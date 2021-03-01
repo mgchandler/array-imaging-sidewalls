@@ -37,8 +37,8 @@ scat_matrix(4).matr = zeros(ang_pts_over_2pi);
 if scat_info.type == "sdh"
     % Unpack scatterer info.
     sdh_radius = scat_info.radius;
-    lambda_L = scat_info.lambda(1);
-    lambda_T = scat_info.lambda(2);
+    lambda_L = scat_info.lambdaL;
+    lambda_T = scat_info.lambdaT;
     
     % Iterate. Need to change the sdh_scat_amp function to calculate by
     % matrix multiplication.

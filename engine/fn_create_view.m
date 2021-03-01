@@ -29,7 +29,6 @@ view.name = sprintf('%s-%s', path1.path_info.name, reverse(path2.path_info.name)
 % Initialise variables.
 view.min_times = zeros(probe_els ^ 2, num_scatterers);
 view.probe_txrx = zeros(probe_els ^ 2, 2);
-view.tau = zeros(probe_els ^ 2, path1.scat_size(2), path1.scat_size(1));
 view.scatterer_coords = zeros(num_scatterers, 3);
 
 % Assemble view from paths.
@@ -39,7 +38,6 @@ for i = 1 : probe_els
         view.min_times(el, :) = path1.min_times(i, :) + path2.min_times(j, :);
         view.probe_txrx(el, 1) = i;
         view.probe_txrx(el, 2) = j;
-        view.tau(el, :, :) = reshape(view.min_times(el, :), [path1.scat_size(2), path1.scat_size(1)]);
     end
 end
 

@@ -9,11 +9,11 @@ MODEL = ["NGeo", "Geo"];
 times = [];
 config = [];
 FUNC = [];
-xwidth = 60.0e-3;
-N = xwidth * 10^3; % + 1;
-half_probe_width = 16.0e-3;
-xmins = linspace(-xwidth+half_probe_width, -half_probe_width, xwidth*10^3);
-xmaxs = linspace(+half_probe_width, xwidth-half_probe_width, xwidth*10^3);
+% xwidth = 60.0e-3;
+% N = xwidth * 10^3; % + 1;
+% half_probe_width = 16.0e-3;
+% xmins = linspace(-xwidth+half_probe_width, -half_probe_width, xwidth*10^3);
+% xmaxs = linspace(+half_probe_width, xwidth-half_probe_width, xwidth*10^3);
 
 % for i = 48:60%:size(xmins,2)
 %     shape = [xmins(i), xmaxs(i), 0.0e-3, 40.0e-3];
@@ -25,10 +25,10 @@ xmaxs = linspace(+half_probe_width, xwidth-half_probe_width, xwidth*10^3);
 % shape = [xmins(48), xmaxs(48), 0.0e-3, 40.0e-3];
 % func = fn_batch_sens_contact_quicker(1.00e-3, 5.0e-3, 500, 2, 0, shape);
 shape = [-25e-3, 25e-3, 0.0e-3, 40.0e-3];
-fn_batch_sens_contact(1.00e-3, 20e-3, 500, 1, 0, 1);
+% fn_batch_sens_contact(1.00e-3, 20e-3, 500, 1, 0, 1);
 
-in_use = monitor_memory_whos;
-disp(in_use)
+% in_use = monitor_memory_whos;
+% disp(in_use)
 
 % for i = 1:3
 %     for j = 1:2

@@ -40,7 +40,6 @@ end
 
 % Initialise the structure.
 ray.min_times = zeros(probe_els, num_scatterers);
-ray.scat_size = [scat_info.x_shape, scat_info.z_shape];
 ray.wall_idxs = zeros(probe_els, num_scatterers, no_walls);
 ray.path_info = path_info;
 ray.scat_info = scat_info;
