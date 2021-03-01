@@ -643,7 +643,7 @@ for view = 1 : size(Views, 1)
     scat_amp = fn_scattering_amps(Views(view), probe_frequency);
     for scatterer = 1 : size(scat_info.image_block, 1)
         amp = conj(scat_amp(:, scatterer, :) .* ray_weights(:, scatterer, :));
-        out_freq_spec = out_freq_spec + fn_propagate_spectrum_mc_2(probe_frequency, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
+        out_freq_spec = out_freq_spec + fn_propagate_spectrum_mc_2(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
     end
 end
 
@@ -810,6 +810,9 @@ for im = 1:Number_of_ims
     plot(front_wall(:, 1)*UC, front_wall(:, 3)*UC, 'r');
     plot(back_wall(:, 1)*UC, back_wall(:, 3)*UC, 'r');
     plot(side_wall(:, 1)*UC, side_wall(:, 3)*UC, 'r');
+    for s = 1 : size(scat_info.image_block, 1)
+        rectangle('Position', [scat_info.image_block(s, 1)*UC - 2.5, scat_info.image_block(s, 3)*UC - 2.5, 5, 5], 'EdgeColor', 'r');
+    end
     axis equal; axis tight;
 end
 
