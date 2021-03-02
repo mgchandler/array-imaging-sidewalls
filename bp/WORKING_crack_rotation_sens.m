@@ -22,6 +22,9 @@ function WORKING_crack_rotation_sens(array_idx, total_jobs, VIEWS)
 % total_jobs = 100;
 % VIEWS = 1;
 
+% Assume that the submission directory is /array-imaging-sidewalls/bp
+cd('../engine')
+
 %% ---------------------------------------------------------------------- %
 % Setup input parameters                                                  %
 % ---------------------------------------------------------------------- %%
