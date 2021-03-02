@@ -16,13 +16,18 @@ function WORKING_crack_rotation_sens(array_idx, total_jobs, VIEWS)
 %       to image.
 
 % Move into engine directory.
-cd('/home/mc16535/Matlab_Sidewalls/array-imaging-sidewalls/engine')
+% cd('/home/mc16535/Matlab_Sidewalls/array-imaging-sidewalls/engine')
+
+% array_idx = 2;
+% total_jobs = 100;
+% VIEWS = 1;
 
 %% ---------------------------------------------------------------------- %
 % Setup input parameters                                                  %
 % ---------------------------------------------------------------------- %%
 
-crack_angle = linspace(-pi, pi, total_jobs);
+crack_angle = linspace(-pi, pi, total_jobs+1);
+crack_angle = crack_angle(2:end);
 
 model_config.PITCH =  1.00e-3;
 model_config.PIXEL = 10.0e-3;
@@ -40,6 +45,7 @@ new_options.scat_info = fn_scat_info( ...
     2.0e-3, ...
     crack_angle(array_idx), ...
     [[0, 0, 0]], ...
+    'nodes_per_wavelength', 20, ...
     'ang_pts_over_2pi', 120 ...
 );
 new_options.savepath = '/work/mc16535/Matlab_Sidewalls/array-sidewalls-imaging';
@@ -63,3 +69,5 @@ fn_sens(model_config, model_options);
 % ---------------------------------------------------------------------- %%
 
 % fn_tfm(model_config, model_options);
+
+quit;
