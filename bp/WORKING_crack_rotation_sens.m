@@ -33,7 +33,7 @@ crack_angle = linspace(-pi, pi, total_jobs+1);
 crack_angle = crack_angle(2:end);
 
 model_config.PITCH =  1.00e-3;
-model_config.PIXEL = 10.0e-3;
+model_config.PIXEL = 2.0e-3;
 model_config.WALLS = 500;
 model_config.VIEWS = VIEWS;
 model_config.GEOM = 0;

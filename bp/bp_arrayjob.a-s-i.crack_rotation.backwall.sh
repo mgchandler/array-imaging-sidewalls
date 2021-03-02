@@ -2,7 +2,7 @@
 #
 #
 #PBS -l select=1:ncpus=1:mem=2000mb
-#PBS -l walltime=00:05:00
+#PBS -l walltime=12:00:00
 #PBS -J 1-90
 
 # Load modules
@@ -24,7 +24,7 @@ hostname
 declare -i Job Num Views
 Job=${PBS_ARRAY_INDEX}
 Num=90
-Views=1
+Views=2
 
 # Execute code
 echo matlab -nodisplay -nodesktop -singleCompThread -nosplash -r "WORKING_crack_rotation_sens(${Job}, ${Num}, ${Views});quit;"
