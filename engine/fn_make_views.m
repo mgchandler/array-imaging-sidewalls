@@ -53,10 +53,10 @@ if VIEWS == 1
 elseif VIEWS == 2
     modes = BACKWALL_IMAGING_MODES;
     Number_of_ims = 21;
-elseif VIEWS == 2
+elseif VIEWS == 3
     modes = SIDEWALL_IMAGING_MODES;
     Number_of_ims = 21;
-elseif VIEWS == 2
+elseif VIEWS == 4
     modes = BACK_SIDEWALL_IMAGING_MODES;
     Number_of_ims = 55;
 else
