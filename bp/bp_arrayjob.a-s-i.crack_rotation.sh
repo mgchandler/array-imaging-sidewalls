@@ -26,8 +26,10 @@ Job=${PBS_ARRAY_INDEX}
 Num=90
 Views=1
 
+cd ${HOME}/Matlab_Sidewalls/array-imaging-sidewalls/engine
+
 # Execute code
-echo matlab -nodisplay -nodesktop -singleCompThread -nosplash -r "fn_mc_batch_sens_contact(${Job}, ${Num}, ${Views});quit;"
-matlab -nodisplay -nodesktop -singleCompThread -nosplash -r "fn_mc_batch_sens_contact(${Job}, ${Num}, ${Views});quit;"
+echo matlab -nodisplay -nodesktop -singleCompThread -nosplash -r "fn_sens(${Job}, ${Num}, ${Views});quit;"
+matlab -nodisplay -nodesktop -singleCompThread -nosplash -r "fn_sens(${Job}, ${Num}, ${Views});quit;"
 
 echo End Time: $(date)
