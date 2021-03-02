@@ -836,8 +836,8 @@ h.Label.String = 'dB';
 
 
 cd(savepath)
-filename_fig = sprintf('Sens Contact %s %s %s scatterer - p=%.2e pix=%.2e walls=%d - shape=(%.2e,%.2e,%.2e,%.2e).fig', mode, Geo, image_block_info.type, PITCH, PIXEL, WALLS, xmin, xmax, zmin, zmax);
-filename_mat = sprintf('Sens Contact %s %s %s scatterer - p=%.2e pix=%.2e walls=%d - shape=(%.2e,%.2e,%.2e,%.2e).mat', mode, Geo, image_block_info.type, PITCH, PIXEL, WALLS, xmin, xmax, zmin, zmax);
+filename_fig = sprintf('Sens Contact %s %s %s scatterer - p=%.2e pix=%.2e walls=%d - rotation=%.2f.fig', mode, Geo, image_block_info.type, PITCH, PIXEL, WALLS, image_block_info.angle);
+filename_mat = sprintf('Sens Contact %s %s %s scatterer - p=%.2e pix=%.2e walls=%d - rotation=%.2f.mat', mode, Geo, image_block_info.type, PITCH, PIXEL, WALLS, image_block_info.angle);
 saveas(fig, filename_fig)
 close all
 
