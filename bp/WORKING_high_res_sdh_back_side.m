@@ -1,4 +1,4 @@
-function WORKING_high_res_sdh()
+function WORKING_high_res_sdh_back_side()
 % Script which takes the array index from BluePebble as an input, works out
 % exactly which geometry block this relates to, and performs the
 % corresponding sidewall sensitivity calculation.
