@@ -808,7 +808,7 @@ im_x = linspace(xmin, xmax, xpts+1);
 im_z = linspace(zmin, zmax, zpts+1);
 fig = figure(1);
 ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
-sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, image_block_info.angle))
+sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
 for im = 1:Number_of_ims
     ax(im) = subplot(plot_z, plot_x, im);
     imagesc(im_x*UC, im_z*UC, Sens(sort_idx(im)).db_image);
