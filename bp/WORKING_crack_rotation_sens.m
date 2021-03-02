@@ -52,6 +52,7 @@ new_options.scat_info = fn_scat_info( ...
     'ang_pts_over_2pi', 120 ...
 );
 new_options.savepath = '/work/mc16535/Matlab_Sidewalls/array-sidewalls-imaging';
+new_options.savename = sprintf('Sens Crack Rotation - %.2f', crack_angle(array_idx));
 new_options.geom_shape.xmin = -35.0e-3;
 new_options.geom_shape.xmax =  35.0e-3;
 new_options.geom_shape.zmin =   0.0;

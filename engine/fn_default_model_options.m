@@ -16,6 +16,7 @@ function model_options = fn_default_model_options(varargin)
 %       - material_params : struct : DEFAULT air and alum properties
 %       - scat_info : struct : DEFAULT sdh located at (0, 22e-3)
 %       - boxsize : integer : DEFAULT = 0
+%       - savename : string : DEFAULT = "sens MODE GEOM VIEWS PITCH PIXEL WALLS"
 %
 % OUTPUTS:
 % - model_options : struct (1, 1)
@@ -46,6 +47,7 @@ model_options.scat_info = fn_scat_info( ...
 );
 model_options.boxsize = 0;
 model_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\array-imaging-sidewalls\output';
+model_options.savename = 'TFM-Sens Image Plot';
 
 if nargin == 1
     new_options = varargin{1};
