@@ -628,22 +628,10 @@ if or(VIEWS == 3, VIEWS == 4)
     clear LSL_path_im LST_path_im TSL_path_im TST_path_im
 end
 
-Views = repmat(fn_create_view(Paths(1), Paths(1), image_block_info), Number_of_ims, 1);
+Views = fn_make_views(VIEWS, Paths, Names);
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
-Namelist = repmat("-", Number_of_ims, 1);
-i = 1;
-for t_path = 1 : size(Paths, 2)
-    for r_path = 1 : size(Paths, 2)
-        name = strcat(Names(t_path), "-", Names_rev(r_path));
-        revname = strcat(Names(r_path), "-", Names_rev(t_path));
-        if ~any(strcmp(Namelist, revname))
-            Namelist(i) = name;
-            Views(i) = fn_create_view(Paths(t_path), Paths(r_path), image_block_info);
-            Views(i).name = name;
-            Sens(i).name = name;
-            i = i + 1;
-        end
-    end
+for view = 1 : Number_of_ims
+    Sens(view).name = Views(view).name;
 end
 
 clear probe_angle probe_frequency boxsize Paths Names Names_rev Namelist
@@ -672,7 +660,7 @@ for xpt_im = 1:xpts_im+1
         % "boxsize" border (i.e. the border to allow windows to be drawn around
         % all valid scatterer locations), then carry on to the next iteration.
         scatterer_coords = image_block_info.image_block(grid_pt, :);
-        if ~(((scatterer_coords(1) >= xmin) && (scatterer_coords(1) <= xmax)) && ((scatterer_coords(3) >= zmin) && (scatterer_coords(3) <= zmax)))
+        if ~(((scatterer_coords(1) >= xmin) && (scatterer_coords(1) <= xmax)) && ((scatterer_coords(3) >= zmin) && (scatterer_coords(3) < zmax)))
             clear scatterer_coords
             continue
         % If we are inside the region allowed for scatterers, work out
@@ -780,20 +768,27 @@ end
 if VIEWS == 1
     View_names = ["L-L", "L-T", "T-T"];
 elseif VIEWS == 2
-    View_names = ["L-L", "L-T", "T-T", "L-LBL", "T-LBL", "L-TBL", "T-TBL", ...
-                  "L-LBT", "T-LBT", "L-TBT", "T-TBT", "LBL-LBL", "LBL-LBT", "LBL-TBL", ...
-                  "LBL-TBT", "LBT-LBT", "LBT-TBL", "LBT-TBT", "TBL-LBT", "TBL-TBT", "TBT-TBT"];
+    View_names = ["L-L", "L-T", "T-T", "LBL-L", "LBL-T", "LBT-L", "LBT-T", ...
+                  "TBL-L", "TBL-T", "TBT-L", "TBT-T", "LBL-LBL", "LBL-LBT", ...
+                  "LBL-TBL", "LBL-TBT", "LBT-LBT", "LBT-TBL", "LBT-TBT", ...
+                  "TBL-LBT", "TBL-TBT", "TBT-TBT"];
 elseif VIEWS == 3
-    View_names = ["L-L", "L-T", "T-T", "L-LSL", "T-LSL", "L-TSL", "T-TSL", ...
-                  "L-LST", "T-LST", "L-TST", "T-TST", "LSL-LSL", "LSL-LST", "LSL-TSL", ...
-                  "LSL-TST", "LST-LST", "LST-TSL", "LST-TST", "TSL-LST", "TSL-TST", "TST-TST"];
+    View_names = ["L-L", "L-T", "T-T", "LSL-L", "LSL-T", "LST-L", "LST-T", ...
+                  "TSL-L", "TSL-T", "TST-L", "TST-T", "LSL-LSL", "LSL-LST", ...
+                  "LSL-TSL", "LSL-TST", "LST-LST", "LST-TSL", "LST-TST", ...
+                  "TSL-LST", "TSL-TST", "TST-TST"];
 elseif VIEWS == 4
-    View_names = ["L-L", "L-T", "T-T", "LBL-T", "LBL-T", "LBT-L", "LBT-T", ...
-                  "TBL-L", "TBL-T", "TBT-L", "TBT-T", "LBL-LBL", "LBL-LBT", "LBL-TBL", ...
-                  "LBL-TBT", "LBT-LBT", "LBT-TBL", "LBT-TBT", "TBL-LBT", "TBL-TBT", "TBT-TBT", ...
-                  "L-LSL", "T-LSL", "L-TSL", "T-TSL", ...
-                  "L-LST", "T-LST", "L-TST", "T-TST", "LSL-LSL", "LSL-LST", "LSL-TSL", ...
-                  "LSL-TST", "LST-LST", "LST-TSL", "LST-TST", "TSL-LST", "TSL-TST", "TST-TST"];
+    View_names = ["L-L", "L-T", "T-T", "LBL-L", "LBL-T", "LBT-L", "LBT-T", ...
+                  "LSL-L", "LSL-T", "LST-L", "LST-T", "TBL-L", "TBL-T", ...
+                  "TBT-L", "TBT-T", "TSL-L", "TSL-T", "TST-L", "TST-T", ...
+                  "LBL-LBL", "LBL-LBT", "LBL-LSL", "LBL-LST", "LBL-TBL", ...
+                  "LBL-TBT", "LBL-TSL", "LBL-TST", "LBT-LBT", "LBT-LSL", ...
+                  "LBT-LST", "LBT-TBL", "LBT-TBT", "LBT-TSL", "LBT-TST", ...
+                  "LSL-LBT", "LSL-LSL", "LSL-LST", "LSL-TBT", "LSL-TSL", ...
+                  "LSL-TST", "LST-LBT", "LST-LST", "LST-TBT", "LST-TSL", ...
+                  "LST-TST", "TBL-LBT", "TBL-LST", "TBL-TBT", "TBL-TST", ...
+                  "TBT-LST", "TBT-TBT", "TBT-TST", "TSL-LST", "TSL-TST", ...
+                  "TST-TST"];
 end
 
 sort_idx = zeros(Number_of_ims, 1);
@@ -808,7 +803,9 @@ im_x = linspace(xmin, xmax, xpts+1);
 im_z = linspace(zmin, zmax, zpts+1);
 fig = figure(1);
 ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
-sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
+if image_block_info.type == "crack"
+    sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
+end
 for im = 1:Number_of_ims
     ax(im) = subplot(plot_z, plot_x, im);
     imagesc(im_x*UC, im_z*UC, Sens(sort_idx(im)).db_image);
@@ -844,7 +841,7 @@ cd(savepath)
 filename_fig = sprintf('%s.fig', savename);
 filename_mat = sprintf('%s.mat', savename);
 saveas(fig, filename_fig)
-close all
+% close all
 
 time_6 = double(toc);
 
@@ -858,6 +855,6 @@ times = [time_1, time_2, time_3, time_4, time_5, time_6];
 
 save(filename_mat, 'times', 'Sens', 'Views', 'image_block_info')
 
-clear
+% clear
 
 end

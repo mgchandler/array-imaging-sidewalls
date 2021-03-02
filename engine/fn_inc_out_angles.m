@@ -41,12 +41,12 @@ for leg = 1:no_legs
             sign_alpha = -alpha;
         end
         
-        conv_alpha = alpha;
-%         if cart_inc(3) > 0
-%             conv_alpha = pi - alpha;
-%         else
-%             conv_alpha = alpha;
-%         end
+%         conv_alpha = alpha;
+        if cart_inc(3) < 0
+            conv_alpha = pi - alpha;
+        else
+            conv_alpha = alpha;
+        end
 
     elseif wall_ids(leg+1) == 3 % If wall is a sidewall.
         cart_inc = -dists(leg, 1:3);
@@ -59,12 +59,12 @@ for leg = 1:no_legs
             sign_alpha = -alpha;
         end
         
-        conv_alpha = alpha;
-%         if cart_inc(1) > 0
-%             conv_alpha = pi - alpha;
-%         else
-%             conv_alpha = alpha;
-%         end
+%         conv_alpha = alpha;
+        if cart_inc(1) < 0
+            conv_alpha = pi - alpha;
+        else
+            conv_alpha = alpha;
+        end
 
     else % Wall type is not valid.
         disp('Invalid wall type');
@@ -92,12 +92,12 @@ for leg = 1:no_legs
             sign_beta = -beta;
         end
         
-        conv_beta = beta;
-%         if cart_inc(3) > 0
-%             conv_beta = pi - beta;
-%         else
-%             conv_beta = beta;
-%         end
+%         conv_beta = beta;
+        if cart_inc(3) < 0
+            conv_beta = pi - beta;
+        else
+            conv_beta = beta;
+        end
         
     elseif wall_ids(leg) == 3 % If wall is a sidewall.
         cart_out = -dists(leg, 1:3);
@@ -110,12 +110,12 @@ for leg = 1:no_legs
             sign_beta = -beta;
         end
         
-        conv_beta = beta;
-%         if cart_inc(1) > 0
-%             conv_beta = pi - beta;
-%         else
-%             conv_beta = beta;
-%         end
+%         conv_beta = beta;
+        if cart_inc(1) < 0
+            conv_beta = pi - beta;
+        else
+            conv_beta = beta;
+        end
         
     else % Wall type is not valid.
         disp('Invalid wall type');

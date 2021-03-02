@@ -43,7 +43,6 @@ ray.min_times = zeros(probe_els, num_scatterers);
 ray.wall_idxs = zeros(probe_els, num_scatterers, no_walls);
 ray.path_info = path_info;
 ray.scat_info = scat_info;
-ray.min_dists = zeros(probe_els, num_scatterers, no_walls+1);
 
 % Calculate the fermat path.
 for scat = 1 : num_scatterers

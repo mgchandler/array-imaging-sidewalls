@@ -2,7 +2,7 @@
 #
 #
 #PBS -l select=1:ncpus=1:mem=2000mb
-#PBS -l walltime=12:00:00
+#PBS -l walltime=16:00:00
 #PBS -J 1-90
 
 # Load modules
@@ -19,6 +19,8 @@ echo Working Directory: $(pwd)
 echo Start Time: $(date)
 echo Run location:
 hostname
+
+echo Backwall Crack Rotation
 
 # Create and define variables for use in the job.
 declare -i Job Num Views

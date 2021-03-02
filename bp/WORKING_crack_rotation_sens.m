@@ -20,7 +20,7 @@ function WORKING_crack_rotation_sens(array_idx, total_jobs, VIEWS)
 
 % array_idx = 2;
 % total_jobs = 100;
-% VIEWS = 1;
+% VIEWS = 2;
 
 % Assume that the submission directory is /array-imaging-sidewalls/bp
 cd('../engine')
@@ -33,8 +33,8 @@ crack_angle = linspace(-pi, pi, total_jobs+1);
 crack_angle = crack_angle(2:end);
 
 model_config.PITCH =  1.00e-3;
-model_config.PIXEL = 2.0e-3;
-model_config.WALLS = 500;
+model_config.PIXEL = 1.0e-3;
+model_config.WALLS = 750;
 model_config.VIEWS = VIEWS;
 model_config.GEOM = 0;
 model_config.SETUP = 0;
@@ -49,11 +49,11 @@ new_options.scat_info = fn_scat_info( ...
     crack_angle(array_idx), ...
     [[0, 0, 0]], ...
     'nodes_per_wavelength', 20, ...
-    'ang_pts_over_2pi', 5 ...
+    'ang_pts_over_2pi', 120 ...
 );
-new_options.savepath = '/work/mc16535/Matlab_Sidewalls/array-sidewalls-imaging';
+new_options.savepath = '/work/mc16535/Matlab_Sidewalls/array-sidewalls-imaging/crack-rotation';
 % new_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\array-imaging-sidewalls\output';
-new_options.savename = sprintf('Sens Crack Rotation - %.2f', crack_angle(array_idx));
+new_options.savename = sprintf('Sens Contact %d Crack Angle %.2f', VIEWS, crack_angle(array_idx));
 new_options.geom_shape.xmin = -35.0e-3;
 new_options.geom_shape.xmax =  35.0e-3;
 new_options.geom_shape.zmin =   0.0;

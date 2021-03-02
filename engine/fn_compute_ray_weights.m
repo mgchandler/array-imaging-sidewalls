@@ -13,7 +13,7 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array)
 %       coefficients along the forward and backward path for the ray.
 
 % Relevant dimensions.
-[probe_els, num_scatterers, ~] = size(ray.min_dists);
+[probe_els, num_scatterers] = size(ray.min_times);
 [num_freqs, ~] = size(freq_array);
 
 % Unpack path and scatterer info.
@@ -50,6 +50,7 @@ ray_weights.inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.inv_inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+ray.min_dists = zeros(probe_els, num_scatterers, no_walls+1);
 
 % If we are in the direct contact case
 if ray.path_info.walls == 0
@@ -77,6 +78,7 @@ if ray.path_info.walls == 0
             ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
             ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
             ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
+            ray.min_dists(tx, scat, :) = min_dists(:, 4);
             
             for freq_idx = 1 : num_freqs
                 

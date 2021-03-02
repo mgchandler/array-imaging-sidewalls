@@ -22,3 +22,5 @@ To do:
 - [ ] Make sure that the function still works for the immersion case.
 - [ ] Adapt code to allow for multiple types of scatterers to be simulated.
 - [ ] Adapt functions to allow for matrix multiplication as much as possible, to try and speed it up.
+- [ ] When adding complicated geometry, make sure that conv_angle in fn_inc_out_angles is shifted with respect to the definition of the normal of the interface, rather than the z-component simply being +ve or -ve.
+- [ ] In fn_make_views, have it sort out views more elegantly like arim does using a function to sort, rather than just reference a big ol' list of valid names.
