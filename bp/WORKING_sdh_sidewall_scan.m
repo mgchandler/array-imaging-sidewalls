@@ -27,7 +27,7 @@ cd('../engine')
 % ---------------------------------------------------------------------- %%
 
 model_config.PITCH =  1.00e-3;
-model_config.PIXEL = 1.0e-3;
+model_config.PIXEL = 2.0e-3;
 model_config.WALLS = 750;
 model_config.VIEWS = 3;
 model_config.GEOM = 0;

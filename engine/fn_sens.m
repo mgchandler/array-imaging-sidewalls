@@ -605,7 +605,6 @@ L_path_im = fn_compute_ray(image_block_info, L_path_info, probe_frequency);
 T_path_im = fn_compute_ray(image_block_info, T_path_info, probe_frequency);
 Paths = [L_path_im T_path_im];
 Names = ["L" "T"];
-Names_rev = ["L" "T"];
 clear L_path_im T_path_im X Z
 if or(VIEWS == 2, VIEWS == 4)
     LBL_path_im = fn_compute_ray(image_block_info, LBL_path_info, probe_frequency);
@@ -614,7 +613,6 @@ if or(VIEWS == 2, VIEWS == 4)
     TBT_path_im = fn_compute_ray(image_block_info, TBT_path_info, probe_frequency);
     Paths = [Paths LBL_path_im LBT_path_im TBL_path_im TBT_path_im];
     Names = [Names "LBL" "LBT" "TBL" "TBT"];
-    Names_rev = [Names_rev "LBL" "TBL" "LBT" "TBT"];
     clear LBL_path_im LBT_path_im TBL_path_im TBT_path_im
 end
 if or(VIEWS == 3, VIEWS == 4)
@@ -624,7 +622,6 @@ if or(VIEWS == 3, VIEWS == 4)
     TST_path_im = fn_compute_ray(image_block_info, TST_path_info, probe_frequency);
     Paths = [Paths LSL_path_im LST_path_im TSL_path_im TST_path_im];
     Names = [Names "LSL" "LST" "TSL" "TST"];
-    Names_rev = [Names_rev "LSL" "TSL" "LST" "TST"];
     clear LSL_path_im LST_path_im TSL_path_im TST_path_im
 end
 

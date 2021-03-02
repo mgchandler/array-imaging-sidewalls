@@ -22,7 +22,7 @@ model_options = fn_default_model_options(new_options);
 new_options.savename = sprintf('Sens Contact %d Crack Angle %.2f', VIEWS, crack_angle(array_idx));
 disp(new_options.savename)
 
-
+q
 
 %% ---------------------------------------------------------------------- %
 % Run sensitivity                                                         %
