@@ -67,6 +67,9 @@ if use_gpu_if_present && (exist('gpuDeviceCount') == 2) && (gpuDeviceCount > 0)
 else
     m = length(omega);
     n = length(amps);
-    out_freq_spec = spdiags(in_freq_spec(:), 0, m, m) * exp(-1i * omega(:) * tof(:).') * spdiags(amps(:), 0, n, n);
+    spec_diags = spdiags(in_freq_spec(:), 0, m, m);
+    exp_mult = exp(-1i * omega * tof.');
+    amps_diags = spdiags(amps(:), 0, n, n);
+    out_freq_spec = spec_diags * exp_mult * amps_diags;
 end
 return;
