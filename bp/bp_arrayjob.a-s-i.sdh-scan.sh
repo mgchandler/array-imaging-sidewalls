@@ -2,7 +2,7 @@
 #
 #
 #PBS -l select=1:ncpus=1:mem=3500mb
-#PBS -l walltime=16:00:00
+#PBS -l walltime=20:00:00
 #PBS -J 1-100
 
 # Load modules
