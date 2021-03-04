@@ -1,7 +1,7 @@
 model_config.PITCH =  1.00e-3;
 model_config.PIXEL = 5.0e-3;
 model_config.WALLS = 500;
-model_config.VIEWS = 2;
+model_config.VIEWS = 1;
 model_config.GEOM = 0;
 model_config.SETUP = 0;
 
@@ -12,8 +12,6 @@ new_options.geom_shape.xmax =  25.0e-3;
 new_options.geom_shape.zmin =   0.0;
 new_options.geom_shape.zmax =  40.0e-3;
 model_options = fn_default_model_options(new_options);
-
-
 
 %% ---------------------------------------------------------------------- %
 % Run sensitivity                                                         %

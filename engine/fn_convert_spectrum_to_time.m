@@ -40,6 +40,7 @@ if return_hilbert
 else
     out_time_sig = real(ifft(out_freq_spec,fft_pts)) * 2;
 end;
+
 out_time_sig = out_time_sig(1:time_pts,:);
 
 time_step = 1 / (fft_pts*abs(freq(2)-freq(1)));

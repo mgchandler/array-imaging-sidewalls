@@ -49,15 +49,6 @@ end
 omega = 2 * pi * freq;
 %do the propagation
 
-% Reshape tof so we can multiply it by omega later.
-if (size(tof,1) ~= 1) && (size(tof, 2) ~= 1)
-    tof = reshape(tof, 1, size(tof, 1), size(tof, 2));
-    use_page = 1;
-else
-    tof = tof.';
-    use_page = 0;
-end
-
 %OLD METHOD WITH LOOP
 % out_freq_spec = zeros(length(freq),length(dists));
 % for ii = 1:length(dists)
@@ -73,18 +64,9 @@ end
 %GPU METHOD
 if use_gpu_if_present && (exist('gpuDeviceCount') == 2) && (gpuDeviceCount > 0)
     out_freq_spec = (gpuArray(in_freq_spec(:)) * gpuArray(amps(:).')) .* exp(-1i * gpuArray(omega(:)) * gpuArray(tof(:).'));
-else%if use_page
+else
     m = length(omega);
     n = length(amps);
-    spec_diags = full(spdiags(in_freq_spec(:), 0, m, m));
-    amps_diags = full(spdiags(amps(:), 0, n, n));
-    exp_mult = exp(-1i * pagemtimes(omega, tof));
-    
-    out_freq_spec = pagemtimes(pagemtimes(spec_diags, exp_mult), amps_diags);
-% else
-%     m = length(omega);
-%     n = length(amps);
-%     
-%     out_freq_spec = spdiags(in_freq_spec(:), 0, m, m) * exp(-1i * omega * tof) * spdiags(amps(:), 0, n, n);
+    out_freq_spec = spdiags(in_freq_spec(:), 0, m, m) * exp(-1i * omega(:) * tof(:).') * spdiags(amps(:), 0, n, n);
 end
 return;

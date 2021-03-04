@@ -23,7 +23,7 @@ function fn_sens(model_config, model_options)
 %           and backwall (total of 55 imaged).
 %     - GEOM : logical
 %           Logical switch as to whether signals from the geometry will be
-%           modelled. In sensitivity, usually this is switched off (i.e.
+%           modelled. In sensitivity,  this should be switched off (i.e.
 %           set to 0).
 %     - SETUP : logical
 %           Logical switch as to whether contact or immersion setup will be
@@ -90,7 +90,7 @@ PITCH = model_config.PITCH;
 PIXEL = model_config.PIXEL;
 WALLS = model_config.WALLS;
 VIEWS = model_config.VIEWS;
-GEOM = model_config.GEOM;
+assert(~model_config.GEOM, 'Error in fn_sens model_config.GEOM must be 0 for sensitivity.');
 SETUP = model_config.SETUP;
 
 probe_els = model_options.probe_els;
@@ -185,6 +185,8 @@ side_wall(:, 3) = linspace(zmin, zmax, side_wall_pixels);
 
 clear front_wall_pos front_wall_pixels back_wall_pos back_wall_pixels side_wall_pos side_wall_pixels
 
+
+
 %% ---------------------------------------------------------------------- %
 % Input signal                                                            %
 % ---------------------------------------------------------------------- %%
@@ -196,16 +198,14 @@ max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_she
 time_pts = ceil(max_t / time_step);
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
-time_1 = double(toc);
-
-fprintf('Setup time %.2f secs\n', time_1);
-% fprintf('%.2g MB\n', monitor_memory_whos);
-
 clear oversampling no_cycles time_step max_t time in_time_sig
+
+
 
 %% ---------------------------------------------------------------------- %
 % Scatterer Simulation path info - Contact                                %
 % ---------------------------------------------------------------------- %%
+
 tic;
 
 % If we are in the contact case
@@ -546,45 +546,16 @@ elseif SETUP
         clear geometry_sw_skip
     end
     
-end
-
-time_2 = double(toc);
-
-fprintf('Scatterer paths computed in %.2f secs\n', time_2);
-% fprintf('%.2g MB\n', monitor_memory_whos);
-
-clear couplant_speed couplant_density mat_long_speed mat_shear_speed mat_density
-
-
-
-%% ---------------------------------------------------------------------- %
-% Geometry simulation                                                     %
-% ---------------------------------------------------------------------- %%
-tic;
-if GEOM
-    backwall_views = fn_backwall_views( ...
-        probe_coords, probe_angle, 0, back_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
-        [couplant_density solid_density], probe_frequency, el_length ...
-    );
-    amp_b = repmat(zeros(1, size(backwall_views(1).min_times, 1)), size(backwall_views, 2), 1);
-    for view = 1 : size(backwall_views, 2)
-        amp_b(view, :) = conj( ...
-            backwall_views(view).directivity1 .* backwall_views(view).directivity2 .* ...
-            backwall_views(view).bs1 .* backwall_views(view).tr1 ...
-        );
-    end
-    
-    Geo = 'Geo';
 else
-    Geo = 'NGeo';
+    error('Error in fn_sens: Invalid SETUP - must be contact (0) or immersion (1).')
 end
 
-clear probe_pitch
+time_1 = double(toc);
 
-time_3 = double(toc);
+fprintf('Setup time %.2f secs.\n', time_1);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-fprintf('Geometry views and amps simulated in %.2f secs\n', time_3);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+clear couplant_speed couplant_density mat_long_speed mat_shear_speed mat_density probe_pitch
 
 
 
@@ -592,6 +563,7 @@ fprintf('Geometry views and amps simulated in %.2f secs\n', time_3);
 % Scatterer and Imaging setup                                             %
 % ---------------------------------------------------------------------- %%
 % Precompute views for all scatterers, as well as imaging views. As 
+
 tic;
 
 db_range_for_output = 40;
@@ -655,9 +627,16 @@ end
 
 Views = fn_make_views(VIEWS, Paths, Names);
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
+Sens_vec = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
     Sens(view).name = Views(view).name;
+    Sens_vec(view).name = Views(view).name;
 end
+
+time_2 = double(toc);
+
+fprintf('Rays traced in %.2f secs.\n', time_2);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
 clear probe_angle probe_frequency boxsize Paths Names Names_rev Namelist
 
@@ -667,10 +646,16 @@ clear probe_angle probe_frequency boxsize Paths Names Names_rev Namelist
 % Sensitivity Images                                                      %
 % ---------------------------------------------------------------------- %%
 
-time_4 = double(toc);
+tic
 
-fprintf('Imaging views computed in %.2f secs\n', time_4);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+scatterer_coords = reshape(image_block_info.image_block, [zpts_im+1, xpts_im+1, 3]);
+% Obscure points outside of the geometry: these will be zero in logical
+% checks below, so multiply out all checks to kill pixels introduced by
+% boxsize variable.
+are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
+                         (scatterer_coords(:,:,1) <= xmax) .* ...
+                         (scatterer_coords(:,:,3) >= zmin) .* ...
+                         (scatterer_coords(:,:,3) < zmax);
 
 
 
@@ -678,6 +663,7 @@ fprintf('Imaging views computed in %.2f secs\n', time_4);
 % Start of sensitivity loop                                               %
 % ---------------------------------------------------------------------- %%
 % disp('    Starting Sensitivity Loop');
+
 tic;
 
 grid_pt = 0;
@@ -710,14 +696,7 @@ for xpt_im = 1:xpts_im+1
             weights = Views(view).weights(:, grid_pt, 1);
             scat_amp = Views(view).scat_amps(:, grid_pt, 1);
             amp = conj(scat_amp .* weights);
-            out_freq_spec = fn_propagate_spectrum_mc_2(freq, in_freq_spec, Views(view).min_times(:, grid_pt), amp, 0);
-
-            % Geometry simulation.
-            if GEOM
-                for bw_view = 1 : size(backwall_views, 2)
-                    out_freq_spec = out_freq_spec + fn_propagate_spectrum_mc_2(freq, in_freq_spec, backwall_views(bw_view).min_times, amp_b(bw_view), 0);
-                end
-            end
+            out_freq_spec = fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, grid_pt), amp, 0);
 
             % Convert back to time.
             [FMC_time, FMC_time_data] = fn_convert_spectrum_to_time(freq, out_freq_spec, fft_pts, time_pts);
@@ -770,17 +749,14 @@ for xpt_im = 1:xpts_im+1
     end
 end
 
-time_5 = double(toc);
+time_3 = double(toc);
 
-fprintf('Finished Sensitivity Loop in %.2f secs\n', time_5);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+fprintf('Finished Sensitivity Loop in %.2f secs\n', time_3);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
 clear probe_els xsize zsize pixelsize time_pts freq in_freq_spec fft_pts box_pts xpts_im zpts_im FMC grid_pt scat_pt sens_i sens_k
 clear weights scat_amp amp out_freq_spec diagonals tau Im scatterer_coords
 % clear image_block_info
-if GEOM
-    clear backwall_views amp_b
-end
 
 
 
@@ -879,12 +855,12 @@ filename_mat = sprintf('%s.mat', savename);
 saveas(fig, filename_fig)
 % close all
 
-time_6 = double(toc);
+time_4 = double(toc);
 
-fprintf('Plotted in %.2f secs\n', time_6);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+fprintf('Plotted in %.2f secs\n', time_4);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-times = [time_1, time_2, time_3, time_4, time_5, time_6];
+times = [time_1, time_2, time_3, time_4];
 % times.sens = Sens;
 % times.views = Views;
 % times.scat_info = image_block_info;
