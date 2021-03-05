@@ -1,4 +1,4 @@
-function view = fn_create_view(path1, path2, varargin)
+function view = fn_create_view(path1, path2)
 % Assembles a view from two paths.
 %
 % INPUTS:
@@ -10,10 +10,6 @@ function view = fn_create_view(path1, path2, varargin)
 %       All information of the first path, which will be treated as the
 %       reverse path in this view. Must be an output from fn_compute_ray
 %       function.
-% - scat_info : OPTIONAL struct (1, 1)
-%       Contains information on all scatterers which are being modelled.
-%       Scatterer coordinates are in field `image_block`. Must be an output
-%       from the fn_scat_info function.
 %
 % OUTPUTS:
 % - view : struct (1, 1)
@@ -32,12 +28,12 @@ view.probe_txrx = zeros(probe_els ^ 2, 2);
 view.scatterer_coords = zeros(num_scatterers, 3);
 
 % Assemble view from paths.
-for i = 1 : probe_els
-    for j = 1 : probe_els
-        el = probe_els * (i - 1) + j;
-        view.min_times(el, :) = path1.min_times(i, :) + path2.min_times(j, :);
-        view.probe_txrx(el, 1) = i;
-        view.probe_txrx(el, 2) = j;
+for ii = 1 : probe_els
+    for jj = 1 : probe_els
+        el = probe_els * (ii - 1) + jj;
+        view.min_times(el, :) = path1.min_times(ii, :) + path2.min_times(jj, :);
+        view.probe_txrx(el, 1) = ii;
+        view.probe_txrx(el, 2) = jj;
     end
 end
 
@@ -45,19 +41,19 @@ end
 if isfield(path1, "weights") && isfield(path2, "weights")
     [~, ~, num_freqs] = size(path1.weights.weights);
     view.weights = zeros(probe_els^2, num_scatterers, num_freqs);
-    for i = 1 : probe_els
-        for j = 1 : probe_els
-            el = probe_els * (i - 1) + j;
+    el = 0;
+    for ii = 1 : probe_els
+        for jj = 1 : probe_els
+            el = el+1;
             view.weights(el, :, :) = ( ...
-                path1.weights.weights(i, :, :) .* path2.weights.inv_weights(j, :, :) ...
+                path1.weights.weights(ii, :, :) .* path2.weights.inv_weights(jj, :, :) ...
             );
         end
     end
 end
 
 % If scatterer info is provided, then calculate the scattering amplitudes.
-if nargin > 2
-    scat_info = varargin{1};
+if isfield(path1, 'freq_array')
     view.scat_amps = fn_scattering_amps(view, path1.freq_array);
 end
 

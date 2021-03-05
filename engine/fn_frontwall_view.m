@@ -56,15 +56,7 @@ ray = fn_compute_ray(probe_as_scatterer, frontwall_path, 0);
 view.name = 'Frontwall L-L';
 view.min_times = zeros(probe_els ^ 2, 1);
 view.probe_txrx = zeros(probe_els ^ 2, 2);
-view.min_theta1 = zeros(probe_els ^ 2, 1);
-view.min_theta2 = zeros(probe_els ^ 2, 1);
-view.min_dist1 = zeros(probe_els ^ 2, 1);
-view.bs1 = zeros(probe_els ^ 2, 1);
-view.path_1 = ray;
-view.tr1 = zeros(probe_els ^ 2, 1);
-view.tau = ray.min_times;
-view.directivity1 = zeros(probe_els ^ 2, 1);
-view.directivity2 = zeros(probe_els ^ 2, 1);
+view.ray = ray;
 
 el = 1;
 for t_el = 1 : probe_els
@@ -72,15 +64,21 @@ for t_el = 1 : probe_els
         
         view.min_times(el, 1) = ray.min_times(t_el, r_el);
         view.probe_txrx(el, :) = [t_el, r_el];
-        view.min_theta1(el, 1) = ray.min_theta(t_el, r_el);
-        view.min_theta2(el, 1) = ray.min_theta(r_el, t_el);
-        view.min_dist1(el, 1) = ray.min_dists(t_el, r_el);
-        view.bs1(el, 1) = ray.beam_spread(t_el, r_el);
-        view.tr1(el, 1) = ray.tr_coeff(t_el, r_el);
-        view.directivity1(el, 1) = ray.directivity(t_el, r_el);
-        view.directivity2(el, 1) = ray.inv_directivity(t_el, r_el);
         
         el = el+1;
+    end
+end
+
+[~, ~, num_freqs] = size(ray.weights.weights);
+view.weights = zeros(probe_els^2, num_freqs);
+el = 1;
+for ii = 1 : probe_els
+    for jj = 1 : probe_els
+        view.weights(el, :) = ( ...
+            ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
+        );
+
+    el = el+1;
     end
 end
 

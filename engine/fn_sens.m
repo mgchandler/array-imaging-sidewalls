@@ -107,7 +107,7 @@ couplant_density = model_options.material_params.couplant_density;
 solid_long_speed = model_options.material_params.solid_long_speed;
 solid_shear_speed = model_options.material_params.solid_shear_speed;
 solid_density = model_options.material_params.solid_density;
-boxsize = PIXEL * model_options.boxsize;
+boxsize = model_options.boxsize;
 image_block_info = model_options.scat_info;
 savepath = model_options.savepath;
 savename = model_options.savename;
@@ -150,6 +150,8 @@ back_wall_pixels = WALLS;
 side_wall_pos = xmax + 1.0e-5;
 side_wall_pixels = WALLS;
 
+clear PITCH WALLS
+
 
 
 %% ---------------------------------------------------------------------- %
@@ -176,7 +178,8 @@ side_wall = zeros(side_wall_pixels, 3);
 side_wall(:, 1) = linspace(side_wall_pos, side_wall_pos, side_wall_pixels);
 side_wall(:, 3) = linspace(zmin, zmax, side_wall_pixels);
 
-clear front_wall_pos front_wall_pixels back_wall_pos back_wall_pixels side_wall_pos side_wall_pixels
+clear probe_angle front_wall_pos back_wall_pos side_wall_pos front_wall_pixels back_wall_pixels side_wall_pixels
+clear rot_matrix
 
 
 
@@ -191,7 +194,7 @@ max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_she
 time_pts = ceil(max_t / time_step);
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
-clear oversampling no_cycles time_step max_t time in_time_sig
+clear probe_standoff oversampling no_cycles time_step max_t
 
 
 
@@ -548,14 +551,14 @@ time_1 = double(toc);
 fprintf('Setup time %.2f secs.\n', time_1);
 fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-clear couplant_speed couplant_density mat_long_speed mat_shear_speed mat_density probe_pitch
+clear SETUP el_length couplant_speed couplant_density solid_long_speed solid_shear_speed solid_density
 
 
 
 %% ---------------------------------------------------------------------- %
 % Scatterer and Imaging setup                                             %
 % ---------------------------------------------------------------------- %%
-% Precompute views for all scatterers, as well as imaging views. As 
+% Precompute views for all scatterers, as well as imaging views.
 
 tic;
 
@@ -563,27 +566,23 @@ db_range_for_output = 40;
 
 % The total number of points where scatterers will be placed in the x- and
 % z- axes.
-xpts = round(xsize / PIXEL);
-zpts = round(zsize / PIXEL);
+xpts = round(xsize / PIXEL) + 2*boxsize;
+zpts = round(zsize / PIXEL) + 2*boxsize;
 % The number of points in the box plotted for each individual
 % scatterer, from which the maximum is taken for the sensitivity plot.
-boxpts = round(boxsize / PIXEL);
-% The number of points which the sensitivity image will be plotted: equal
-% to the number of scatterers in each dimension plus the boxsize.
-xpts_im = xpts + boxpts;
-zpts_im = zpts + boxpts;
+boxpix = boxsize * PIXEL;
 % Helper arrays for use in the meshgrid.
-x = linspace(xmin-boxsize, xmax+boxsize, xpts_im+1);
-z = linspace(zmin-boxsize, zmax+boxsize, zpts_im+1);
+x = linspace(xmin-boxpix, xmax+boxpix, xpts+1);
+z = linspace(zmin-boxpix, zmax+boxpix, zpts+1);
 % Meshgrid for assembling the image block.
 [X, Z] = meshgrid(x, z);
 % [im_X, im_Z] = meshgrid(im_x, im_z);
 
 pt = 0;
-image_block = zeros((xpts_im+1)*(zpts_im+1), 3);
+image_block = zeros((xpts+1)*(zpts+1), 3);
 
-for xpt = 1 : xpts_im+1
-    for zpt = 1 : zpts_im+1
+for xpt = 1 : xpts+1
+    for zpt = 1 : zpts+1
         pt = pt + 1;
         image_block(pt, 1) = X(zpt, xpt);
         image_block(pt, 3) = Z(zpt, xpt);
@@ -592,13 +591,15 @@ end
 
 % Reuse imaging paths for 
 image_block_info.image_block = image_block;
+scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
 
 % Compute Imaging Paths and Views
 L_path_im = fn_compute_ray(image_block_info, L_path_info, probe_frequency);
 T_path_im = fn_compute_ray(image_block_info, T_path_info, probe_frequency);
 Paths = [L_path_im T_path_im];
 Names = ["L" "T"];
-clear L_path_im T_path_im X Z
+clear L_path_info T_path_info L_path_im T_path_im
+clear X Z pt image_block
 if or(VIEWS == 2, VIEWS == 4)
     LBL_path_im = fn_compute_ray(image_block_info, LBL_path_info, probe_frequency);
     LBT_path_im = fn_compute_ray(image_block_info, LBT_path_info, probe_frequency);
@@ -606,6 +607,7 @@ if or(VIEWS == 2, VIEWS == 4)
     TBT_path_im = fn_compute_ray(image_block_info, TBT_path_info, probe_frequency);
     Paths = [Paths LBL_path_im LBT_path_im TBL_path_im TBT_path_im];
     Names = [Names "LBL" "LBT" "TBL" "TBT"];
+    clear LBL_path_info LBT_path_info TBL_path_info TBT_path_info
     clear LBL_path_im LBT_path_im TBL_path_im TBT_path_im
 end
 if or(VIEWS == 3, VIEWS == 4)
@@ -615,10 +617,11 @@ if or(VIEWS == 3, VIEWS == 4)
     TST_path_im = fn_compute_ray(image_block_info, TST_path_info, probe_frequency);
     Paths = [Paths LSL_path_im LST_path_im TSL_path_im TST_path_im];
     Names = [Names "LSL" "LST" "TSL" "TST"];
+    clear LSL_path_info LST_path_info TSL_path_info TST_path_info
     clear LSL_path_im LST_path_im TSL_path_im TST_path_im
 end
 
-Views = fn_make_views(VIEWS, Paths, Names);
+Views = fn_make_views(VIEWS, Paths, 1);
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
     Sens(view).name = Views(view).name;
@@ -629,7 +632,7 @@ time_2 = double(toc);
 fprintf('Rays traced in %.2f secs.\n', time_2);
 fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-clear probe_angle probe_frequency boxsize Paths Names Names_rev Namelist
+clear probe_frequency boxpix
 
 
 
@@ -639,7 +642,6 @@ clear probe_angle probe_frequency boxsize Paths Names Names_rev Namelist
 
 tic
 
-scatterer_coords = reshape(image_block_info.image_block, [zpts_im+1, xpts_im+1, 3]);
 % Obscure points outside of the geometry: these will be zero in logical
 % checks below, so multiply out all checks to kill pixels introduced by
 % boxsize variable.
@@ -647,74 +649,93 @@ are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
                          (scatterer_coords(:,:,1) <= xmax) .* ...
                          (scatterer_coords(:,:,3) >= zmin) .* ...
                          (scatterer_coords(:,:,3) < zmax);
+                     
+% Set up sens_i and sens_k indices for referencing when setting values of
+% the Sens image.
+sens_i = [1:xpts+1]+xpts+1;
+sens_k = [1:zpts+1]+zpts+1;
+sens_i_min = sens_i-boxsize;
+sens_i_max = sens_i+boxsize;
+sens_k_min = sens_k-boxsize;
+sens_k_max = sens_k+boxsize;
+
+clear xmin xmax zmin zmax sens_i sens_k scatterer_coords
 
 
 
 %% ---------------------------------------------------------------------- %
 % Start of sensitivity loop                                               %
 % ---------------------------------------------------------------------- %%
-% disp('    Starting Sensitivity Loop');
 
 tic;
 
 grid_pt = 0;
-scat_pt = 0;
-for xpt_im = 1:xpts_im+1
-    for zpt_im = 1:zpts_im+1
+for xpt_im = 1:xpts+1
+    for zpt_im = 1:zpts+1
         grid_pt = grid_pt + 1;
-        % Work out if the scatterer location is valid. If we are in the
-        % "boxsize" border (i.e. the border to allow windows to be drawn around
-        % all valid scatterer locations), then carry on to the next iteration.
-        scatterer_coords = image_block_info.image_block(grid_pt, :);
-        if ~(((scatterer_coords(1) >= xmin) && (scatterer_coords(1) <= xmax)) && ((scatterer_coords(3) >= zmin) && (scatterer_coords(3) < zmax)))
-            clear scatterer_coords
-            continue
-        % If we are inside the region allowed for scatterers, work out
-        % exactly where this corresponds to.
-        else
-            sens_i = xpt_im - boxpts;
-            sens_k = zpt_im - boxpts;
-            scat_pt = scat_pt + 1;
-        end
         
-%% ---------------------------------------------------------------------- %
+        
+
+% ----------------------------------------------------------------------- %
 % Simulation Step                                                         %
-% ---------------------------------------------------------------------- %%
+% ----------------------------------------------------------------------- %
 
         for view = 1 : Number_of_ims
-            Views(view).scatterer_coords(scat_pt, :) = scatterer_coords;
-            
             weights = Views(view).weights(:, grid_pt, 1);
             scat_amp = Views(view).scat_amps(:, grid_pt, 1);
             amp = conj(scat_amp .* weights);
             out_freq_spec = fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, grid_pt), amp, 0);
+            
+            clear weights scat_amp amp
 
             % Convert back to time.
             [FMC_time, FMC_time_data] = fn_convert_spectrum_to_time(freq, out_freq_spec, fft_pts, time_pts);
             FMC_time = FMC_time';
+            
+            clear out_freq_spec
 
             % Hilbert Filtering (?) from fast_DAS function
             diagonals = spdiags([1:length(FMC_time)]' < length(FMC_time)/2, 0, length(FMC_time), length(FMC_time));
             FMC_time_data = ifft(diagonals * fft(FMC_time_data));
+            
+            clear diagonals
         
-%% ---------------------------------------------------------------------- %
+% ----------------------------------------------------------------------- %
 % Imaging Step                                                            %
-% ---------------------------------------------------------------------- %%
+% ----------------------------------------------------------------------- %
             
-            tau = reshape(Views(view).min_times, [probe_els^2, zpts_im+1, xpts_im+1]);
-            Im = sum(diag(interp1(FMC_time, FMC_time_data, tau(:, sens_k:sens_k+2*boxpts, sens_i:sens_i+2*boxpts), 'linear', 0)));
+            if boxsize == 0
+                tau = reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]);
+                Im = (are_points_in_geometry(zpt_im, xpt_im) * ...
+                    sum(diag(interp1(FMC_time, FMC_time_data, tau(:, zpt_im, xpt_im), 'linear', 0))) ...
+                );
+            else
+                tau = repmat(reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]),1,3,3);
+                Im = zeros(boxsize*2+1);
+                for s_i = sens_i_min(xpt_im):sens_i_max(xpt_im)
+                    for s_k = sens_k_min(zpt_im):sens_k_max(zpt_im)
+                        Im(s_k-sens_k_min(zpt_im)+1, s_i-sens_i_min(xpt_im)+1) = ( ...
+                            are_points_in_geometry(zpt_im, xpt_im) * ...
+                            sum(diag(interp1(FMC_time, FMC_time_data, tau(:, s_k, s_i), 'linear', 0))) ...
+                        );
+                    end
+                end
+            end
+%             tau2 = tau(:, sens_k_min(zpt):sens_k_max(zpt), sens_i_min(xpt):sens_i_max(xpt));
+%             interp = interp1(FMC_time, FMC_time_data, tau(:, sens_k_min(zpt):sens_k_max(zpt), sens_i_min(xpt):sens_i_max(xpt)), 'linear', 0);
+%             Im = sum(diag(interp1(FMC_time, FMC_time_data, tau(:, sens_k_min(zpt):sens_k_max(zpt), sens_i_min(xpt):sens_i_max(xpt)), 'linear', 0)));
             
-            Sens(view).image(sens_k, sens_i) = max(Im, [], 'all');
+            Sens(view).image(zpt_im, xpt_im) = max(Im, [], 'all');
+            
+            clear FMC_time FMC_time_data tau Im
 
         end
-        
-        clear FMC_time FMC_time_data tau
         
 %% ---------------------------------------------------------------------- %
 % Estimate Loop Runtime                                                   %
 % ---------------------------------------------------------------------- %%
 
-        if and(sens_i == 1, sens_k == 1)
+        if and(xpt_im == 1, zpt_im == 1)
             timing = double(toc);
             fprintf('    One loop performed in %.1f secs\n', timing);
             est_runtime = timing * xsize * zsize / (PIXEL^2);
@@ -725,7 +746,7 @@ for xpt_im = 1:xpts_im+1
             else
                 fprintf('    Estimated runtime is %.2f hrs\n', est_runtime/3600);
             end
-        elseif and(xpt_im == round((xpts_im+1)/2), zpt_im == 1)
+        elseif and(xpt_im == round((xpts+1)/2), zpt_im == 1)
             timing = double(toc);
             est_runtime = timing * 2;
             if est_runtime < 60
@@ -745,9 +766,8 @@ time_3 = double(toc);
 fprintf('Finished Sensitivity Loop in %.2f secs\n', time_3);
 fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-clear probe_els xsize zsize pixelsize time_pts freq in_freq_spec fft_pts box_pts xpts_im zpts_im FMC grid_pt scat_pt sens_i sens_k
-clear weights scat_amp amp out_freq_spec diagonals tau Im scatterer_coords
-% clear image_block_info
+clear PIXEL probe_els boxsize xsize zsize time_pts freq in_freq_spec fft_pts
+clear are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max grid_pt
 
 
 
@@ -802,8 +822,6 @@ for view = 1:Number_of_ims
 end
 
 % Plot.
-im_x = linspace(xmin, xmax, xpts+1);
-im_z = linspace(zmin, zmax, zpts+1);
 fig = figure(1);
 ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
 if image_block_info.type == "crack"
@@ -811,7 +829,7 @@ if image_block_info.type == "crack"
 end
 for im = 1:Number_of_ims
     ax(im) = subplot(plot_z, plot_x, im);
-    imagesc(im_x*UC, im_z*UC, Sens(sort_idx(im)).db_image);
+    imagesc(x*UC, z*UC, Sens(sort_idx(im)).db_image);
     hold on
     title(Sens(sort_idx(im)).name)
     caxis([-db_range_for_output, 0])

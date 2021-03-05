@@ -48,8 +48,8 @@ if no_legs ~= 1
     for k = 1:no_legs-1
         r = dists(k+1);
         gamma = 1.0;
-        for i = 1:k
-            gamma = gamma*gamma_list(i);
+        for ii = 1:k
+            gamma = gamma*gamma_list(ii);
         end
         virtual_distance = virtual_distance + r/gamma;
     end

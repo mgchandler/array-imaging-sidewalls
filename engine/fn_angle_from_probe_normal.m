@@ -23,13 +23,13 @@ dot_out = 0;
 
 rot_mat = [-1, -1, 1];
 
-for i = 1:3
-    norm_vector(i, 1) = rot_mat(i) * (probe_coords(end, 4-i) - probe_coords(1, 4-i));
-    ray_vector(i, 1) = ray_geometry(end, i) - ray_geometry(1, i);
+for ii = 1:3
+    norm_vector(ii, 1) = rot_mat(ii) * (probe_coords(end, 4-ii) - probe_coords(1, 4-ii));
+    ray_vector(ii, 1) = ray_geometry(end, ii) - ray_geometry(1, ii);
     
-    norm_radius = norm_radius + norm_vector(i, 1) * norm_vector(i, 1);
-    ray_radius = ray_radius + ray_vector(i, 1) * ray_vector(i, 1);
-    dot_out = dot_out + norm_vector(i, 1) * ray_vector(i, 1);
+    norm_radius = norm_radius + norm_vector(ii, 1) * norm_vector(ii, 1);
+    ray_radius = ray_radius + ray_vector(ii, 1) * ray_vector(ii, 1);
+    dot_out = dot_out + norm_vector(ii, 1) * ray_vector(ii, 1);
 end
 
 norm_radius = sqrt(norm_radius);

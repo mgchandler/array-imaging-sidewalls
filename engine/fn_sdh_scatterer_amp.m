@@ -102,8 +102,8 @@ end
 
 if length(inc_angle) ~= 1
     amp = zeros(size(scat_amp, 1));
-    for j = 1:size(scat_amp, 1)
-        amp(:, j) = scat_amp;
+    for jj = 1:size(scat_amp, 1)
+        amp(:, jj) = scat_amp;
         scat_amp = circshift(scat_amp, 1);
     end
     scat_amp = amp;

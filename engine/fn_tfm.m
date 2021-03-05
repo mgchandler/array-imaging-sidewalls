@@ -104,36 +104,35 @@ couplant_density = model_options.material_params.couplant_density;
 solid_long_speed = model_options.material_params.solid_long_speed;
 solid_shear_speed = model_options.material_params.solid_shear_speed;
 solid_density = model_options.material_params.solid_density;
-boxsize = PIXEL * model_options.boxsize;
 scat_info = model_options.scat_info;
 savepath = model_options.savepath;
+savename = model_options.savename;
+
+if SETUP == 0
+    if probe_standoff ~= 0 || probe_angle ~= 0
+        error('Probe standoff and probe angle must be 0 in contact setup')
+    end
+end
 
 % Work out the size of the final plot from the VIEW parameter.
 if VIEWS == 1
     Number_of_ims = 3;
     plot_x = 3;
     plot_z = 1;
-    im_width = 450;
-    im_height = 240;
-    mode = 'Direct';
+    im_width = 900;
+    im_height = 580;
 elseif or(VIEWS == 2, VIEWS == 3)
     Number_of_ims = 21;
     plot_x = 3;
     plot_z = 7;
     im_width = 450;
     im_height = 1050;
-    if VIEWS == 2
-        mode = 'Backwall Skip';
-    else
-        mode = 'Sidewall Skip';
-    end
 else
     Number_of_ims = 55;
     plot_x = 5;
     plot_z = 11;
     im_width = 580;
     im_height = 1280;
-    mode = 'Back-Side Skip';
 end
 
 % Additional parameters not directly dependent on inputs.
@@ -152,6 +151,8 @@ back_wall_pos = zmax + 1.0e-5;
 back_wall_pixels = WALLS;
 side_wall_pos = xmax + 1.0e-5;
 side_wall_pixels = WALLS;
+
+clear PITCH WALLS
 
 
 
@@ -180,6 +181,7 @@ side_wall(:, 1) = linspace(side_wall_pos, side_wall_pos, side_wall_pixels);
 side_wall(:, 3) = linspace(zmin, zmax, side_wall_pixels);
 
 clear front_wall_pos front_wall_pixels back_wall_pos back_wall_pixels side_wall_pos side_wall_pixels
+clear rot_matrix
 
 
         
@@ -190,27 +192,25 @@ clear front_wall_pos front_wall_pixels back_wall_pos back_wall_pixels side_wall_
 % Create input signal.
 time_step = 1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
 max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed) + ...
-                  (probe_standoff + el_length) / couplant_speed);
+                  (probe_standoff + el_length*probe_els) / couplant_speed);
 time_pts = ceil(max_t / time_step);
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
-time_1 = double(toc);
-fprintf('Setup time %.2f secs\n', time_1);
-% fprintf('%.2g MB\n', monitor_memory_whos);
-
-clear oversampling no_cycles time_step max_t time in_time_sig
+clear probe_standoff oversampling no_cycles time_step max_t
 
 
 
-%% ------------------------------------------------------------------------
-% Scatterer Simulation path info
-% -------------------------------------------------------------------------
-
-tic;
+%% ---------------------------------------------------------------------- %
+% Scatterer Simulation path info - Contact                                %
+% ---------------------------------------------------------------------- %%
 
 % If we are in the contact case
 if ~SETUP
     geometry = 0;
+    
+% ----------------------------------------------------------------------- %
+% Direct Paths                                                            %
+% ----------------------------------------------------------------------- %
 
     L_path_info = fn_path_info( ...
         "L", ...
@@ -240,8 +240,11 @@ if ~SETUP
     ); %#ok<*NBRAK>
 
     clear geometry
+    
+% ----------------------------------------------------------------------- %
+% Backwall Skip Paths                                                     %
+% ----------------------------------------------------------------------- %
 
-    % -------------------------------------------------------------------------
     if or(VIEWS == 2, VIEWS == 4)
         geometry_bw_skip = zeros(1, size(front_wall, 1), size(front_wall, 2));
         geometry_bw_skip(1, :, :) = back_wall;
@@ -301,8 +304,11 @@ if ~SETUP
 
         clear geometry_bw_skip
     end
+    
+% ----------------------------------------------------------------------- %
+% Sidewall Skip Paths                                                     %
+% ----------------------------------------------------------------------- %
 
-    % -------------------------------------------------------------------------
     if or(VIEWS == 3, VIEWS == 4)
         geometry_sw_skip = zeros(1, size(front_wall, 1), size(front_wall, 2));
         geometry_sw_skip(1, :, :) = side_wall;
@@ -363,11 +369,19 @@ if ~SETUP
         clear geometry_sw_skip
     end
 
+%% ---------------------------------------------------------------------- %
+% Scatterer Simulation path info - Contact                                %
+% ---------------------------------------------------------------------- %%
+
 % If we are in the immersion case.
 elseif SETUP
 
     geometry = zeros(1, size(front_wall, 1), size(front_wall, 2));
     geometry(:, :, :) = front_wall;
+    
+% ----------------------------------------------------------------------- %
+% Direct Paths                                                            %
+% ----------------------------------------------------------------------- %
 
     L_path_info = fn_mc_path_info( ...
         "L", ...
@@ -397,8 +411,11 @@ elseif SETUP
     );
 
     clear geometry
+    
+% ----------------------------------------------------------------------- %
+% Backwall Skip Paths                                                     %
+% ----------------------------------------------------------------------- %
 
-    % -------------------------------------------------------------------------
     if or(VIEWS == 2, VIEWS == 4)
         geometry_bw_skip = zeros(2, size(front_wall, 1), size(front_wall, 2));
         geometry_bw_skip(1, :, :) = front_wall;
@@ -459,8 +476,11 @@ elseif SETUP
 
         clear geometry_bw_skip
     end
+    
+% ----------------------------------------------------------------------- %
+% Sidewall Skip Paths                                                     %
+% ----------------------------------------------------------------------- %
 
-    % -------------------------------------------------------------------------
     if or(VIEWS == 3, VIEWS == 4)
         geometry_sw_skip = zeros(2, size(front_wall, 1), size(front_wall, 2));
         geometry_sw_skip(1, :, :) = front_wall;
@@ -522,30 +542,28 @@ elseif SETUP
         clear geometry_sw_skip
     end
     
+else
+    error('Error in fn_sens: Invalid SETUP - must be contact (0) or immersion (1).')
 end
 
-time_2 = double(toc);
+time_1 = double(toc);
 
-fprintf('Scatterer paths computed in %.2f secs\n', time_2);
-% fprintf('%.2g MB\n', monitor_memory_whos);
-
-clear couplant_speed couplant_density mat_long_speed mat_shear_speed mat_density
+fprintf('Setup time %.2f secs.\n', time_1);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
 
 
-%% ------------------------------------------------------------------------
-% Views
-% -------------------------------------------------------------------------
+%% ---------------------------------------------------------------------- %
+% Create views                                                            %
+% ---------------------------------------------------------------------- %%
+% Precompute views for all scatterers, as well as imaging views.
 
-xpts = round(xsize / PIXEL);
-zpts = round(zsize / PIXEL);
+tic;
 
 % Compute Imaging Paths and Views
 L_path_scat = fn_compute_ray(scat_info, L_path_info, probe_frequency);
 T_path_scat = fn_compute_ray(scat_info, T_path_info, probe_frequency);
 Paths = [L_path_scat T_path_scat];
-Names = ["L" "T"];
-Names_rev = ["L" "T"];
 clear L_path_scat T_path_scat X Z
 if or(VIEWS == 2, VIEWS == 4)
     LBL_path_scat = fn_compute_ray(scat_info, LBL_path_info, probe_frequency);
@@ -553,8 +571,6 @@ if or(VIEWS == 2, VIEWS == 4)
     TBL_path_scat = fn_compute_ray(scat_info, TBL_path_info, probe_frequency);
     TBT_path_scat = fn_compute_ray(scat_info, TBT_path_info, probe_frequency);
     Paths = [Paths LBL_path_scat LBT_path_scat TBL_path_scat TBT_path_scat];
-    Names = [Names "LBL" "LBT" "TBL" "TBT"];
-    Names_rev = [Names_rev "LBL" "TBL" "LBT" "TBT"];
     clear LBL_path_scat LBT_path_scat TBL_path_scat TBT_path_scat
 end
 if or(VIEWS == 3, VIEWS == 4)
@@ -563,111 +579,109 @@ if or(VIEWS == 3, VIEWS == 4)
     TSL_path_scat = fn_compute_ray(scat_info, TSL_path_info, probe_frequency);
     TST_path_scat = fn_compute_ray(scat_info, TST_path_info, probe_frequency);
     Paths = [Paths LSL_path_scat LST_path_scat TSL_path_scat TST_path_scat];
-    Names = [Names "LSL" "LST" "TSL" "TST"];
-    Names_rev = [Names_rev "LSL" "TSL" "LST" "TST"];
     clear LSL_path_im LST_path_im TSL_path_im TST_path_im
 end
 
-Views = repmat(fn_create_view(Paths(1), Paths(1), scat_info), Number_of_ims, 1);
-Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
-Namelist = repmat("-", Number_of_ims, 1);
-i = 1;
-for t_path = 1 : size(Paths, 2)
-    for r_path = 1 : size(Paths, 2)
-        name = strcat(Names(t_path), "-", Names_rev(r_path));
-        revname = strcat(Names(r_path), "-", Names_rev(t_path));
-        if ~any(strcmp(Namelist, revname))
-            Namelist(i) = name;
-            Views(i) = fn_create_view(Paths(t_path), Paths(r_path), scat_info);
-            Views(i).name = name;
-            Sens(i).name = name;
-            i = i + 1;
-        end
+Views = fn_make_views(VIEWS, Paths, 0);
+
+clear Paths
+
+
+
+%% ---------------------------------------------------------------------- %
+% Geometry setup.                                                         %
+% ---------------------------------------------------------------------- %%
+
+
+
+% If we are in the contact case. There is no frontwall.
+if ~SETUP
+    if GEOM
+        backwall_views = fn_backwall_views( ...
+            probe_coords, probe_angle, 0, back_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
+            [couplant_density solid_density], probe_frequency, el_length ...
+        );
     end
-end
 
-clear boxsize Namelist
-
-
-
-%% ------------------------------------------------------------------------
-% Geometry simulation
-% -------------------------------------------------------------------------
-tic;
-if GEOM
-    backwall_views = fn_backwall_views( ...
-        probe_coords, probe_angle, 0, back_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
-        [couplant_density solid_density], probe_frequency, el_length ...
-    );
-    amp_b = repmat(zeros(1, size(backwall_views(1).min_times, 1)), size(backwall_views, 2), 1);
-    for view = 1 : size(backwall_views, 2)
-        amp_b(view, :) = conj( ...
-            backwall_views(view).directivity1 .* backwall_views(view).directivity2 .* ...
-            backwall_views(view).bs1 .* backwall_views(view).tr1 ...
+% If we are in the immersion case. There will be a frontwall reflection.
+elseif SETUP
+    if GEOM
+        frontwall_view = fn_frontwall_view( ...
+            probe_coords, probe_angle, front_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
+            [couplant_density solid_density], probe_frequency, el_length ...
+        );
+    
+        backwall_views = fn_backwall_views( ...
+            probe_coords, probe_angle, front_wall, back_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
+            [couplant_density solid_density], probe_frequency, el_length ...
         );
     end
     
-    Geo = 'Geo';
 else
-    Geo = 'NGeo';
+    error('Invalid SETUP value.')
 end
 
-clear probe_pitch
+time_2 = double(toc);
 
-time_3 = double(toc);
+fprintf('Rays traced in %.2f secs.\n', time_2);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-fprintf('Rays traced and views assembled in %.2f secs\n', time_3);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+clear probe_angle probe_frequency el_length couplant_speed couplant_density
+clear solid_long_speed solid_shear_speed solid_density
 
 
 
-%% ------------------------------------------------------------------------
-% Simulation
-% -------------------------------------------------------------------------
+%% ---------------------------------------------------------------------- %
+% Simulation.                                                             %
+% ---------------------------------------------------------------------- %%
+
+tic
 
 % Scatterer simulation.
-tic;
 out_freq_spec = 0;
+num_scatterers = size(scat_info.image_block, 1);
 
-for view = 1 : size(Views, 1)
-    ray_weights_path1 = fn_compute_ray_weights(Views(view).path_1, probe_frequency);
-    ray_weights_path2 = fn_compute_ray_weights(Views(view).path_2, probe_frequency);
-    ray_weights = zeros(probe_els^2, size(scat_info.image_block, 1), 1);
-    el = 1;
-    for tx = 1 : probe_els
-        for rx = 1 : probe_els
-            ray_weights(el, :, :) = ray_weights_path1.weights(tx, :, :) .* ray_weights_path2.inv_weights(rx, :, :);
-            el = el + 1;
-        end
+for scatterer = 1 : num_scatterers
+    for view = 1 : size(Views, 1)
+        weights = Views(view).weights(:, scatterer, 1);
+        scat_amp = Views(view).scat_amps(:, scatterer, 1);
+        amp = conj(scat_amp .* weights);
+        out_freq_spec = out_freq_spec + ...
+            fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
+        
+        clear weights scat_amp amp
     end
-    scat_amp = fn_scattering_amps(Views(view), probe_frequency);
-    for scatterer = 1 : size(scat_info.image_block, 1)
-        amp = conj(scat_amp(:, scatterer, :) .* ray_weights(:, scatterer, :));
-        out_freq_spec = out_freq_spec + fn_propagate_spectrum_mc_2(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
+end
+
+if GEOM
+    for view = 1 : size(backwall_views, 1)
+        out_freq_spec = out_freq_spec + ...
+            fn_propagate_spectrum_mc(freq, in_freq_spec, backwall_views(view).min_times, backwall_views(view).weights, 0);
     end
+    % If immersion, then do frontwall.
+    if SETUP
+        out_freq_spec = out_freq_spec + ...
+            fn_propagate_spectrum_mc(freq, in_freq_spec, frontwall_view.min_times, frontwall_view.weights, 0);
+        
+        clear frontwall_view
+    end
+    clear backwall_views
 end
 
 % Convert back to time.
-[FMC.time, FMC.time_data] = fn_convert_spectrum_to_time(freq, out_freq_spec, fft_pts, time_pts);
-FMC.time = FMC.time';
+[FMC_time, FMC_time_data] = fn_convert_spectrum_to_time(freq, out_freq_spec, fft_pts, time_pts);
+FMC_time = FMC_time';
 
 % Hilbert Filtering (?) from fast_DAS function
-diagonals = spdiags([1:length(FMC.time)]' < length(FMC.time)/2, 0, length(FMC.time), length(FMC.time));
-FMC.time_data = ifft(diagonals * fft(FMC.time_data));
+diagonals = spdiags([1:length(FMC_time)]' < length(FMC_time)/2, 0, length(FMC_time), length(FMC_time));
+FMC_time_data = ifft(diagonals * fft(FMC_time_data));
 
+time_3 = double(toc);
 
+fprintf('Simulated in in %.2f secs\n', time_3);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-clear time_pts freq in_freq_spec fft_pts box_pts xpts_im zpts_im grid_pt scat_pt sens_i sens_k
-clear weights scat_amp amp out_freq_spec diagonals tau Im scatterer_coords
-% clear image_block_info
-if GEOM
-    clear backwall_views amp_b
-end
-
-time_4 = double(toc);
-
-fprintf('Scatterer simulated in %.2f secs\n', time_4);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+clear GEOM SETUP time_pts freq in_freq_spec fft_pts out_freq_spec num_scatterers diagonals
 
 
 
@@ -697,15 +711,14 @@ end
 
 image_block_info = fn_scat_info("image", image_block);
 
-
-
-tic;
 % Compute Imaging Paths and Views
 disp('Computing imaging')
 
 L_path_im = fn_compute_ray(image_block_info, L_path_info);
 T_path_im = fn_compute_ray(image_block_info, T_path_info);
 Paths_im = [L_path_im, T_path_im];
+clear L_path_info T_path_info
+clear L_path_im T_path_im
 
 if or(VIEWS == 2, VIEWS == 4)
     LBL_path_im = fn_compute_ray(image_block_info, LBL_path_info);
@@ -713,6 +726,8 @@ if or(VIEWS == 2, VIEWS == 4)
     TBL_path_im = fn_compute_ray(image_block_info, TBL_path_info);
     TBT_path_im = fn_compute_ray(image_block_info, TBT_path_info);
     Paths_im = [Paths_im, LBL_path_im, LBT_path_im, TBL_path_im, TBT_path_im];
+    clear LBL_path_info LBT_path_info TBL_path_info TBT_path_info
+    clear LBL_path_im LBT_path_im TBL_path_im TBT_path_im
 end
 if or(VIEWS == 3, VIEWS == 4)
     LSL_path_im = fn_compute_ray(image_block_info, LSL_path_info);
@@ -720,46 +735,42 @@ if or(VIEWS == 3, VIEWS == 4)
     TSL_path_im = fn_compute_ray(image_block_info, TSL_path_info);
     TST_path_im = fn_compute_ray(image_block_info, TST_path_info);
     Paths_im = [Paths_im, LSL_path_im, LST_path_im, TSL_path_im, TST_path_im];
+    clear LSL_path_info LST_path_info TSL_path_info TST_path_info
+    clear LSL_path_im LST_path_im TSL_path_im TST_path_im
 end
 
-tic;
-Views_im = repmat(fn_create_view(Paths_im(1), Paths_im(1)), Number_of_ims, 1);
+Views_im = fn_make_views(VIEWS, Paths_im, 1);
 Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
-Namelist = [];
-i = 1;
-for t_path = 1 : size(Paths_im, 2)
-    for r_path = 1 : size(Paths_im, 2)
-        name = strcat(Names(t_path), "-", Names_rev(r_path));
-        revname = strcat(Names(r_path), "-", Names_rev(t_path));
-        if ~any(strcmp(Namelist, revname))
-            Namelist = [Namelist name];
-            Views_im(i) = fn_create_view(Paths_im(t_path), Paths_im(r_path));
-            Ims(i).name = name;
-            i = i + 1;
-        end
-    end
+for view = 1 : Number_of_ims
+    Ims(view).name = Views(view).name;
 end
 
-tic;
 % Lookup times in FMC data.
 for tr_pair = 1 : probe_els ^ 2
     for view = 1 : size(Views_im, 1)
         tau = reshape(Views_im(view).min_times(tr_pair, :), [zpts+1, xpts+1]);
-        Ims(view).image = Ims(view).image + interp1(FMC.time, FMC.time_data(:, tr_pair), tau, 'linear', 0);
+        Ims(view).image = Ims(view).image + interp1(FMC_time, FMC_time_data(:, tr_pair), tau, 'linear', 0);
     end
 end
 
-time_5 = double(toc);
+time_4 = double(toc);
 
-fprintf('Scatterer imaged in %.2f secs\n', time_4);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+fprintf('Imaged in %.2f secs\n', time_4);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
+
+clear PIXEL probe_els xmin xmax zmin zmax xsize zsize FMC_time FMC_time_data 
+clear xpts zpts X Z image_block image_block_info
 
 
+
+%% ---------------------------------------------------------------------- %
+% Plotting.                                                               %
+% ---------------------------------------------------------------------- %%
 
 tic
 
 max_ = 0;
-for view = 1 : size(Views_im, 1)
+for view = 1 : Number_of_ims
     if max(abs(Ims(view).image(:))) > max_
         max_ = max(abs(Ims(view).image(:)));
     end
@@ -789,15 +800,13 @@ elseif VIEWS == 4
 end
 
 sort_idx = zeros(Number_of_ims, 1);
-view_names = struct2cell(Views);
+view_names = struct2cell(Views_im);
 view_names = view_names(3, :);
 for view = 1:Number_of_ims
     sort_idx(view) = find(strcmp([view_names{:}], View_names(view)));
 end
 
 % Plot.
-im_x = linspace(xmin, xmax, xpts+1);
-im_z = linspace(zmin, zmax, zpts+1);
 fig = figure(1);
 ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
 for im = 1:Number_of_ims
@@ -835,19 +844,19 @@ h.Label.String = 'dB';
 
 
 cd(savepath)
-filename_fig = sprintf('Sens Contact %s %s %s scatterer - p=%.2e pix=%.2e walls=%d - shape=(%.2e,%.2e,%.2e,%.2e).fig', mode, Geo, image_block_info.type, PITCH, PIXEL, WALLS, xmin, xmax, zmin, zmax);
-filename_mat = sprintf('Sens Contact %s %s %s scatterer - p=%.2e pix=%.2e walls=%d - shape=(%.2e,%.2e,%.2e,%.2e).mat', mode, Geo, image_block_info.type, PITCH, PIXEL, WALLS, xmin, xmax, zmin, zmax);
-saveas(fig, filename_fig)
-close all
+filename_fig = sprintf('%s.fig', savename);
+filename_mat = sprintf('%s.mat', savename);
+% saveas(fig, filename_fig)
+% close all
 
-time_6 = double(toc);
+time_5 = double(toc);
 
-fprintf('Plotted in %.2f secs\n', time_6);
-% fprintf('%.2g MB\n', monitor_memory_whos);
+fprintf('Plotted in %.2f secs\n', time_5);
+fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-times = [time_1, time_2, time_3, time_4, time_5, time_6];
+times = [time_1, time_2, time_3, time_4, time_5];
 
-save(filename_mat, 'times', 'Ims', 'Views')
+% save(filename_mat, 'times', 'Ims', 'Views')
 
 clear
 

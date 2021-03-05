@@ -38,8 +38,6 @@ function Views = fn_backwall_views(probe_coords, probe_angle, front_wall, back_w
 %       The order returned is 'L-L', 'L-T', 'T-L', 'T-T'.
 
 % Set up variables required for calculations.
-[probe_els, ~] = size(probe_coords);
-
 probe_as_scatterer.image_block = probe_coords;
 probe_as_scatterer.x_shape = 1;
 probe_as_scatterer.z_shape = 1;
@@ -105,20 +103,14 @@ for view = 1:4
         walls, medium_ids, densities, probe_freq, probe_pitch, probe_coords ...
     );
 
-    ray = fn_compute_ray(probe_as_scatterer, backwall_path, 0);
+    ray = fn_compute_ray(probe_as_scatterer, backwall_path, probe_freq);
+
+    [probe_els, ~] = size(ray.min_times);
 
     Views(view).name = name(view);
     Views(view).min_times = zeros(probe_els ^ 2, 1);
     Views(view).probe_txrx = zeros(probe_els ^ 2, 2);
-    Views(view).min_theta1 = zeros(probe_els ^ 2, 1);
-    Views(view).min_theta2 = zeros(probe_els ^ 2, 1);
-    Views(view).min_dist1 = zeros(probe_els ^ 2, 1);
-    Views(view).bs1 = zeros(probe_els ^ 2, 1);
-    Views(view).path_1 = ray;
-    Views(view).tr1 = zeros(probe_els ^ 2, 1);
-    Views(view).tau = ray.min_times;
-    Views(view).directivity1 = zeros(probe_els ^ 2, 1);
-    Views(view).directivity2 = zeros(probe_els ^ 2, 1);
+    Views(view).ray = ray;
 
     el = 1;
 
@@ -127,15 +119,21 @@ for view = 1:4
 
             Views(view).min_times(el, 1) = ray.min_times(t_el, r_el);
             Views(view).probe_txrx(el, :) = [t_el, r_el];
-            Views(view).min_theta1(el, 1) = ray.min_theta(t_el, r_el);
-            Views(view).min_theta2(el, 1) = ray.min_theta(r_el, t_el);
-            Views(view).min_dist1(el, 1) = ray.min_dists(t_el, r_el);
-            Views(view).bs1(el, 1) = ray.beam_spread(t_el, r_el);
-            Views(view).tr1(el, 1) = ray.tr_coeff(t_el, r_el);
-            Views(view).directivity1(el, 1) = ray.directivity(t_el, r_el);
-            Views(view).directivity2(el, 1) = ray.inv_directivity(t_el, r_el);
 
             el = el+1;
+        end
+    end
+
+    [~, ~, num_freqs] = size(ray.weights.weights);
+    Views(view).weights = zeros(probe_els^2, num_freqs);
+    el = 1;
+    for ii = 1 : probe_els
+        for jj = 1 : probe_els
+            Views(view).weights(el, :) = ( ...
+                ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
+            );
+        
+        el = el+1;
         end
     end
 end

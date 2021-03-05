@@ -1,4 +1,4 @@
-function out_freq_spec = fn_propagate_spectrum_mc_2(freq, in_freq_spec, tof, varargin);
+function out_freq_spec = fn_propagate_spectrum_mc(freq, in_freq_spec, tof, varargin);
 %USAGE
 %	out_freq_spec = fn_propagate_spectrum(freq, in_freq_spec, ph_vel, dists [, amps, use_gpu_if_present]);
 %AUTHOR
