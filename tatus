@@ -1,0 +1,161 @@
+[33mcommit 4b20b025e14f0aca4524461c095fecbc832438d6[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Thu Mar 4 14:00:45 2021 +0000
+
+    Attempted to vectorize sensitivity loop for simulation and imaging in
+    fn_sens, but found that this massively increased the time taken to run
+    due to pagemtimes() function for multiplying N-dimensional matrices.
+
+[33mcommit 4f06d05f2dd301513f8f154766a3dd4b16b0967e[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Wed Mar 3 17:09:19 2021 +0000
+
+    fn_sens: Vectorized lookup of FMC data
+
+[33mcommit 9e40e4764852a090b0748022e21aef94f4017e3a[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Wed Mar 3 14:57:06 2021 +0000
+
+    Updated sdh scan BP script as walltime was exceeded at 16hrs.
+    This is a reference point of a working a-i-s code before changes were made that might break it.
+
+[33mcommit 21a7745e7ee10fb71a259463ccd9f68f111ab73a[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Wed Mar 3 13:14:09 2021 +0000
+
+    Updated fn_sens, wrote a script for editing figures output from BP, and now included some gifs of cracks obtained from BP jobs.
+
+[33mcommit 86fc9b4ec205b3a22d9c0e20a7d197af8ab4ba73[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 21:38:32 2021 +0000
+
+    Updated run scripts
+
+[33mcommit 53772de8a2b075bbae0063fb44db6892c386dea3[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 21:17:51 2021 +0000
+
+    Upped memory request in bash cripts in bp
+
+[33mcommit 658706d0fc1345671d652465d8526814a054ebd5[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 21:14:58 2021 +0000
+
+    Removed extra ';' in bp/WORKING_high_res_sdh_back_side.m
+
+[33mcommit 68d612c1547a8e8548993d95aa76be91a8718cca[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 21:09:36 2021 +0000
+
+    Added high res bash scripts for running on BP.
+
+[33mcommit cdc379df22e3f9fa760474526ea7752cf38154a1[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 21:03:09 2021 +0000
+
+    Fixed error in fn_make_views: checks on VIEWS value did not cover all possible values.
+
+[33mcommit f2ee11463cf8e2ed0881243b6f102bebd0ded8d4[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 18:33:00 2021 +0000
+
+    Updated and fixed scattering matrices. Got BP scripts ready to run
+
+[33mcommit c2aa5debf99941d2c998d0a15767f3199a137952[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 12:18:40 2021 +0000
+
+    Fixed WORKING_crack_rotation_sens for use on BP, with the most recent commit changes.
+
+[33mcommit be908b95d81a03deb4a889fdede159095d6737cc[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 12:16:12 2021 +0000
+
+    Fixed angle notation to being in degrees in fn_sens line 811
+
+[33mcommit 0c8d9b1e852e0295550e4b0ff7c77ddb7aae4d2f[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 12:13:34 2021 +0000
+
+    New update to make sure that WORKING_crack_rotation_sens works with the new save figure process in fn_sens.
+
+[33mcommit 8408c6e6be452506faf2a8aefc93a554e883a24d[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 11:57:32 2021 +0000
+
+    Updated fn_sens to feature crack angle in figure title, and put figure savename as input in model_options.
+
+[33mcommit 6af35233ba964763c8004d6bad0fd96f2dbcc903[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 11:25:19 2021 +0000
+
+    Updated fn_sens to save angles better. Note: in future, it would be a good idea to pass file savename as part of model_options.
+
+[33mcommit e4566aeac06c904f2c72bb13a69ca3554dd03d30[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 11:17:45 2021 +0000
+
+    Shell script works on BP. Scaled up for proper job submission.
+
+[33mcommit 9274468f34f9a24aaa71a93c26aa671cc7af9d3d[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 11:10:30 2021 +0000
+
+    Added directory change to WORKING_crack_rotation_sens: cd('../engine/')
+
+[33mcommit fa4b509b55abefa56b3610a62e50447892a9206b[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 11:05:08 2021 +0000
+
+    Updated BP crack rotation shell script: fn_sens -> WORKING_crack_rotation_sens
+
+[33mcommit 7585692f4aa2f7b665f0befcd6014adb0e3f945c[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 10:56:56 2021 +0000
+
+    Minor bug fix to BP crack rotation shell script: fn_batch_sens_contact -> fn_sens
+
+[33mcommit f2116d9591fc683ac15ff0624c99c204cb8a384b[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 10:52:40 2021 +0000
+
+    Updated the shell script for running crack rotation sensitivity on BP.
+
+[33mcommit 18c8a6a874aa93374d37bec0404531bf6ac31c60[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Tue Mar 2 09:54:32 2021 +0000
+
+    Added a script for controlling an array job on BP for finding sensitivity maps of a rotating crack for a given value of VIEWS.
+
+[33mcommit 7585bf2c744a588a87ca28b735e4bf425a81f6b1[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Mon Mar 1 18:04:33 2021 +0000
+
+    engine/fn_tfm now updated to take simplified input arguments. Currently set up to work with the single frequency model, but does work with both contact and immersion cases.
+
+[33mcommit 3a3872ef58d8c2116059978163b39b8217b95e16[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Mon Mar 1 17:54:39 2021 +0000
+
+    Updated engine/fn_sens.m to take in simplified arguments for model options, and work for both contact and immersion.
+
+[33mcommit 156699e00f78325ff27a9490a106b16d01aaafd8[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Sat Feb 27 22:43:33 2021 +0000
+
+    Edited README.md to be more readable in markdown.
+
+[33mcommit a21ced0b1c3ad93feb555cc0d00ce85cbbfa7e32[m
+Author: Matt Chandler <mc16535@bristol.ac.uk>
+Date:   Sat Feb 27 22:25:51 2021 +0000
+
+    Initial commit of array-imaging-sidewall code.
+    
+    Contains all working functions at the time but no
+    BluePebble work. Still need to verify immersion cases.
+
+[33mcommit f12de30a51b2e6ba1d3c9f591802e1e3f8d01b44[m
+Author: Matt <72458692+mgchandler@users.noreply.github.com>
+Date:   Wed Feb 24 10:48:00 2021 +0000
+
+    Initial commit

@@ -3,9 +3,9 @@ function scat_amp = fn_sdh_scatterer_amp(inc_angle, out_angle, sdh_radius, lambd
 % incident and outgoing angle.
 %
 % INPUTS:
-% - inc_angle : double
+% - inc_angle : double OR array (1, ang_pts_over_2pi)
 %       Incident angle on the scatterer.
-% - out_angle : double
+% - out_angle : double OR array (1, ang_pts_over_2pi)
 %       Outgoing angle from the scatterer.
 % - sdh_radius : double
 %       Radius of the SDH.
@@ -25,8 +25,12 @@ function scat_amp = fn_sdh_scatterer_amp(inc_angle, out_angle, sdh_radius, lambd
 %       calcualtions.
 
 %% Compute terms used in all scattering amplitudes.
-theta = out_angle - inc_angle + pi; % Add pi as NDE convention is incident 
+if length(inc_angle) == 1
+    theta = out_angle - inc_angle + pi; % Add pi as NDE convention is incident 
 %       direction is angle between -ve incident wavevector and +ve x-axis.
+else
+    theta = (inc_angle + 2*pi)';
+end
 
 alpha = 2 * pi * sdh_radius / lambda_L;
 beta = 2 * pi * sdh_radius / lambda_T;
@@ -54,8 +58,8 @@ if ~inc_mode % If incident mode is longitudinal.
     
 %       Note that in Lopez equations, factor of lambda/sqrt(r) is
 %       beamspreading, so we omit it here.
-        scat_amp = sqrt(1i) / pi * alpha * sum( ...
-            epsilon_n .* A_n_L .* cos(n * theta) ...
+        scat_amp = sqrt(1i) / pi * sum( ...
+            ones(size(theta)) * (epsilon_n .* alpha .* A_n_L) .* cos(theta * n), 2 ...
         );
         
     else % If incident mode is longitudinal, outgoing mode is shear.
@@ -64,8 +68,8 @@ if ~inc_mode % If incident mode is longitudinal.
             (C_n_1_alpha .* C_n_1_beta - D_n_1_alpha .* D_n_1_beta) ...
         );
     
-        scat_amp = sqrt(1i) / pi * beta * sum( ...
-            epsilon_n .* B_n_L .* sin(n * theta) ...
+        scat_amp = sqrt(1i) / pi* sum( ...
+            ones(size(theta)) * (epsilon_n .* beta .* B_n_L) .* sin(theta * n), 2 ...
         );
         
     end
@@ -76,8 +80,8 @@ else % If incident mode is shear.
             (C_n_1_alpha .* C_n_1_beta - D_n_1_alpha .* D_n_1_beta) ...
         );
     
-        scat_amp = sqrt(1i) / pi * alpha * sum( ...
-            epsilon_n .* A_n_T .* sin(n * theta) ...
+        scat_amp = sqrt(1i) / pi * sum( ...
+            ones(size(theta)) * (epsilon_n .* alpha .* A_n_T) .* sin(theta * n), 2 ...
         );
         
     else % If incident mode is shear, outgoing mode is shear.
@@ -89,11 +93,20 @@ else % If incident mode is shear.
                 (C_n_1_alpha .* C_n_1_beta - D_n_1_alpha .* D_n_1_beta) ...
         );
     
-        scat_amp = sqrt(1i) / pi * beta * sum( ...
-            epsilon_n .* B_n_T .* cos(n * theta) ...
+        scat_amp = sqrt(1i) / pi * sum( ...
+            ones(size(theta)) * (epsilon_n .* beta .* B_n_T) .* cos(theta * n), 2 ...
         );
         
     end
+end
+
+if length(inc_angle) ~= 1
+    amp = zeros(size(scat_amp, 1));
+    for j = 1:size(scat_amp, 1)
+        amp(:, j) = scat_amp;
+        scat_amp = circshift(scat_amp, 1);
+    end
+    scat_amp = amp;
 end
 
 end
@@ -101,7 +114,7 @@ end
 
 
 function C = C_n_i(n, i, x, beta)
-C = (n.^2 + n - beta^2/2) .* besselh(n, i, x) - x .* besselh(n-1, i, x);
+C = (n.^2 + n - beta^2/2) .* besselh(n, i, x) - x * besselh(n-1, i, x);
 end
 
 function D = D_n_i(n, i, x)

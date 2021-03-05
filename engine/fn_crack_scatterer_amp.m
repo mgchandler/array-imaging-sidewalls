@@ -4,9 +4,9 @@ function [scat_amp, extras] = fn_crack_scatterer_amp(inc_angle, out_angle, dens,
 % amplitude.
 
 % INPUTS:
-% - inc_angle : double
+% - inc_angle : double OR array (1, ang_pts_over_2pi)
 %       Incident angle on the scatterer.
-% - out_angle : double
+% - out_angle : double OR array (1, ang_pts_over_2pi)
 %       Outgoing angle from the scatterer.
 % - dens : double
 %       Density of the material.

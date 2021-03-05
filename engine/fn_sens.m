@@ -119,25 +119,18 @@ if VIEWS == 1
     plot_z = 1;
     im_width = 450;
     im_height = 240;
-    mode = 'Direct';
 elseif or(VIEWS == 2, VIEWS == 3)
     Number_of_ims = 21;
     plot_x = 3;
     plot_z = 7;
     im_width = 450;
     im_height = 1050;
-    if VIEWS == 2
-        mode = 'Backwall Skip';
-    else
-        mode = 'Sidewall Skip';
-    end
 else
     Number_of_ims = 55;
     plot_x = 5;
     plot_z = 11;
     im_width = 580;
     im_height = 1280;
-    mode = 'Back-Side Skip';
 end
 
 % Additional parameters not directly dependent on inputs.
@@ -627,10 +620,8 @@ end
 
 Views = fn_make_views(VIEWS, Paths, Names);
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
-Sens_vec = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
     Sens(view).name = Views(view).name;
-    Sens_vec(view).name = Views(view).name;
 end
 
 time_2 = double(toc);
