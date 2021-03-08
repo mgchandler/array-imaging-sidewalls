@@ -58,7 +58,7 @@ new_options.geometry = fn_make_geometry(0, 500, ...
     [new_options.geom_shape.xmax, 0.0, new_options.geom_shape.zmax+1e-5], [new_options.geom_shape.xmin, 0.0, new_options.geom_shape.zmax+1e-5] ...
 );
 new_options.max_no_reflections = 1;
-model_options = fn_default_model_options(new_options);
+model_options = fn_default_model_options(model_config, new_options);
 
 
 %% ---------------------------------------------------------------------- %
