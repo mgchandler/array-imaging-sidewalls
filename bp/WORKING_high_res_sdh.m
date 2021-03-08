@@ -30,6 +30,7 @@ model_config.PITCH =  1.00e-3;
 model_config.PIXEL = 2.0e-3;
 model_config.WALLS = 500;
 model_config.GEOM = 0;
+model_config.VIEWS = 1;
 model_config.SETUP = 0;
 
 % half_probe_width = 16*model_config.PITCH;
