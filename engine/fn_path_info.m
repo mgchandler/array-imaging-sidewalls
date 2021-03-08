@@ -1,4 +1,4 @@
-function path_info = fn_path_info(name, modes, geometries, speeds, mat_speeds, walls, medium_ids, densities, probe_frequency, pitch, probe_coords)
+function path_info = fn_path_info(name, rev_name, modes, geometries, speeds, mat_speeds, walls, medium_ids, densities, probe_frequency, pitch, probe_coords)
 % Collects the information passed in into a single object which can then be
 % passed into the ray computation function.
 %
@@ -45,6 +45,7 @@ function path_info = fn_path_info(name, modes, geometries, speeds, mat_speeds, w
 %       functions which require all of this information!
 
 path_info.name = name;
+path_info.rev_name = rev_name;
 path_info.modes = modes;
 path_info.geometries = geometries;
 path_info.speeds = speeds;

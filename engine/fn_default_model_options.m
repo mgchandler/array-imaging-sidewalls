@@ -1,4 +1,4 @@
-function model_options = fn_default_model_options(varargin)
+function model_options = fn_default_model_options(model_config, new_options)
 % Returns the default model options if no inputs are given, and overwrites
 % the defaults when these are provided.
 %
@@ -27,10 +27,16 @@ model_options.probe_angle = 0;
 model_options.probe_standoff = 0;
 model_options.probe_frequency = 5.0e+6;
 model_options.el_length = 0;
-model_options.geom_shape.xmin = -25.0e-3;
-model_options.geom_shape.xmax =  25.0e-3;
-model_options.geom_shape.zmin =   0.0e-3;
-model_options.geom_shape.zmax =  40.0e-3;
+
+xmin = -25.0e-3;
+xmax =  25.0e-3;
+zmin =   0.0e-3;
+zmax =  40.0e-3;
+
+model_options.geom_shape.xmin = xmin;
+model_options.geom_shape.xmax = xmax;
+model_options.geom_shape.zmin = zmin;
+model_options.geom_shape.zmax = zmax;
 model_options.multi_freq = 0;
 model_options.material_params.couplant_speed = 340.0;
 model_options.material_params.couplant_density = 1.2;
@@ -49,9 +55,9 @@ model_options.scat_info = fn_scat_info( ...
 model_options.boxsize = 0;
 model_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\array-imaging-sidewalls\output';
 model_options.savename = 'TFM-Sens Image Plot';
+model_options.max_no_reflections = 0;
 
-if nargin == 1
-    new_options = varargin{1};
+if nargin == 2
     option_fieldnames = fieldnames(new_options);
     for arg = 1:size(option_fieldnames, 1)
         field_val = getfield(new_options, option_fieldnames{arg});
@@ -59,6 +65,18 @@ if nargin == 1
     end
 elseif nargin ~= 0
     error('fn_default_model_options: wrong number of inputs.')
+end
+
+if and(model_config.SETUP == 0, ~isfield(model_options, 'geometry'))
+    model_options.geometry = fn_make_geometry(1, 500, ...
+        [xmin, 0.0, zmax], [xmax, 0.0, zmax], [xmax, 0.0, zmin] ...
+    );
+elseif and(model_config.SETUP == 1, ~isfield(model_options, 'geometry'))
+    model_options.geometry = fn_make_geometry(0, 500, ...
+        [xmin, 0.0, zmin], [xmax, 0.0, zmin], ...
+        [xmax, 0.0, zmax], [xmin, 0.0, zmax], ...
+        [xmax, 0.0, zmin], [xmax, 0.0, zmax] ...
+    );
 end
 
 end

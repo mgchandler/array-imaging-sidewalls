@@ -57,17 +57,17 @@ if ray.path_info.walls == 0
     for scat = 1 : num_scatterers
         for tx = 1 : probe_els
             
-            single_ray_geometry = zeros(2, 3);
-            single_ray_geometry(1, :) = probe_coords(tx, :);
-            single_ray_geometry(2, :) = scatterers(scat, :);
-            inv_single_ray_geometry = flip(single_ray_geometry, 1);
+            single_ray_leg_coords = zeros(2, 3);
+            single_ray_leg_coords(1, :) = probe_coords(tx, :);
+            single_ray_leg_coords(2, :) = scatterers(scat, :);
+            inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
-            min_dists = fn_min_dists(single_ray_geometry);
+            min_dists = fn_min_dists(single_ray_leg_coords);
             inv_min_dists = fn_min_dists(inv_single_ray_geometry);
                 
             walls_for_angles = [-1, -2];
             inc_out_angles = fn_inc_out_angles(min_dists, walls_for_angles);
-            inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_geometry(1:2, :), probe_coords);
+            inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
             inv_inc_out_angles = flip(inc_out_angles, 1);
             
             ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
@@ -115,22 +115,22 @@ else
     for scat = 1 : num_scatterers
         for tx = 1 : probe_els
             
-            single_ray_geometry = zeros(no_walls+2, 3);
-            single_ray_geometry(1, :) = probe_coords(tx, :);
+            single_ray_leg_coords = zeros(no_walls+2, 3);
+            single_ray_leg_coords(1, :) = probe_coords(tx, :);
             for wall = 1:no_walls
-                single_ray_geometry(wall+1, :) = geometries(wall, ray.wall_idxs(tx, scat, wall), :);
+                single_ray_leg_coords(wall+1, :) = geometries(wall).coords(ray.wall_idxs(tx, scat, wall), :);
             end
-            single_ray_geometry(no_walls+2, :) = scatterers(scat, :);
-            inv_single_ray_geometry = flip(single_ray_geometry, 1);
+            single_ray_leg_coords(no_walls+2, :) = scatterers(scat, :);
+            inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
             % Get the minimum distances.
-            min_dists = fn_min_dists(single_ray_geometry);
+            min_dists = fn_min_dists(single_ray_leg_coords);
             inv_min_dists = fn_min_dists(inv_single_ray_geometry);
 
             % Get the angles.
             walls_for_angles = [-1, walls, -2];
             inc_out_angles = fn_inc_out_angles(min_dists, walls_for_angles);
-            inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_geometry(1:2, :), probe_coords);
+            inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
             inv_inc_out_angles = flip(inc_out_angles, 1);
             
             ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
