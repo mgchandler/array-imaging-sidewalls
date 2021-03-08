@@ -104,6 +104,7 @@ couplant_density = model_options.material_params.couplant_density;
 solid_long_speed = model_options.material_params.solid_long_speed;
 solid_shear_speed = model_options.material_params.solid_shear_speed;
 solid_density = model_options.material_params.solid_density;
+boxsize = model_options.boxsize;
 scat_info = model_options.scat_info;
 savepath = model_options.savepath;
 savename = model_options.savename;
@@ -120,7 +121,7 @@ if VIEWS == 1
     plot_x = 3;
     plot_z = 1;
     im_width = 900;
-    im_height = 580;
+    im_height = 400;
 elseif or(VIEWS == 2, VIEWS == 3)
     Number_of_ims = 21;
     plot_x = 3;
@@ -642,7 +643,7 @@ out_freq_spec = 0;
 num_scatterers = size(scat_info.image_block, 1);
 
 for scatterer = 1 : num_scatterers
-    for view = 1 : size(Views, 1)
+    for view = 1 : size(Views, 2)
         weights = Views(view).weights(:, scatterer, 1);
         scat_amp = Views(view).scat_amps(:, scatterer, 1);
         amp = conj(scat_amp .* weights);

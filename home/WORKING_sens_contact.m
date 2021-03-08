@@ -13,7 +13,6 @@ new_options.geom_shape.xmin = -25.0e-3;
 new_options.geom_shape.xmax =  25.0e-3;
 new_options.geom_shape.zmin =   0.0;
 new_options.geom_shape.zmax =  40.0e-3;
-% new_options.probe_standoff = 10.0e-3;
 model_options = fn_default_model_options(new_options);
 
 

@@ -190,7 +190,7 @@ clear rot_matrix
 % Create input signal.
 time_step = 1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
 max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed) + ...
-                  (probe_standoff + el_length) / couplant_speed);
+                  (probe_standoff + el_length*probe_els) / couplant_speed);
 time_pts = ceil(max_t / time_step);
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
@@ -597,7 +597,6 @@ scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
 L_path_im = fn_compute_ray(image_block_info, L_path_info, probe_frequency);
 T_path_im = fn_compute_ray(image_block_info, T_path_info, probe_frequency);
 Paths = [L_path_im T_path_im];
-Names = ["L" "T"];
 clear L_path_info T_path_info L_path_im T_path_im
 clear X Z pt image_block
 if or(VIEWS == 2, VIEWS == 4)
@@ -606,7 +605,6 @@ if or(VIEWS == 2, VIEWS == 4)
     TBL_path_im = fn_compute_ray(image_block_info, TBL_path_info, probe_frequency);
     TBT_path_im = fn_compute_ray(image_block_info, TBT_path_info, probe_frequency);
     Paths = [Paths LBL_path_im LBT_path_im TBL_path_im TBT_path_im];
-    Names = [Names "LBL" "LBT" "TBL" "TBT"];
     clear LBL_path_info LBT_path_info TBL_path_info TBT_path_info
     clear LBL_path_im LBT_path_im TBL_path_im TBT_path_im
 end
@@ -616,7 +614,6 @@ if or(VIEWS == 3, VIEWS == 4)
     TSL_path_im = fn_compute_ray(image_block_info, TSL_path_info, probe_frequency);
     TST_path_im = fn_compute_ray(image_block_info, TST_path_info, probe_frequency);
     Paths = [Paths LSL_path_im LST_path_im TSL_path_im TST_path_im];
-    Names = [Names "LSL" "LST" "TSL" "TST"];
     clear LSL_path_info LST_path_info TSL_path_info TST_path_info
     clear LSL_path_im LST_path_im TSL_path_im TST_path_im
 end
