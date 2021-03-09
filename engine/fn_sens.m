@@ -127,14 +127,6 @@ zsize = zmax - zmin;
 
 UC = 1e3; % Unit conversion
 
-% Geometry parameters. Do not overlap image params.
-front_wall_pos = zmin - 1.0e-5;
-front_wall_pixels = WALLS;
-back_wall_pos = zmax + 1.0e-5;
-back_wall_pixels = WALLS;
-side_wall_pos = xmax + 1.0e-5;
-side_wall_pixels = WALLS;
-
 clear PITCH WALLS
 
 
