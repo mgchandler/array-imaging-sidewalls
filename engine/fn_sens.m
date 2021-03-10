@@ -476,9 +476,6 @@ for xpt_im = 1:xpts+1
                     end
                 end
             end
-%             tau2 = tau(:, sens_k_min(zpt):sens_k_max(zpt), sens_i_min(xpt):sens_i_max(xpt));
-%             interp = interp1(FMC_time, FMC_time_data, tau(:, sens_k_min(zpt):sens_k_max(zpt), sens_i_min(xpt):sens_i_max(xpt)), 'linear', 0);
-%             Im = sum(diag(interp1(FMC_time, FMC_time_data, tau(:, sens_k_min(zpt):sens_k_max(zpt), sens_i_min(xpt):sens_i_max(xpt)), 'linear', 0)));
             
             Sens(view).image(zpt_im, xpt_im) = max(Im, [], 'all');
             
