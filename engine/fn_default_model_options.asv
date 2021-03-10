@@ -68,7 +68,7 @@ function model_options = fn_default_model_options(varargin)
 %           The maximum number of reflections which will be made from the
 %           walls of the geometry when tracing rays from probe to
 %           scatterer.
-%       - geometry : struct (no_walls, 1) : DEFAULT backwall
+%       - geometry : struct (no_walls, 1) : DEFAULT backwall.
 %           A structure containing all of the walls in the geometry, which
 %           will be passed into ray tracing steps. Note that the presence
 %           of a frontwall in this object defines whether we are in the
@@ -119,7 +119,8 @@ if nargin == 1
     new_options = varargin{1};
     option_fieldnames = fieldnames(new_options);
     for arg = 1:size(option_fieldnames, 1)
-        model_options.(option_fieldnames{arg}) = new_options.(option_fieldnames{arg});
+        field_val = getfield(new_options, option_fieldnames{arg});
+        model_options = setfield(model_options, option_fieldnames{arg}, field_val);
     end
 elseif nargin ~= 0
     error('fn_default_model_options: wrong number of inputs.')

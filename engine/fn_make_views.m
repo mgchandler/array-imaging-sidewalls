@@ -1,4 +1,4 @@
-function Views = fn_make_views(max_no_reflections, Paths, unique_only)
+function Views = fn_make_views(Paths, unique_only)
 % Creates all the unique views from paths, making sure that the same ones
 % as used in arim are used, for comparison. Note that arim has a sort
 % algorithm to do this, for now we simply have a list of all possible views
