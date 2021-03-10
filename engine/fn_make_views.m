@@ -1,4 +1,4 @@
-function Views = fn_make_views(VIEWS, Paths, unique_only)
+function Views = fn_make_views(max_no_reflections, Paths, unique_only)
 % Creates all the unique views from paths, making sure that the same ones
 % as used in arim are used, for comparison. Note that arim has a sort
 % algorithm to do this, for now we simply have a list of all possible views
@@ -124,109 +124,8 @@ tx_rx_idxs(:,2) = tx_rx_idxs(I,2);
 no_views = size(tx_rx_idxs, 1);
 Views = repmat(fn_create_view(Paths(1), Paths(1)), no_views, 1);
 for view = 1:no_views
-    Views(view) = fn_create_view(Paths(tx_rx_idxs(tx,1)), Paths(tx_rx_idxs(rx,2)));
+    Views(view) = fn_create_view(Paths(tx_rx_idxs(view,1)), Paths(tx_rx_idxs(view,2)));
     Views(view).name = sprintf("%s - %s", tx_rx_names(view, 1), tx_rx_names(view, 2));
 end
-
-% if unique_only
-%     
-%     no_paths = size(Paths, 2);
-%     View_names = repmat('L-L', no_paths^2, 1);
-%     view = 1;
-%     for tx = 1:no_paths
-%         for rx = 1:no_paths
-%             View_names(view) = sprintf("%s-%s", Paths(tx).name, Paths(rx).rev_name);
-%             
-%             view = view + 1;
-%         end
-%     end
-%     
-%     
-%     DIRECT_IMAGING_MODES = [ ...
-%                       "L-L", "L-T", "T-T" ...
-%     ];
-%     BACKWALL_IMAGING_MODES = [ ...
-%                       "L-L", "L-T", "T-T", "LBL-L", "LBL-T", "LBT-L", "LBT-T", ...
-%                       "TBL-L", "TBL-T", "TBT-L", "TBT-T", "LBL-LBL", "LBL-LBT", ...
-%                       "LBL-TBL", "LBL-TBT", "LBT-LBT", "LBT-TBL", "LBT-TBT", ...
-%                       "TBL-LBT", "TBL-TBT", "TBT-TBT" ...
-%     ];
-%     SIDEWALL_IMAGING_MODES = [ ....
-%                       "L-L", "L-T", "T-T", "LSL-L", "LSL-T", "LST-L", "LST-T", ...
-%                       "TSL-L", "TSL-T", "TST-L", "TST-T", "LSL-LSL", "LSL-LST", ...
-%                       "LSL-TSL", "LSL-TST", "LST-LST", "LST-TSL", "LST-TST", ...
-%                       "TSL-LST", "TSL-TST", "TST-TST" ....
-%     ];
-%     BACK_SIDEWALL_IMAGING_MODES = [....
-%                       "L-L", "L-T", "T-T", "LBL-L", "LBL-T", "LBT-L", "LBT-T", ...
-%                       "LSL-L", "LSL-T", "LST-L", "LST-T", "TBL-L", "TBL-T", ...
-%                       "TBT-L", "TBT-T", "TSL-L", "TSL-T", "TST-L", "TST-T", ...
-%                       "LBL-LBL", "LBL-LBT", "LBL-LSL", "LBL-LST", "LBL-TBL", ...
-%                       "LBL-TBT", "LBL-TSL", "LBL-TST", "LBT-LBT", "LBT-LSL", ...
-%                       "LBT-LST", "LBT-TBL", "LBT-TBT", "LBT-TSL", "LBT-TST", ...
-%                       "LSL-LBT", "LSL-LSL", "LSL-LST", "LSL-TBT", "LSL-TSL", ...
-%                       "LSL-TST", "LST-LBT", "LST-LST", "LST-TBT", "LST-TSL", ...
-%                       "LST-TST", "TBL-LBT", "TBL-LST", "TBL-TBT", "TBL-TST", ...
-%                       "TBT-LST", "TBT-TBT", "TBT-TST", "TSL-LST", "TSL-TST", ...
-%                       "TST-TST" ...
-%     ];
-% 
-% 
-% 
-%     if VIEWS == 1
-%         modes = DIRECT_IMAGING_MODES;
-%         Number_of_ims = 3;
-%     elseif VIEWS == 2
-%         modes = BACKWALL_IMAGING_MODES;
-%         Number_of_ims = 21;
-%     elseif VIEWS == 3
-%         modes = SIDEWALL_IMAGING_MODES;
-%         Number_of_ims = 21;
-%     elseif VIEWS == 4
-%         modes = BACK_SIDEWALL_IMAGING_MODES;
-%         Number_of_ims = 55;
-%     else
-%         error('fn_make_views: Invalid VIEWS parameter')
-%     end
-% 
-%     ii = 1;
-% 
-% 
-% 
-%     Views = repmat(fn_create_view(Paths(1), Paths(1)), Number_of_ims, 1);
-% 
-%     for tx = 1 : size(Paths, 2)
-%         for rx = 1 : size(Paths, 2)
-%             thisPathName = Paths(tx).path_info.name;
-%             thisRevPathName = reverse(Paths(rx).path_info.name);
-%             name = strcat(thisPathName, "-", thisRevPathName);
-%             if any(modes == name)
-%                 Views(ii) = fn_create_view(Paths(tx), Paths(rx));
-%                 Views(ii).name = name;
-%                 ii = ii+1;
-%             end
-%         end
-%     end
-%     
-% % Make all views
-% else
-%     ii = 1;
-% 
-% 
-% 
-%     Views = repmat(fn_create_view(Paths(1), Paths(1)), size(Paths, 1)^2, 1);
-% 
-%     for tx = 1 : size(Paths, 2)
-%         for rx = 1 : size(Paths, 2)
-%             thisPathName = Paths(tx).path_info.name;
-%             thisRevPathName = reverse(Paths(rx).path_info.name);
-%             name = strcat(thisPathName, "-", thisRevPathName);
-%             Views(ii) = fn_create_view(Paths(tx), Paths(rx));
-%             Views(ii).name = name;
-%             ii = ii+1;
-%         end
-%     end
-%     
-% end
 
 end

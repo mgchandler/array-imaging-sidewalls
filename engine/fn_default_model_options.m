@@ -79,4 +79,8 @@ elseif and(model_config.SETUP == 1, ~isfield(model_options, 'geometry'))
     );
 end
 
+if model_options.max_no_reflections > size(model_options.geometry, 1)
+    error('fn_default_model_options: too many reflections for walls provided')
+end
+
 end

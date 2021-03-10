@@ -154,8 +154,10 @@ clear rot_matrix
 
 % Create input signal.
 time_step = 1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
-max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed) + ...
-                  (probe_standoff + el_length*probe_els) / couplant_speed);
+max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed));
+if probe_standoff ~= 0
+    max_t = max_t + sqrt(probe_standoff^2 + (el_length*probe_els)^2) / couplant_speed;
+end            
 time_pts = ceil(max_t / time_step);
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
@@ -361,7 +363,7 @@ end
 clear Path_info_list X Z pt image_block
 
 % Create views from these paths.
-Views = fn_make_views(VIEWS, Paths, 1);
+Views = fn_make_views(max_no_reflections, Paths, 1);
 clear Paths
 Number_of_ims = size(Views, 1);
 if Number_of_ims == 3
@@ -588,7 +590,7 @@ h.Label.String = 'dB';
 cd(savepath)
 filename_fig = sprintf('%s.fig', savename);
 filename_mat = sprintf('%s.mat', savename);
-saveas(fig, filename_fig)
+savefig(filename_fig)
 % close all
 
 time_4 = double(toc);
