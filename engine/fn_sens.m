@@ -377,6 +377,7 @@ elseif Number_of_ims == 55
 else
     error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
 end
+
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
     Sens(view).name = Views(view).name;
@@ -437,7 +438,8 @@ for xpt_im = 1:xpts+1
         for view = 1 : Number_of_ims
             weights = Views(view).weights(:, grid_pt, 1);
             scat_amp = Views(view).scat_amps(:, grid_pt, 1);
-            amp = conj(scat_amp .* weights);
+            valid_path = Views(view).valid_path(:, grid_pt);
+            amp = conj(scat_amp .* weights .* valid_path);
             out_freq_spec = fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, grid_pt), amp, 0);
             
             clear weights scat_amp amp
@@ -460,16 +462,18 @@ for xpt_im = 1:xpts+1
             
             if boxsize == 0
                 tau = reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]);
-                Im = (are_points_in_geometry(zpt_im, xpt_im) * ...
+                valid = reshape(Views(view).valid_path, [probe_els^2, zpts+1, xpts+1]);
+                Im = (are_points_in_geometry(zpt_im, xpt_im) * valid(zpt_im, xpt_im) * ...
                     sum(diag(interp1(FMC_time, FMC_time_data, tau(:, zpt_im, xpt_im), 'linear', 0))) ...
                 );
             else
                 tau = repmat(reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]),1,3,3);
+                valid = reshape(Views(view).valid_path, [probe_els^2, zpts+1, xpts+1]);
                 Im = zeros(boxsize*2+1);
                 for s_i = sens_i_min(xpt_im):sens_i_max(xpt_im)
                     for s_k = sens_k_min(zpt_im):sens_k_max(zpt_im)
                         Im(s_k-sens_k_min(zpt_im)+1, s_i-sens_i_min(xpt_im)+1) = ( ...
-                            are_points_in_geometry(zpt_im, xpt_im) * ...
+                            are_points_in_geometry(zpt_im, xpt_im) * valid(zpt_im, xpt_im) * ...
                             sum(diag(interp1(FMC_time, FMC_time_data, tau(:, s_k, s_i), 'linear', 0))) ...
                         );
                     end

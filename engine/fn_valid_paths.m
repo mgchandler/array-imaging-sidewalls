@@ -1,7 +1,9 @@
 function valid_paths = fn_valid_paths(path_info, ray_coords, all_geometry)
 % Determines whether the path traced by each ray is valid by detecting
 % whether the legs of each ray intersect with any of the walls in the
-% geometry.
+% geometry. Note that here, "intersect" means that there is at least one
+% point which is coincident between the line representing the leg of a ray
+% and a wall, not including the points where reflections occur.
 %
 % INPUTS:
 %   - path_info : struct (1, 1)
@@ -35,8 +37,9 @@ num_legs = num_points - 1;
 % by.
 path_geometry = path_info.path_geometry;
 
-% Initialise output array.
-valid_paths = zeros(probe_els, num_scatterers);
+% Initialise output array. Assume valid to start, and then change if
+% intersection is found.
+valid_paths = ones(probe_els, num_scatterers);
 
 % Each ray traces from a probe element to a scatterer.
 for el = 1:probe_els
@@ -55,7 +58,7 @@ for el = 1:probe_els
             % If we are on a direct contact path, we do not reflect from
             % any geometry. Test for intersection against all_geometry.
             if num_legs == 1
-                geom_for_testing = all_geometry;
+                geometry_for_testing = all_geometry;
                 
             % If we are not (i.e. more than 1 leg in total) then check if
             % we are on the first or the last leg. If we are, there is only
@@ -74,6 +77,36 @@ for el = 1:probe_els
                 geometry_for_testing = all_geometry;
                 geometry_for_testing(leg-1) = [];
                 geometry_for_testing(leg) = [];
+            end
+            
+            % Now that we have the geometry to test for intersections with,
+            % we can work out whether this is valid or not.
+            %
+            % Check that there is some geometry remaining to test with. Ray
+            % must be valid if not, so move on.
+            if size(geometry_for_testing, 2) ~= 0
+                % Check that all walls do not intersect.
+                for wall = 1:size(geometry_for_testing, 1)
+                    % If there is an intersection, set the validity to 0
+                    % and break out of the loop over this ray's legs, as we
+                    % do not need to check any more.
+                    wall_start = geometry_for_testing(wall).coords(1, :);
+                    wall_end = geometry_for_testing(wall).coords(end, :);
+                    if fn_is_intersection(wall_start, wall_end, leg_start, leg_end)
+                        valid_paths(el, scat) = 0;
+                        break
+                    end
+                end
+                % Break out of the loop over this ray's legs.
+                break
+            
+            % If there are no walls to test, then there can be no
+            % intersections. This comes from the fact that walls must be
+            % straight lines, and thus we must either have no walls at all,
+            % or we are reflecting off all the available walls. If we are
+            % reflecting, then the ray cannot intersect with this wall.
+            else
+                break
             end
             
         end

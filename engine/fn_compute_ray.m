@@ -86,16 +86,15 @@ for scat = 1 : num_scatterers
 
             % First and last legs of the ray are simple to calculate. Treat
             % them differently. Start with first leg.
-            for ii = 1 : wall_pixels
-                % Calculate the time taken to travel from the probe to all
-                % points on the first wall.
-                min_times(ii, 1) = ( ...
-                    sqrt((path_geometry(1).coords(ii, 1) - probe_coords(tx, 1)) ^ 2 + ...
-                         (path_geometry(1).coords(ii, 3) - probe_coords(tx, 3)) ^ 2) / speeds(1) ...
-                );
-            end
+            
+            % Calculate the time taken to travel from the probe to all
+            % points on the first wall.
+            min_times(:, 1) = ( ...
+                sqrt((path_geometry(1).coords(:, 1) - probe_coords(tx, 1)) .^ 2 + ...
+                     (path_geometry(1).coords(:, 3) - probe_coords(tx, 3)) .^ 2) ./ speeds(1) ...
+            );
 
-            % If more than one boundary is present, then we will have middle
+            % If more than one boundary is present, then we will have
             % middle legs that we must consider - this is where the
             % efficiency improvement of Dijkstra comes in.
             if no_walls > 1
@@ -107,15 +106,9 @@ for scat = 1 : num_scatterers
                 % added to the time calculated from the kth point on the
                 % nth wall to all points on the (n+1)th wall.
                 for wall = 2 : no_walls
-                    min_times_matrix = zeros(wall_pixels, wall_pixels);
-                    for ii = 1 : wall_pixels
-                        for jj = 1 : wall_pixels
-                            min_times_matrix(ii, jj) = min_times(ii, 1) + ( ...
-                                sqrt((path_geometry(wall).coords(jj, 1) - path_geometry(wall-1).coords(ii, 1)) ^ 2 + ...
-                                     (path_geometry(wall).coords(jj, 3) - path_geometry(wall-1).coords(ii, 3)) ^ 2) / speeds(wall) ...
-                            );
-                        end
-                    end
+                    min_times_matrix = min_times + ...
+                        sqrt((path_geometry(wall).coords(:, 1).' - path_geometry(wall-1).coords(:, 1)).^2 + ...
+                             (path_geometry(wall).coords(:, 3).' - path_geometry(wall-1).coords(:, 3)).^2) ./ speeds(wall);
                     
                 % Find the minimum time from the probe to each point on the
                 % (n+1)th wall, and return these times. This min_times
@@ -134,13 +127,9 @@ for scat = 1 : num_scatterers
             end
 
             % Finally, compute the last leg.
-            for ii = 1 : wall_pixels
-                min_times(ii, 1) = min_times(ii, 1) + ( ...
-                    sqrt((scatterers(scat, 1) - path_geometry(end).coords(ii, 1)) ^ 2 + ...
-                         (scatterers(scat, 3) - path_geometry(end).coords(ii, 3)) ^ 2) / ...
-                    speeds(no_walls + 1) ...
-                );
-            end
+            min_times = min_times + ...
+                sqrt((scatterers(scat, 1) - path_geometry(end).coords(:, 1)) .^ 2 + ...
+                     (scatterers(scat, 3) - path_geometry(end).coords(:, 3)) .^ 2) ./ speeds(no_walls + 1);
             
             % Now that we have reached the scatterer, find the path which
             % takes the least time. Record this time, and the wall indices

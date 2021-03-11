@@ -26,6 +26,7 @@ view.name = sprintf('%s-%s', path1.path_info.name, reverse(path2.path_info.name)
 view.min_times = zeros(probe_els ^ 2, num_scatterers);
 view.probe_txrx = zeros(probe_els ^ 2, 2);
 view.scatterer_coords = zeros(num_scatterers, 3);
+view.valid_path = zeros(probe_els ^ 2, num_scatterers);
 
 % Assemble view from paths.
 for ii = 1 : probe_els
@@ -34,6 +35,9 @@ for ii = 1 : probe_els
         view.min_times(el, :) = path1.min_times(ii, :) + path2.min_times(jj, :);
         view.probe_txrx(el, 1) = ii;
         view.probe_txrx(el, 2) = jj;
+        % If path is not valid, it will be 0. If 1, path is valid. View
+        % path will be invalid if either path is invalid, so multiply.
+        view.valid_path(el, :) = path1.valid_paths(ii, :) .* path2.valid_paths(jj, :);
     end
 end
 
