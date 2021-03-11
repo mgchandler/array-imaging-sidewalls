@@ -350,9 +350,9 @@ image_block_info.image_block = image_block;
 scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
 
 % Compute Imaging Paths
-Paths = repmat(fn_compute_ray(image_block_info, Path_info_list(1), probe_frequency), 1, num_paths);
+Paths = repmat(fn_compute_ray(image_block_info, Path_info_list(1), geometry, probe_frequency), 1, num_paths);
 for path = 2:num_paths
-    Paths(path) = fn_compute_ray(image_block_info, Path_info_list(path), probe_frequency);
+    Paths(path) = fn_compute_ray(image_block_info, Path_info_list(path), geometry, probe_frequency);
 end
 clear probe_frequency num_paths path Path_info_list boxpix X Z pt xpt zpt image_block path
 

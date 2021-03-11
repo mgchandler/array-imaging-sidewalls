@@ -324,9 +324,9 @@ clear path mode_name wall mode1 mode1_name mode2 mode2_name
 tic;
 
 % Compute Imaging Paths
-Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), probe_frequency), 1, num_paths);
+Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, probe_frequency), 1, num_paths);
 for path = 2:num_paths
-    Paths(path) = fn_compute_ray(scat_info, Path_info_list(path), probe_frequency);
+    Paths(path) = fn_compute_ray(scat_info, Path_info_list(path), geometry, probe_frequency);
 end
 
 % Create views from these paths.

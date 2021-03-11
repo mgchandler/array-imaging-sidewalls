@@ -1,4 +1,4 @@
-function ray = fn_compute_ray(scat_info, path_info, varargin)
+function ray = fn_compute_ray(scat_info, path_info, geometry, varargin)
 % Function which computes the fermat path of a ray travelling from all
 % probe positions to all scatterer positions. The Dijkstra method is used
 % to do this, which is quicker than the bulk method when more than two legs
@@ -12,6 +12,10 @@ function ray = fn_compute_ray(scat_info, path_info, varargin)
 % - path_info : struct(1, 1)
 %       Contains information on the path which is being calculated. Must be
 %       an output from the fn_path_info function.
+% - geometry : struct (no_walls, 1)
+%       Contains all of the walls in the geometry which will be reflected
+%       off. This is used for checking whether the rays are valid or not
+%       due to collisions with walls.
 % - freq_array : OPTIONAL array (no_freqs, 1)
 %       Contains all of the frequencies which will be used to calculate ray
 %       weights if the multi-frequency model is being used.
@@ -23,7 +27,7 @@ function ray = fn_compute_ray(scat_info, path_info, varargin)
 
 % Unpack scat_info and path_info structures.
 scatterers = scat_info.image_block;
-geometries = path_info.geometries;
+path_geometry = path_info.path_geometry;
 speeds = path_info.speeds;
 walls = path_info.walls;
 probe_coords = path_info.probe_coords;
@@ -35,15 +39,17 @@ probe_coords = path_info.probe_coords;
 if walls == 0 % We are in the contact case.
     no_walls = 0;
 else % We are in the immersion case.
-    [no_walls, ~] = size(geometries);
-    [wall_pixels, ~] = size(geometries(1).coords);
+    [no_walls, ~] = size(path_geometry);
+    [wall_pixels, ~] = size(path_geometry(1).coords);
 end
 
 % Initialise the structure.
 ray.min_times = zeros(probe_els, num_scatterers);
 ray.wall_idxs = zeros(probe_els, num_scatterers, no_walls);
+ray_coords = zeros(probe_els, num_scatterers, no_walls+2, 3);
 ray.path_info = path_info;
 ray.scat_info = scat_info;
+ray.valid_paths = zeros(probe_els, 1);
 
 % Calculate the fermat path.
 for scat = 1 : num_scatterers
@@ -58,6 +64,10 @@ for scat = 1 : num_scatterers
                 (scatterers(scat, 1) - probe_coords(tx, 1)) ^ 2 + ...
                 (scatterers(scat, 3) - probe_coords(tx, 3)) ^ 2) / ...
             speeds(1);
+            
+            % Get the ray coordinates for use with fn_valid_paths.
+            ray_coords(tx, scat, 1, :) = probe_coords(tx, :);
+            ray_coords(tx, scat, 2, :) = scatterers(scat, :);
             
             % Collect the values.
             ray.min_times(tx, scat) = min_times;
@@ -80,8 +90,8 @@ for scat = 1 : num_scatterers
                 % Calculate the time taken to travel from the probe to all
                 % points on the first wall.
                 min_times(ii, 1) = ( ...
-                    sqrt((geometries(1).coords(ii, 1) - probe_coords(tx, 1)) ^ 2 + ...
-                         (geometries(1).coords(ii, 3) - probe_coords(tx, 3)) ^ 2) / speeds(1) ...
+                    sqrt((path_geometry(1).coords(ii, 1) - probe_coords(tx, 1)) ^ 2 + ...
+                         (path_geometry(1).coords(ii, 3) - probe_coords(tx, 3)) ^ 2) / speeds(1) ...
                 );
             end
 
@@ -101,8 +111,8 @@ for scat = 1 : num_scatterers
                     for ii = 1 : wall_pixels
                         for jj = 1 : wall_pixels
                             min_times_matrix(ii, jj) = min_times(ii, 1) + ( ...
-                                sqrt((geometries(wall).coords(jj, 1) - geometries(wall-1).coords(ii, 1)) ^ 2 + ...
-                                     (geometries(wall).coords(jj, 3) - geometries(wall-1).coords(ii, 3)) ^ 2) / speeds(wall) ...
+                                sqrt((path_geometry(wall).coords(jj, 1) - path_geometry(wall-1).coords(ii, 1)) ^ 2 + ...
+                                     (path_geometry(wall).coords(jj, 3) - path_geometry(wall-1).coords(ii, 3)) ^ 2) / speeds(wall) ...
                             );
                         end
                     end
@@ -126,8 +136,8 @@ for scat = 1 : num_scatterers
             % Finally, compute the last leg.
             for ii = 1 : wall_pixels
                 min_times(ii, 1) = min_times(ii, 1) + ( ...
-                    sqrt((scatterers(scat, 1) - geometries(end).coords(ii, 1)) ^ 2 + ...
-                         (scatterers(scat, 3) - geometries(end).coords(ii, 3)) ^ 2) / ...
+                    sqrt((scatterers(scat, 1) - path_geometry(end).coords(ii, 1)) ^ 2 + ...
+                         (scatterers(scat, 3) - path_geometry(end).coords(ii, 3)) ^ 2) / ...
                     speeds(no_walls + 1) ...
                 );
             end
@@ -141,13 +151,26 @@ for scat = 1 : num_scatterers
             end
             ray.min_times(tx, scat) = min_times(find_i);
             ray.wall_idxs(tx, scat, 1:no_walls) = wall_idxs(:, find_i);
+            
+            ray_coords(tx, scat, 1, :) = probe_coords(tx, :);
+            for wall = 1:no_walls
+                ray_coords(tx, scat, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
+            end
+            ray_coords(tx, scat, end, :) = scatterers(scat, :);
                 
         end
     end
 end
 
+
+
+% Determine whether the ray paths are valid.
+ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
+
+
+
 % If frequency is provided, compute the ray weights.
-if nargin > 2
+if nargin > 3
     freq_array = varargin(1);
     try
         freq_array = cell2mat(freq_array);

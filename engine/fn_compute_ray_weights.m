@@ -18,11 +18,11 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array)
 
 % Unpack path and scatterer info.
 path_info = ray.path_info;
-geometries = path_info.geometries;
+path_geometry = path_info.path_geometry;
 if ray.path_info.walls == 0
     no_walls = 0;
 else
-    [no_walls, ~, ~] = size(geometries);
+    [no_walls, ~, ~] = size(path_geometry);
 end
 speeds = path_info.speeds;
 mat_speeds = path_info.material_speeds;
@@ -118,7 +118,7 @@ else
             single_ray_leg_coords = zeros(no_walls+2, 3);
             single_ray_leg_coords(1, :) = probe_coords(tx, :);
             for wall = 1:no_walls
-                single_ray_leg_coords(wall+1, :) = geometries(wall).coords(ray.wall_idxs(tx, scat, wall), :);
+                single_ray_leg_coords(wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
             end
             single_ray_leg_coords(no_walls+2, :) = scatterers(scat, :);
             inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
