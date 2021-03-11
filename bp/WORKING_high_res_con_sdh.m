@@ -1,4 +1,4 @@
-function WORKING_high_res_sdh()
+function WORKING_high_res_con_sdh()
 % Script which takes the array index from BluePebble as an input, works out
 % exactly which geometry block this relates to, and performs the
 % corresponding sidewall sensitivity calculation.
@@ -49,13 +49,11 @@ new_options.geom_shape.xmax =  35.0e-3;
 new_options.geom_shape.zmin =   0.0;
 new_options.geom_shape.zmax =  40.0e-3;
 new_options.geometry = fn_make_geometry(0, 500, ...
-    [new_options.geom_shape.xmax, 0.0, -1e-5], [new_options.geom_shape.xmin, 0.0, -1e-5], ...
     [new_options.geom_shape.xmax, 0.0, new_options.geom_shape.zmax+1e-5], [new_options.geom_shape.xmin, 0.0, new_options.geom_shape.zmax+1e-5] ...
 );
 new_options.max_no_reflections = 1;
-new_options.probe_standoff = 10e-3;
-new_options.pixel = 2.0e-3;
-model_options = fn_default_model_options(model_config, new_options);
+new_options.pixel = 1.0e-3;
+model_options = fn_default_model_options(new_options);
 
 
 %% ---------------------------------------------------------------------- %

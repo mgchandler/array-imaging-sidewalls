@@ -53,7 +53,7 @@ if ~is_contiguous
         
         wall_id = 0;
         
-        if and(start_point(3) == 0, end_point(3) == 0)
+        if and(start_point(3) == -1e-5, end_point(3) == -1e-5)
             name = sprintf("%s", "F");
             wall_id = 1;
         elseif (start_point(3) - end_point(3)) == 0

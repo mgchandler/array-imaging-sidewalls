@@ -68,6 +68,11 @@ function model_options = fn_default_model_options(varargin)
 %           The maximum number of reflections which will be made from the
 %           walls of the geometry when tracing rays from probe to
 %           scatterer.
+%       - model_geometry : logical : DEFAULT = 0
+%           Logical switch for whether to include the signal reflected from
+%           the front and backwall. Note that this is not checked for in
+%           fn_sens, as this signal is never modelled, and is only used in
+%           fn_tfm.
 %       - geometry : struct (no_walls, 1) : DEFAULT backwall
 %           A structure containing all of the walls in the geometry, which
 %           will be passed into ray tracing steps. Note that the presence
@@ -111,9 +116,10 @@ model_options.scat_info = fn_scat_info( ...
     'ang_pts_over_2pi', 120 ...
 );
 model_options.boxsize = 0;
-model_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\array-imaging-sidewalls\output';
+model_options.savepath = "";
 model_options.savename = 'TFM-Sens Image Plot';
 model_options.max_no_reflections = 0;
+model_options.model_geometry = 0;
 
 if nargin == 1
     new_options = varargin{1};

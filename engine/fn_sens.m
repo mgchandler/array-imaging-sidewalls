@@ -33,6 +33,7 @@ function fn_sens(model_options)
 %       - savepath : string : DEFAULT = ""
 %       - savename : string : DEFAULT = "sens MODE GEOM VIEWS PITCH PIXEL WALLS"
 %       - max_no_reflections : integer : DEFAULT = 1
+%       - model_geometry : logical : DEFAULT = 0
 %       - geometry : struct (no_walls, 1) : DEFAULT backwall
 
 
@@ -67,8 +68,6 @@ savename = model_options.savename;
 geometry = model_options.geometry;
 max_num_reflections = model_options.max_no_reflections;
 
-% Work out the size of the final plot from the VIEW parameter.
-
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
 no_cycles = 5;
@@ -99,7 +98,7 @@ zsize = zmax - zmin;
 
 UC = 1e3; % Unit conversion
 
-clear PITCH WALLS
+clear PITCH is_frontwall wall
 
 
 
@@ -115,8 +114,7 @@ probe_coords(1, :) = probe_coords(1, :) - mean(probe_coords(1, :));
 probe_coords = probe_coords.' * rot_matrix;
 probe_coords(:, 3) = probe_coords(:, 3) - probe_standoff - 1e-5;
 
-clear probe_angle front_wall_pos back_wall_pos side_wall_pos front_wall_pixels back_wall_pixels side_wall_pixels
-clear rot_matrix
+clear probe_angle rot_matrix
 
 
 
@@ -150,6 +148,8 @@ num_paths = 0;
 for num_reflections_in_path = 0:max_num_reflections
     num_paths = num_paths + 2^(num_reflections_in_path + 1);
 end
+
+clear num_reflections_in_path
 
 Path_info_list = repmat(fn_path_info( ...
     "", ...
@@ -232,7 +232,7 @@ if is_contact
     end
 
 %% ---------------------------------------------------------------------- %
-% Scatterer Simulation path info - Contact                                %
+% Scatterer Simulation path info - Immersion                              %
 % ---------------------------------------------------------------------- %%
 
 % If we are in the immersion case.
@@ -304,9 +304,10 @@ end
 time_1 = double(toc);
 
 fprintf('Setup time %.2f secs.\n', time_1);
-fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-clear SETUP el_length couplant_speed couplant_density solid_long_speed solid_shear_speed solid_density
+clear el_length couplant_speed couplant_density solid_long_speed solid_shear_speed solid_density
+clear max_num_reflections no_walls is_contact mode_names speeds mode mode_name wall mode1 mode2
+clear mode1_name mode2_name
 
 
 
@@ -353,11 +354,10 @@ Paths = repmat(fn_compute_ray(image_block_info, Path_info_list(1), probe_frequen
 for path = 2:num_paths
     Paths(path) = fn_compute_ray(image_block_info, Path_info_list(path), probe_frequency);
 end
-clear Path_info_list X Z pt image_block
+clear probe_frequency num_paths path Path_info_list boxpix X Z pt xpt zpt image_block path
 
 % Create views from these paths.
 Views = fn_make_views(Paths, 1);
-clear Paths
 Number_of_ims = size(Views, 1);
 if Number_of_ims == 3
     plot_x = 3;
@@ -385,9 +385,8 @@ end
 time_2 = double(toc);
 
 fprintf('Rays traced in %.2f secs.\n', time_2);
-fprintf('%.2g MB used.\n', monitor_memory_whos);
 
-clear probe_frequency boxpix
+clear Paths
 
 
 
@@ -414,7 +413,7 @@ sens_i_max = sens_i+boxsize;
 sens_k_min = sens_k-boxsize;
 sens_k_max = sens_k+boxsize;
 
-clear xmin xmax zmin zmax sens_i sens_k scatterer_coords
+clear xmin xmax zmin zmax scatterer_coords sens_i sens_k
 
 
 
@@ -476,10 +475,10 @@ for xpt_im = 1:xpts+1
                     end
                 end
             end
-            
+             
             Sens(view).image(zpt_im, xpt_im) = max(Im, [], 'all');
             
-            clear FMC_time FMC_time_data tau Im
+            clear tau
 
         end
         
@@ -516,10 +515,10 @@ end
 time_3 = double(toc);
 
 fprintf('Finished Sensitivity Loop in %.2f secs\n', time_3);
-fprintf('%.2g MB used.\n', monitor_memory_whos);
 
 clear PIXEL probe_els boxsize xsize zsize time_pts freq in_freq_spec fft_pts
-clear are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max grid_pt
+clear xpts zpts are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max
+clear grid_pt xpt_im zpt_im view FMC_time FMC_time_data
 
 
 
@@ -529,13 +528,13 @@ clear are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max grid_pt
 tic;
 
 max_ = 0;
-for view = 1 : size(Views, 1)
+for view = 1 : Number_of_ims
     if max(abs(Sens(view).image(:))) > max_
         max_ = max(abs(Sens(view).image(:)));
     end
 end
 
-for view = 1 : size(Views, 1)
+for view = 1 : Number_of_ims
    Sens(view).db_image = 20 * log10(abs(Sens(view).image) ./ max_); 
 end
 
@@ -579,7 +578,6 @@ h.Label.String = 'dB';
 time_4 = double(toc);
 
 fprintf('Plotted in %.2f secs\n', time_4);
-fprintf('%.2g MB used.\n', monitor_memory_whos);
 
 times = [time_1, time_2, time_3, time_4];
 
