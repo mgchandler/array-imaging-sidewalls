@@ -204,6 +204,11 @@ if is_contact
 
     if max_num_reflections > 0
         for wall = 1:no_walls
+            % For brief testing, only want reflections from the big
+            % sidewall.
+            if geometry(wall).name ~= "S2"
+                continue
+            end
             path_geometry = geometry(wall);
             for mode1 = 0:1 % Mode of the first leg
                 mode1_name = mode_names(mode1+1);

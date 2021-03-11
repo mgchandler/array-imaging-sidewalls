@@ -41,9 +41,9 @@ new_options.scat_info = fn_scat_info( ...
     [[0, 0, 0]], ...
     'ang_pts_over_2pi', 120 ...
 );
-new_options.savepath = '/work/mc16535/Matlab_Sidewalls/array-sidewalls-imaging';
+new_options.savepath = '/work/mc16535/Matlab_Sidewalls/array-sidewalls-imaging/valid-paths';
 % new_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\array-imaging-sidewalls\output';
-new_options.savename = 'High Res SDH';
+new_options.savename = 'SDH Direct - Valid Paths';
 new_options.geom_shape.xmin = -35.0e-3;
 new_options.geom_shape.xmax =  35.0e-3;
 new_options.geom_shape.zmin =   0.0;
