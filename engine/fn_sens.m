@@ -359,7 +359,7 @@ Paths = repmat(fn_compute_ray(image_block_info, Path_info_list(1), geometry, pro
 for path = 2:num_paths
     Paths(path) = fn_compute_ray(image_block_info, Path_info_list(path), geometry, probe_frequency);
 end
-clear probe_frequency num_paths path Path_info_list boxpix X Z pt xpt zpt image_block path
+clear probe_frequency num_paths path Path_info_list boxpix X Z pt xpt zpt path
 
 % Create views from these paths.
 Views = fn_make_views(Paths, 1);
@@ -405,10 +405,14 @@ tic
 % Obscure points outside of the geometry: these will be zero in logical
 % checks below, so multiply out all checks to kill pixels introduced by
 % boxsize variable.
-are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
-                         (scatterer_coords(:,:,1) <= xmax) .* ...
-                         (scatterer_coords(:,:,3) >= zmin) .* ...
-                         (scatterer_coords(:,:,3) < zmax);
+% are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
+%                          (scatterer_coords(:,:,1) <= xmax) .* ...
+%                          (scatterer_coords(:,:,3) >= zmin) .* ...
+%                          (scatterer_coords(:,:,3) < zmax);
+are_points_in_geometry = (image_block(:,1) >= xmin) .* ...
+                         (image_block(:,1) <= xmax) .* ...
+                         (image_block(:,3) >= zmin) .* ...
+                         (image_block(:,3) < zmax);
                      
 % Set up sens_i and sens_k indices for referencing when setting values of
 % the Sens image.
@@ -433,10 +437,6 @@ grid_pt = 0;
 for xpt_im = 1:xpts+1
     for zpt_im = 1:zpts+1
         grid_pt = grid_pt + 1;
-        
-        if and(xpt_im == 6, zpt_im == 4)
-            evan = 1;
-        end
 
 % ----------------------------------------------------------------------- %
 % Simulation Step                                                         %
@@ -446,7 +446,8 @@ for xpt_im = 1:xpts+1
             weights = Views(view).weights(:, grid_pt, 1);
             scat_amp = Views(view).scat_amps(:, grid_pt, 1);
             valid_path = Views(view).valid_path(:, grid_pt);
-            amp = conj(scat_amp .* weights .* valid_path);
+            in_geometry = are_points_in_geometry(grid_pt);
+            amp = conj(scat_amp .* weights .* valid_path * in_geometry);
             out_freq_spec = fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, grid_pt), amp, 0);
             
             clear weights scat_amp amp
@@ -469,18 +470,14 @@ for xpt_im = 1:xpts+1
             
             if boxsize == 0
                 tau = reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]);
-                valid = reshape(Views(view).valid_path, [probe_els^2, zpts+1, xpts+1]);
-                Im = (are_points_in_geometry(zpt_im, xpt_im) * ...
-                    sum(diag(interp1(FMC_time, FMC_time_data, tau(:, zpt_im, xpt_im), 'linear', 0))) ...
+                Im = (sum(diag(interp1(FMC_time, FMC_time_data, tau(:, zpt_im, xpt_im), 'linear', 0))) ...
                 );
             else
                 tau = repmat(reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]),1,3,3);
-                valid = reshape(Views(view).valid_path, [probe_els^2, zpts+1, xpts+1]);
                 Im = zeros(boxsize*2+1);
                 for s_i = sens_i_min(xpt_im):sens_i_max(xpt_im)
                     for s_k = sens_k_min(zpt_im):sens_k_max(zpt_im)
                         Im(s_k-sens_k_min(zpt_im)+1, s_i-sens_i_min(xpt_im)+1) = ( ...
-                            are_points_in_geometry(zpt_im, xpt_im) * valid(zpt_im, xpt_im) * ...
                             sum(diag(interp1(FMC_time, FMC_time_data, tau(:, s_k, s_i), 'linear', 0))) ...
                         );
                     end

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #
-#PBS -l select=1:ncpus=1:mem=4000mb
+#PBS -l select=1:ncpus=1:mem=5000mb
 #PBS -l walltime=27:59:59
 
 # Load modules
