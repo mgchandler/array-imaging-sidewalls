@@ -2,7 +2,7 @@
 #
 #
 #PBS -l select=1:ncpus=1:mem=4000mb
-#PBS -l walltime=08:59:59
+#PBS -l walltime=27:59:59
 
 # Load modules
 module load apps/matlab/r2019a

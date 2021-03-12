@@ -434,7 +434,9 @@ for xpt_im = 1:xpts+1
     for zpt_im = 1:zpts+1
         grid_pt = grid_pt + 1;
         
-        
+        if and(xpt_im == 6, zpt_im == 4)
+            evan = 1;
+        end
 
 % ----------------------------------------------------------------------- %
 % Simulation Step                                                         %
@@ -468,7 +470,7 @@ for xpt_im = 1:xpts+1
             if boxsize == 0
                 tau = reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]);
                 valid = reshape(Views(view).valid_path, [probe_els^2, zpts+1, xpts+1]);
-                Im = (are_points_in_geometry(zpt_im, xpt_im) * valid(zpt_im, xpt_im) * ...
+                Im = (are_points_in_geometry(zpt_im, xpt_im) * ...
                     sum(diag(interp1(FMC_time, FMC_time_data, tau(:, zpt_im, xpt_im), 'linear', 0))) ...
                 );
             else

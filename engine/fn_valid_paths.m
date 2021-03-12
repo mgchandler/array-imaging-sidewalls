@@ -65,18 +65,42 @@ for el = 1:probe_els
             % one wall to exclude.
             elseif leg == 1 % If we are on the first leg.
                 geometry_for_testing = all_geometry;
-                geometry_for_testing(leg) = [];
+                exclude_name = path_geometry(leg).name;
+                for wall = 1:size(all_geometry, 1)
+                    if geometry_for_testing(wall).name == exclude_name
+                        geometry_for_testing(wall) = [];
+                        break
+                    end
+                end
                 
             elseif leg == num_legs % If we are on the last leg.
                 geometry_for_testing = all_geometry;
-                geometry_for_testing(leg-1) = [];
+                exclude_name = path_geometry(leg-1).name;
+                for wall = 1:size(all_geometry, 1)
+                    if geometry_for_testing(wall).name == exclude_name
+                        geometry_for_testing(wall) = [];
+                        break
+                    end
+                end
                 
             % We must be on a path with >= 3 legs, and the leg we are
             % currently looking at must not be an end leg.
             else
                 geometry_for_testing = all_geometry;
-                geometry_for_testing(leg-1) = [];
-                geometry_for_testing(leg) = [];
+                exclude_name = path_geometry(leg-1).name;
+                for wall = 1:size(all_geometry, 1)
+                    if geometry_for_testing(wall).name == exclude_name
+                        geometry_for_testing(wall) = [];
+                        break
+                    end
+                end
+                exclude_name = path_geometry(leg).name;
+                for wall = 1:size(all_geometry, 1)
+                    if geometry_for_testing(wall).name == exclude_name
+                        geometry_for_testing(wall) = [];
+                        break
+                    end
+                end
             end
             
             % Now that we have the geometry to test for intersections with,

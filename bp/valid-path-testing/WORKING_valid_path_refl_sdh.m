@@ -54,7 +54,7 @@ new_options.geometry = fn_make_geometry(1, 500, ...
     [ 40.01e-3, 0.0,  0.01e-3] ...
 );
 new_options.max_no_reflections = 1;
-new_options.pixel = 2.0e-3;
+new_options.pixel = 1.0e-3;
 model_options = fn_default_model_options(new_options);
 
 
