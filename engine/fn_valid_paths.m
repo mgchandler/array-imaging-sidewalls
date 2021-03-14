@@ -116,13 +116,16 @@ for el = 1:probe_els
                     % do not need to check any more.
                     wall_start = geometry_for_testing(wall).coords(1, :);
                     wall_end = geometry_for_testing(wall).coords(end, :);
-                    if fn_is_intersection(wall_start, wall_end, leg_start, leg_end)
+                    is_intersection = fn_is_intersection(wall_start, wall_end, leg_start, leg_end);
+                    if is_intersection
                         valid_paths(el, scat) = 0;
                         break
                     end
                 end
                 % Break out of the loop over this ray's legs.
-                break
+                if is_intersection
+                    break
+                end
             
             % If there are no walls to test, then there can be no
             % intersections. This comes from the fact that walls must be

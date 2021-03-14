@@ -1,7 +1,7 @@
 clear
 
 new_options.probe_pitch =  1.00e-3;
-new_options.pixel = 7.5e-3;
+new_options.pixel = 5.0e-3;
 new_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\home-output\Immersion Testing';
 new_options.savename = sprintf('Sens SDH Backwall Immersion');
 new_options.geom_shape.xmin = -25.0e-3;
@@ -18,7 +18,7 @@ new_options.geometry = fn_make_geometry(1, 500, ...
     [ 40.01e-3, 0.0,  0.01e-3] ...
 );
 % new_options.probe_standoff = 10e-3;
-new_options.max_no_reflections = 0;
+new_options.max_no_reflections = 1;
 model_options = fn_default_model_options(new_options);
 
 profile clear
