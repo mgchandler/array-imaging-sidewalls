@@ -65,8 +65,7 @@ if ray.path_info.walls == 0
             min_dists = fn_min_dists(single_ray_leg_coords);
             inv_min_dists = fn_min_dists(inv_single_ray_geometry);
                 
-            walls_for_angles = [-1, -2];
-            inc_out_angles = fn_inc_out_angles(min_dists, walls_for_angles);
+            inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
             inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
             inv_inc_out_angles = flip(inc_out_angles, 1);
             
@@ -97,14 +96,16 @@ if ray.path_info.walls == 0
                 
                 % We are in direct contact path.
                 % We want the outgoing angle from the probe.
-                ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
-                                                              fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+                ray_weights.directivity(tx, scat, freq_idx) = ...
+                    fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
+                    fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                 % Inverse directivity required in backwall view only, so
                 % calculate it here. Note that we want the angle the ray
                 % makes from the probe normal: in the inverse angle data,
                 % this is equivalent to the last angle of incidence.
-                ray_weights.inv_directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
-                                                                  fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+                ray_weights.inv_directivity(tx, scat, freq_idx) = ...
+                    fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
+                    fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
             end
         end
     end
@@ -128,8 +129,7 @@ else
             inv_min_dists = fn_min_dists(inv_single_ray_geometry);
 
             % Get the angles.
-            walls_for_angles = [-1, walls, -2];
-            inc_out_angles = fn_inc_out_angles(min_dists, walls_for_angles);
+            inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
             inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
             inv_inc_out_angles = flip(inc_out_angles, 1);
             
@@ -158,10 +158,12 @@ else
                 % We are in skip contact or immersion case. Check which,
                 % and then compute directivity.
                 if medium_ids(1) == 1 % If solid then contact.
-                    ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
-                                                                  fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                    ray_weights.inv_directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
-                                                                      fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+                    ray_weights.directivity(tx, scat, freq_idx) = ...
+                        fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
+                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+                    ray_weights.inv_directivity(tx, scat, freq_idx) = ...
+                        fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx)) * ...
+                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                 else % Must be liquid, so immersion.
                     ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx));
                     ray_weights.inv_directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), probe_pitch, speeds(1)/freq_array(freq_idx));

@@ -375,15 +375,15 @@ if Number_of_ims == 3
     im_width = 450;
     im_height = 240;
 elseif Number_of_ims == 21
-    plot_x = 3;
-    plot_z = 7;
-    im_width = 450;
-    im_height = 1050;
+    plot_x = 7;
+    plot_z = 3;
+    im_width = 1280;
+    im_height = 670;
 elseif Number_of_ims == 55
-    plot_x = 5;
-    plot_z = 11;
-    im_width = 580;
-    im_height = 1280;
+    plot_x = 11;
+    plot_z = 5;
+    im_width = 1280;
+    im_height = 670;
 else
     error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
 end

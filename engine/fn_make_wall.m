@@ -21,6 +21,17 @@ function geometry = fn_make_wall(name, point1, point2, N, wall_id)
 assert(point1(2) == 0, "Wall is not located in the x-z plane.")
 assert(point2(2) == 0, "Wall is not located in the x-z plane.")
 
+% Assign point1 and point2 correctly so that the bases are always in the
+% same direction for the same wall.
+points = [point1; point2];
+[~, I] = sort(points(:, 1), 'descend');
+points = points(I, :);
+[~, I] = sort(points(:, 3), 'ascend');
+points = points(I, :);
+
+point1 = points(1, :);
+point2 = points(2, :);
+
 geometry.name = name;
 geometry.point1 = point1;
 geometry.point2 = point2;
@@ -35,6 +46,13 @@ geometry.coords = geometry.coords(1:end-1, :);
 % basis(:, 1) is parallel to the wall; basis(:, 2) should always be
 % parallel to the y-axis; basis(:, 3) is normal to the wall. This normal
 % vector is used to work out the angle each ray makes with the wall.
+%
+% In arim, when multiple (parallel) walls are considered, the 3rd basis
+% vector should point in the same direction for all walls. Now that we're
+% considering multiple angles of wall geometries, this needs examination.
+% For now, have 3rd basis vector (i.e. the one normal to the surface)
+% pointing in the +ve z, +ve x direction (in the standard basis), with z
+% taking priority.
 geometry.basis = zeros(3, 3);
 geometry.basis(:, 1) = (point1 - point2) / norm(point1 - point2);
 geometry.basis(:, 2) = [0, 1, 0];
