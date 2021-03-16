@@ -68,6 +68,7 @@ savename = model_options.savename;
 geometry = model_options.geometry;
 max_num_reflections = model_options.max_no_reflections;
 model_geometry = model_options.model_geometry;
+wall_for_imaging = model_options.wall_for_imaging;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
@@ -343,8 +344,9 @@ clear Paths
 % If we are in the contact case. There is no frontwall.
 if is_contact
     if model_geometry
+        
         backwall_views = fn_backwall_views( ...
-            probe_coords, probe_angle, 0, back_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
+            probe_coords, probe_angle, geometry, [couplant_speed solid_long_speed solid_shear_speed], ...
             [couplant_density solid_density], probe_frequency, el_length ...
         );
     end
@@ -353,12 +355,12 @@ if is_contact
 else
     if model_geometry
         frontwall_view = fn_frontwall_view( ...
-            probe_coords, probe_angle, front_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
+            probe_coords, probe_angle, geometry, [couplant_speed solid_long_speed solid_shear_speed], ...
             [couplant_density solid_density], probe_frequency, el_length ...
         );
     
         backwall_views = fn_backwall_views( ...
-            probe_coords, probe_angle, front_wall, back_wall, [couplant_speed solid_long_speed solid_shear_speed], ...
+            probe_coords, probe_angle, geometry, [couplant_speed solid_long_speed solid_shear_speed], ...
             [couplant_density solid_density], probe_frequency, el_length ...
         );
     end
@@ -388,7 +390,8 @@ for scatterer = 1 : num_scatterers
     for view = 1 : size(Views, 1)
         weights = Views(view).weights(:, scatterer, 1);
         scat_amp = Views(view).scat_amps(:, scatterer, 1);
-        amp = conj(scat_amp .* weights);
+        valid_path = Views(view).valid_path(:, scatterer);
+        amp = conj(scat_amp .* weights .* valid_path);
         out_freq_spec = out_freq_spec + ...
             fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
         
@@ -397,14 +400,19 @@ for scatterer = 1 : num_scatterers
 end
 
 if model_geometry
-    for view = 1 : size(backwall_views, 1)
-        out_freq_spec = out_freq_spec + ...
-            fn_propagate_spectrum_mc(freq, in_freq_spec, backwall_views(view).min_times, backwall_views(view).weights, 0);
+    [num_bw_views, num_bw] = size(backwall_views);
+    for backwall = 1 : num_bw
+        for view = 1 : num_bw_views
+            bw_amp = conj(backwall_views(view, backwall).weights .* backwall_views(view, backwall).valid_paths);
+            out_freq_spec = out_freq_spec + ...
+                fn_propagate_spectrum_mc(freq, in_freq_spec, backwall_views(view, backwall).min_times, bw_amp, 0);
+        end
     end
     % If immersion, then do frontwall.
     if ~is_contact
+        fw_amp = frontwall_view.weights .* frontwall_view.valid_paths;
         out_freq_spec = out_freq_spec + ...
-            fn_propagate_spectrum_mc(freq, in_freq_spec, frontwall_view.min_times, frontwall_view.weights, 0);
+            fn_propagate_spectrum_mc(freq, in_freq_spec, frontwall_view.min_times, fw_amp, 0);
         
         clear frontwall_view
     end
@@ -461,7 +469,14 @@ are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
 
 Paths_im = repmat(fn_compute_ray(image_block_info, Path_info_list(1)), 1, num_paths);
 for path = 2:num_paths
-    Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+    % Only get the paths we want to image. This will always include direct
+    % paths (when path_geometry field == 0), and may include some extra
+    % ones if we are modelling wall reflections.
+    if ~isstruct(Path_info_list(path).path_geometry) % If direct
+        Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+    elseif Path_info_list(path).path_geometry.name == wall_for_imaging
+        Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+    end
 end
 
 Views_im = fn_make_views(Paths_im, 1);
@@ -473,13 +488,13 @@ if Number_of_ims == 3
     im_width = 450;
     im_height = 240;
 elseif Number_of_ims == 21
-    plot_x = 3;
-    plot_z = 7;
-    im_width = 450;
-    im_height = 1050;
+    plot_x = 7;
+    plot_z = 3;
+    im_width = 1280;
+    im_height = 670;
 elseif Number_of_ims == 55
-    plot_x = 5;
-    plot_z = 11;
+    plot_x = 11;
+    plot_z = 5;
     im_width = 580;
     im_height = 1280;
 else
@@ -488,7 +503,7 @@ end
 
 Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
-    Ims(view).name = Views(view).name;
+    Ims(view).name = Views_im(view).name;
 end
 
 clear PIXEL xmin xmax zmin zmax xsize zsize num_paths Path_info_list image_block
@@ -557,7 +572,9 @@ end
 set(fig, 'Position', [20, 20, im_width, im_height])
 posa = cell2mat(get(ax, 'Position'));
 h = colorbar;
-set(ax(im), 'Position', posa(im, :))
+for im = 1 : Number_of_ims
+    set(ax(im), 'Position', [posa(im, 1), posa(im, 2)*0.8, posa(im, 3)*1.1, posa(im, 4)*1.1])
+end
 set(ax, 'units', 'pix')
 set(h, 'units', 'pix')
 posf = get(fig, 'Position'); % gives x left, y bottom, width, height

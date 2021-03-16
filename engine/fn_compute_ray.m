@@ -1,4 +1,4 @@
-function ray = fn_compute_ray(scat_info, path_info, geometry, varargin)
+function ray = fn_compute_ray(scat_info, path_info, varargin)
 % Function which computes the fermat path of a ray travelling from all
 % probe positions to all scatterer positions. The Dijkstra method is used
 % to do this, which is quicker than the bulk method when more than two legs
@@ -153,19 +153,20 @@ end
 
 
 
-% Determine whether the ray paths are valid.
-ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
-
-
-
-% If frequency is provided, compute the ray weights.
-if nargin > 3
-    freq_array = varargin(1);
-    try
-        freq_array = cell2mat(freq_array);
+if nargin > 2
+    for arg = 1 : nargin-2
+        argument = varargin{arg};
+        if isa(argument, 'double')
+            freq_array = varargin{arg};
+            % If frequency is provided, compute the ray weights.
+            ray.weights = fn_compute_ray_weights(ray, freq_array);
+            ray.freq_array = freq_array;
+        elseif isa(argument, 'struct')
+            geometry = varargin{arg};
+            % Determine whether the ray paths are valid.
+            ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
+        end
     end
-    ray.weights = fn_compute_ray_weights(ray, freq_array);
-    ray.freq_array = freq_array;
 end
 
 end

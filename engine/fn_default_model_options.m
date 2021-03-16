@@ -78,6 +78,10 @@ function model_options = fn_default_model_options(varargin)
 %           will be passed into ray tracing steps. Note that the presence
 %           of a frontwall in this object defines whether we are in the
 %           contact or immersion case.
+%       - wall_for_imaging : string : DEFAULT 'B1'
+%           When max_no_reflections > 1 and there is more than one wall,
+%           imaged views will include reflections from the wall with name
+%           equal to this string value.
 %
 % OUTPUTS:
 % - model_options : struct (1, 1)
@@ -120,6 +124,7 @@ model_options.savepath = "";
 model_options.savename = 'TFM-Sens Image Plot';
 model_options.max_no_reflections = 0;
 model_options.model_geometry = 0;
+model_options.wall_for_imaging = 'B1';
 
 if nargin == 1
     new_options = varargin{1};

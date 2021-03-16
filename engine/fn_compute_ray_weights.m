@@ -50,7 +50,7 @@ ray_weights.inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.inv_inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
-ray.min_dists = zeros(probe_els, num_scatterers, no_walls+1);
+ray_weights.min_dists = zeros(probe_els, num_scatterers, no_walls+1, 4);
 
 % If we are in the direct contact case
 if ray.path_info.walls == 0
@@ -78,7 +78,7 @@ if ray.path_info.walls == 0
             ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
             ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
             ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
-            ray.min_dists(tx, scat, :) = min_dists(:, 4);
+            ray_weights.min_dists(tx, scat, :, :) = min_dists;
             
             for freq_idx = 1 : num_freqs
                 
@@ -141,6 +141,7 @@ else
             ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
             ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
             ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
+            ray_weights.min_dists(tx, scat, :, :) = min_dists;
             
             for freq_idx = 1 : num_freqs
                 
@@ -177,5 +178,4 @@ ray_weights.weights = ( ...
 ray_weights.inv_weights = ( ...
     ray_weights.inv_beamspread .* ray_weights.inv_transrefl .* ray_weights.inv_directivity ...
 );% .* sqrt(speeds(end)/freq_array);
-
 end

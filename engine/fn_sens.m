@@ -35,6 +35,7 @@ function fn_sens(model_options)
 %       - max_no_reflections : integer : DEFAULT = 1
 %       - model_geometry : logical : DEFAULT = 0
 %       - geometry : struct (no_walls, 1) : DEFAULT backwall
+%       - wall_for_imaging : string : DEFAULT 'B1'
 
 
 
@@ -67,6 +68,7 @@ savepath = model_options.savepath;
 savename = model_options.savename;
 geometry = model_options.geometry;
 max_num_reflections = model_options.max_no_reflections;
+wall_for_imaging = model_options.wall_for_imaging;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
@@ -206,7 +208,7 @@ if is_contact
         for wall = 1:no_walls
             % For brief testing, only want reflections from the big
             % sidewall.
-            if geometry(wall).name ~= "S2"
+            if geometry(wall).name ~= wall_for_imaging
                 continue
             end
             path_geometry = geometry(wall);
@@ -276,6 +278,9 @@ elseif ~is_contact
 
     if max_num_reflections > 0
         for wall = 2:no_walls
+            if geometry(wall).name ~= wall_for_imaging
+                continue
+            end
             path_geometry = repmat(geometry(1), 2, 1);
             path_geometry(2) = geometry(wall);
             for mode1 = 0:1 % Mode of the first leg

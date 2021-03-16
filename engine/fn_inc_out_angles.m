@@ -30,7 +30,13 @@ for leg = 1:no_legs
     % If current wall is a frontwall, backwall or scatterer.
     if or(wall_ids(leg+1) == 1, or(wall_ids(leg+1) == 2, ...
           or(wall_ids(leg+1) == -2, wall_ids(leg+1) == -1))) 
-      
+        
+        % In arim, angles are worked out from the coordinates of the source
+        % point of the ray (or the end of the ray in the outgoing case).
+        % Here, dists is the direction of the ray. To get the source
+        % points, do source = current - ray_direction. To get the angle, we
+        % can treat `current` as the origin, so simply take the -ve of the
+        % ray direction.
         cart_inc = -dists(leg, 1:3);
         rad_inc = dists(leg, 4);
         alpha = acos(cart_inc(3) / rad_inc);
