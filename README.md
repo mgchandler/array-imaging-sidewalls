@@ -17,12 +17,16 @@ Default save location for files when `main` functions within the home folder are
 Folder for miscellaneous other files which do not contribute to this program (i.e. Python testing, etc.).
 	
 To do:
+- [ ] Update TFM back and frontwall views to make sure they still work with new geometry structures.
+- [ ] Fix multi frequency model.
+- [ ] Move away from specifying wall indices in ray weights function, so that general walls will be defined.
+	- [ ] This may require probe and scatterer definitions as walls, so find a way to make this work also.
+- [ ] Adapt code to allow for multiple types of scatterers to be simulated.
 - [*] Go back and fix backwall views and frontwall view functions with respect to new method of calculating ray_weights.
 - [*] Create a function fn_scat_info, comparable to fn_path_info.
 - [*] Make sure that the function still works for the immersion case.
-- [ ] Adapt code to allow for multiple types of scatterers to be simulated.
 - [*] Vectorize functions as much as possible, to try and speed it up.
 	- [*] Vectorize lookup of FMC data.
 	- [*] Vectorize scatterer loop (i.e. for xpt = 1:total_xpts, for zpt ...)
-- [ ] When adding complicated geometry, make sure that conv_angle in fn_inc_out_angles is shifted with respect to the definition of the normal of the interface, rather than the z-component simply being +ve or -ve.
+- [*] When adding complicated geometry, make sure that conv_angle in fn_inc_out_angles is shifted with respect to the definition of the normal of the interface, rather than the z-component simply being +ve or -ve.
 - [*] In fn_make_views, have it sort out views more elegantly like arim does using a function to sort, rather than just reference a big ol' list of valid names.
