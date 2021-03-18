@@ -69,6 +69,7 @@ geometry = model_options.geometry;
 max_num_reflections = model_options.max_no_reflections;
 model_geometry = model_options.model_geometry;
 wall_for_imaging = model_options.wall_for_imaging;
+multi_freq = model_options.multi_freq;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
@@ -241,7 +242,12 @@ if is_contact
 % If we are in the immersion case.
 elseif ~is_contact
     
-    path_geometry = geometry(1);
+    wall_names = repmat("", size(geometry, 1), 1);
+    for wall = 1:size(geometry, 1)
+        wall_names(wall) = geometry(wall).name;
+    end
+    where_F = logical(count(wall_names, "F"));
+    path_geometry = geometry(where_F);
     
 % ----------------------------------------------------------------------- %
 % Direct Paths                                                            %
@@ -268,15 +274,19 @@ elseif ~is_contact
         clear Direct_path_info
     end
     
-    clear path_geometry
+    clear path_geometry wall_names
     
 % ----------------------------------------------------------------------- %
 % Skip Paths                                                              %
 % ----------------------------------------------------------------------- %
 
     if max_num_reflections > 0
-        for wall = 2:no_walls
-            path_geometry = repmat(geometry(1), 2, 1);
+        non_fw_idxs = [1:no_walls];
+        non_fw_idxs = non_fw_idxs(~where_F);
+        for wall2 = 1:no_walls-1
+            wall = non_fw_idxs(wall2);
+            
+            path_geometry = repmat(geometry(where_F), 2, 1);
             path_geometry(2) = geometry(wall);
             for mode1 = 0:1 % Mode of the first leg
                 mode1_name = mode_names(mode1+1);
@@ -314,7 +324,7 @@ time_1 = double(toc);
 fprintf('Setup time %.2f secs.\n', time_1);
 
 clear max_num_reflections no_walls mode_names speeds num_reflections_in_path
-clear path mode_name wall mode1 mode1_name mode2 mode2_name
+clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
 
 
 %% ---------------------------------------------------------------------- %
@@ -431,7 +441,7 @@ time_3 = double(toc);
 
 fprintf('Simulated in in %.2f secs\n', time_3);
 
-clear model_geometry time_pts freq in_freq_spec fft_pts is_contact out_freq_spec
+clear model_geometry time_pts freq in_freq_spec fft_pts out_freq_spec
 clear num_scatterers scatterer view diagonals
 
 
@@ -472,10 +482,18 @@ for path = 2:num_paths
     % Only get the paths we want to image. This will always include direct
     % paths (when path_geometry field == 0), and may include some extra
     % ones if we are modelling wall reflections.
-    if ~isstruct(Path_info_list(path).path_geometry) % If direct
-        Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
-    elseif Path_info_list(path).path_geometry.name == wall_for_imaging
-        Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+    if is_contact
+        if ~isstruct(Path_info_list(path).path_geometry) % If direct contact
+            Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+        elseif Path_info_list(path).path_geometry(end).name == wall_for_imaging
+            Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+        end
+    else
+        if Path_info_list(path).path_geometry(end).name == "F" % If direct immersion
+            Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+        elseif Path_info_list(path).path_geometry(end).name == wall_for_imaging
+            Paths_im(path) = fn_compute_ray(image_block_info, Path_info_list(path));
+        end
     end
 end
 

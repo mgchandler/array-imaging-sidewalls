@@ -3,18 +3,18 @@
 A Matlab library based on the Python 3 `arim` language and the NDT Library. Implements more complex geometry for TFM and sensitivity images for a range of scatterers.
 
 There are three groups of functions provided, found in the following subdirectories:
-* engine
-All functions which are used to run the simulations and imaging steps.
-* home
-The `main` functions (i.e. run to produce TFM or Sensitivity images) for use on a personal Matlab installation. Developed with Matlab version r2020b.
-* bp
-The `main` functions for use on BluePebble. Designed for Matlab version r2019a.
+* `engine` :
+	* All functions which are used to run the simulations and imaging steps.
+* `home` :
+	* The `main` functions (i.e. run to produce TFM or Sensitivity images) for use on a personal Matlab installation. Developed with Matlab version r2020b.
+* `bp` :
+	* The `main` functions for use on BluePebble. Designed for Matlab version r2019a.
 	
 There are two additional folders provided:
-* output
-Default save location for files when `main` functions within the home folder are run.
-* support
-Folder for miscellaneous other files which do not contribute to this program (i.e. Python testing, etc.).
+* `output` :
+	* Default save location for files when `main` functions within the home folder are run.
+* `support` :
+	* Folder for miscellaneous other files which do not contribute to this program (i.e. Python testing, etc.).
 	
 To do:
 - [ ] Update TFM back and frontwall views to make sure they still work with new geometry structures.

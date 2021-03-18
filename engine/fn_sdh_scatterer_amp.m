@@ -9,9 +9,9 @@ function scat_amp = fn_sdh_scatterer_amp(inc_angle, out_angle, sdh_radius, lambd
 %       Outgoing angle from the scatterer.
 % - sdh_radius : double
 %       Radius of the SDH.
-% - lambda_L : double
+% - lambda_L : double OR array (1, num_freqs)
 %       Wavelength of the longitudinal mode.
-% - lambda_T : double
+% - lambda_T : double OR array (1, num_freqs)
 %       Wavelength of the transverse mode.
 % - inc_mode : logical
 %       Logical test of whether the incident mode is shear.

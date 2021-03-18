@@ -84,7 +84,7 @@ else
         
         wall_id = 0;
         
-        if and(start_point(3) == 0, end_point(3) == 0)
+        if and(start_point(3) == -1e-5, end_point(3) == -1e-5)
             name = sprintf("%s", "F");
             wall_id = 1;
         elseif (start_point(3) - end_point(3)) == 0
@@ -103,5 +103,12 @@ else
         geometry(wall) = fn_make_wall(name, start_point, end_point, N, wall_id);
     end
 end
+
+wall_names = repmat("", size(geometry, 1), 1);
+for wall = 1:size(geometry, 1)
+    wall_names(wall) = geometry(wall).name;
+end
+where_F = logical(count(wall_names, "F"));
+assert(sum(where_F)==1, "fn_make_geometry: too many frontwalls");
 
 end

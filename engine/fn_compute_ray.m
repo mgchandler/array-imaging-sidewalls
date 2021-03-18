@@ -12,7 +12,7 @@ function ray = fn_compute_ray(scat_info, path_info, varargin)
 % - path_info : struct(1, 1)
 %       Contains information on the path which is being calculated. Must be
 %       an output from the fn_path_info function.
-% - geometry : struct (no_walls, 1)
+% - geometry : OPTIONAL struct (no_walls, 1)
 %       Contains all of the walls in the geometry which will be reflected
 %       off. This is used for checking whether the rays are valid or not
 %       due to collisions with walls.

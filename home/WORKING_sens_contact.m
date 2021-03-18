@@ -1,7 +1,7 @@
 clear
 
 new_options.probe_pitch =  1.00e-3;
-new_options.pixel = 5.0e-3;
+new_options.pixel = 2.5e-3;
 new_options.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls matlab\home-output\SDH Scan with weird geometry';
 new_options.savename = 'SDH Refl - Valid Paths';
 new_options.geom_shape.xmin = -25.0e-3;
@@ -13,9 +13,9 @@ new_options.geom_shape.zmax =  45.0e-3;
 %     [new_options.geom_shape.xmax, 0.0, new_options.geom_shape.zmax+1e-5], [new_options.geom_shape.xmin, 0.0, new_options.geom_shape.zmax+1e-5] ...
 % );
 new_options.geometry = fn_make_geometry(1, 500, ...
-    [-25.00e-3, 0.0, 25.01e-3], [24.99e-3, 0.0, 25.01e-3], ...
-    [ 24.99e-3, 0.0, 45.01e-3], [40.01e-3, 0.0, 45.01e-3], ...
-    [ 40.01e-3, 0.0,  0.01e-3] ...
+    [-25.00e-3, 0.0, 25.01e-3], [ 24.99e-3, 0.0, 25.01e-3], ...
+    [ 24.99e-3, 0.0, 45.01e-3], [ 40.01e-3, 0.0, 45.01e-3], ...
+    [ 40.01e-3, 0.0,- 0.01e-3], [-25.00e-3, 0.0,- 0.01e-3] ...
 );
 new_options.scat_info = fn_scat_info( ...
     "sdh", ...
@@ -26,14 +26,19 @@ new_options.scat_info = fn_scat_info( ...
     [[32.5e-3, 0.0, 27.5e-3]], ...
     'ang_pts_over_2pi', 120 ...
 );
-% new_options.probe_standoff = 10e-3;
+new_options.material_params.couplant_speed = 1490.0;
+new_options.material_params.couplant_density = 1000.0;
+new_options.material_params.solid_long_speed = 6320.0;
+new_options.material_params.solid_shear_speed = 3130.0;
+new_options.material_params.solid_density = 2700;
+new_options.probe_standoff = 10e-3;
 new_options.max_no_reflections = 1;
-new_options.model_geometry = 0;
-new_options.wall_for_imaging = "S2";
+new_options.model_geometry = 1;
+new_options.wall_for_imaging = "B1";
 model_options = fn_default_model_options(new_options);
 
 profile clear
-profile -memory on
+profile -memory on -historysize 25000000
 
 
 
@@ -41,7 +46,7 @@ profile -memory on
 % Run sensitivity                                                         %
 % ---------------------------------------------------------------------- %%
 
-fn_sens(model_options);
+% fn_sens(model_options);
 
 
 
@@ -69,11 +74,20 @@ fn_sens(model_options);
 % end
     
 
-% new_options.savename = sprintf('TFM SDH Backwall Immersion');
-% model_options = fn_default_model_options(new_options);
+new_options.savename = sprintf('TFM SDH Immersion Backwall Signal Testing');
+model_options = fn_default_model_options(new_options);
 
-% fn_tfm(model_options);
+fn_tfm(model_options);
 
+
+
+if model_options.savepath ~= ""
+    cd(model_options.savepath)
+    if ~exist("profile", 'dir')
+        mkdir("profile")
+    end
+    profsave(profile('info'), "./profile")
+end
 profile report
 
 

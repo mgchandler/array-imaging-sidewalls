@@ -79,6 +79,10 @@ if ray.path_info.walls == 0
             ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
             ray_weights.min_dists(tx, scat, :, :) = min_dists;
             
+            disp(iscolumn(ray_weights.beamspread(tx, scat, :)))
+            disp(iscolumn(ones(1, 2)))
+            disp(iscolumn(ones(2, 1)))
+            
             for freq_idx = 1 : num_freqs
                 
                 % Note angles are not passed to beamspread functions:
