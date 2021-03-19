@@ -110,23 +110,23 @@ if ~ismember("F", wall_names)
         end
         wall_idxs(wall_idxs(:, 1) == 0, :) = [];
 
-        non_fw_geometries = all_geometries(wall_idxs);
+        view_geometries = all_geometries(wall_idxs);
 
-        for wall = 1:size(non_fw_geometries, 1)
+        for wall = 1:size(view_geometries, 1)
             for view = 1:size(view_modes, 1)
                 % Get the name of this path.
                 name = sprintf("%s", names2(view_modes(view, 1)+1));
                 rev_name = sprintf("%s", names2(view_modes(view, end)+1));
                 for mode = 2:size(view_modes, 2)
-                    name = sprintf("%s %s %s", name, non_fw_geometries(wall, mode-1).name, names2(view_modes(view, mode)+1));
-                    rev_name = sprintf("%s %s %s", rev_name, non_fw_geometries(wall, end+2-mode).name, names2(view_modes(view, end+1-mode)+1));
+                    name = sprintf("%s %s %s", name, view_geometries(wall, mode-1).name, names2(view_modes(view, mode)+1));
+                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+2-mode).name, names2(view_modes(view, end+1-mode)+1));
                 end
                 
                 path_info = fn_path_info( ...
                     name, ...
                     rev_name, ...
                     view_modes(view, :), ...
-                    non_fw_geometries(wall, :).', ...
+                    view_geometries(wall, :).', ...
                     view_speeds(view, :), ...
                     mat_speeds, ...
                     walls, ...
@@ -152,59 +152,93 @@ else
     
     where_F = logical(wall_names=="F");
     
-    path_info = fn_path_info( ...
-        sprintf("L %s L", all_geometries(where_F).name), ...
-        sprintf("L %s L", all_geometries(where_F).name), ...
-        [0, 0], ...
-        all_geometries(where_F), ...
-        [couplant_spd, couplant_spd], ...
-        mat_speeds, ...
-        [1], ...
-        [0, 0], ...
-        densities, ...
-        probe_freq, ...
-        probe_pitch, ...
-        probe_coords ...
+    num_walls = num_walls - 1;
+    tot_num_views = ( ...
+        (1 <= max_no_refl) * 2^2 * num_walls + ...
+        (2 <= max_no_refl) * 2^3 * num_walls*(num_walls - 1) ...
     );
     
-    view = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq);
+    view_el = 1;
+    for refl = 1:max_no_refl
+        
+        % Generate mode indices
+        char_modes = dec2bin([0:2^(refl+1)-1]);
+        view_modes = zeros(size(char_modes));
+        for col = 1:size(char_modes, 2)
+            view_modes(:, col) = str2num(char_modes(:, col)); %#ok<*ST2NM>
+        end
+        view_speeds1 = mat_speeds(view_modes+2);
+        view_speeds = couplant_spd * ones(size(view_speeds1, 1), size(view_speeds1, 2)+2);
+        view_speeds(:, 2:end-1) = view_speeds1;
 
-    Views = repmat(view, 4*(num_walls-1)+1, 1);
-    num_walls = num_walls - 1;
-    
-    view_speeds = zeros(4, 4); % Shape (no_views, no_legs)
-    view_modes  = zeros(4, 4);
-    
-    for view = 1:4
-        view_speeds(view, :) = [couplant_spd, mat_1_spd(view), mat_2_spd(view), couplant_spd];
-        view_modes(view, :)  = [1, modes(view, 1), modes(view, 2), 1];
-    end
-    
-    walls = [1, 2, 1];
-    medium_ids = [0, 1, 1, 0];
-    
-    non_fw_geometries = repmat(all_geometries(where_F), num_walls, 3);
-    non_fw_geometries(:, 2) = all_geometries(~where_F);
-    
-    for wall = 1:num_walls
-        for mode = 1:4
-            view_idx = 4*(wall-1) + mode;
-            path_info = fn_path_info( ...
-                sprintf("%s %s %s", names(mode, 1), non_fw_geometries(wall, 2).name, names(mode, 2)), ...
-                sprintf("%s %s %s", names(mode, 2), non_fw_geometries(wall, 2).name, names(mode, 1)), ...
-                view_modes(mode, :), ...
-                non_fw_geometries(wall, :), ...
-                view_speeds(mode, :), ...
-                mat_speeds, ...
-                walls, ...
-                medium_ids, ...
-                densities, ...
-                probe_freq, ...
-                probe_pitch, ...
-                probe_coords ...
-            );
-            
-            Views(view_idx) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq);
+        walls = 2*ones(refl, 1);
+        medium_ids = ones(refl+1, 1);
+        
+        % Generate wall indices
+        wall_idxs1 = dec2base([0:num_walls^refl-1], num_walls);
+        wall_idxs = zeros(size(wall_idxs1));
+        for col = 1:size(wall_idxs1, 2)
+            wall_idxs(:, col) = str2num(wall_idxs1(:, col)) + 1;
+        end
+        
+        % Get the valid ones.
+        wall_idxs1 = zeros(size(wall_idxs1));
+        this_row = 1;
+        for row = 1:size(wall_idxs1, 1)
+            is_adjacent = 0;
+            for col = 1:size(wall_idxs1, 2)-1
+                if wall_idxs(row, col) == wall_idxs(row, col+1)
+                    is_adjacent = 1;
+                    break
+                end
+            end
+            if ~is_adjacent
+                wall_idxs1(this_row, :) = wall_idxs(row, :);
+                this_row = this_row+1;
+            end
+        end
+        wall_idxs1(wall_idxs1(:, 1) == 0, :) = [];
+        fw_location_in_all_geom = find(where_F);
+        wall_idxs1(wall_idxs1 >= fw_location_in_all_geom) = wall_idxs1(wall_idxs1 >= fw_location_in_all_geom)+1;
+        wall_idxs = find(where_F) * ones(size(wall_idxs, 1), size(wall_idxs, 2)+2);
+        wall_idxs(:, 2:end-1) = wall_idxs1;
+
+        view_geometries = all_geometries(wall_idxs);
+        
+        
+
+        for wall = 1:size(view_geometries, 1)
+            for view = 1:size(view_modes, 1)
+                % Get the name of this path.
+                name = sprintf("%s", names2(view_modes(view, 1)+1));
+                rev_name = sprintf("%s", names2(view_modes(view, end)+1));
+                for mode = 2:size(view_modes, 2)
+                    name = sprintf("%s %s %s", name, view_geometries(wall, mode).name, names2(view_modes(view, mode)+1));
+                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+1-mode).name, names2(view_modes(view, end+1-mode)+1));
+                end
+                
+                path_info = fn_path_info( ...
+                    name, ...
+                    rev_name, ...
+                    view_modes(view, :), ...
+                    view_geometries(wall, :).', ...
+                    view_speeds(view, :), ...
+                    mat_speeds, ...
+                    walls, ...
+                    medium_ids, ...
+                    densities, ...
+                    probe_freq, ...
+                    probe_pitch, ...
+                    probe_coords ...
+                );
+                
+                if exist("Views", "var")==0
+                    Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq), tot_num_views, 1);
+                else
+                    Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq);
+                end
+                view_el = view_el + 1;
+            end
         end
     end
     
