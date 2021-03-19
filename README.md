@@ -17,11 +17,11 @@ There are two additional folders provided:
 	* Folder for miscellaneous other files which do not contribute to this program (i.e. Python testing, etc.).
 	
 To do:
-- [ ] Update TFM back and frontwall views to make sure they still work with new geometry structures.
 - [ ] Fix multi frequency model.
 - [ ] Move away from specifying wall indices in ray weights function, so that general walls will be defined.
 	- [ ] This may require probe and scatterer definitions as walls, so find a way to make this work also.
 - [ ] Adapt code to allow for multiple types of scatterers to be simulated.
+- [x] Update TFM back and frontwall views to make sure they still work with new geometry structures.
 - [x] Go back and fix backwall views and frontwall view functions with respect to new method of calculating ray_weights.
 - [x] Create a function fn_scat_info, comparable to fn_path_info.
 - [x] Make sure that the function still works for the immersion case.
