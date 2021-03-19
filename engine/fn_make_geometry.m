@@ -109,6 +109,6 @@ for wall = 1:size(geometry, 1)
     wall_names(wall) = geometry(wall).name;
 end
 where_F = logical(count(wall_names, "F"));
-assert(sum(where_F)==1, "fn_make_geometry: too many frontwalls");
+assert(sum(where_F)<=1, "fn_make_geometry: too many frontwalls");
 
 end
