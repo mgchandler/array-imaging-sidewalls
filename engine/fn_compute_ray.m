@@ -29,14 +29,13 @@ function ray = fn_compute_ray(scat_info, path_info, varargin)
 scatterers = scat_info.image_block;
 path_geometry = path_info.path_geometry;
 speeds = path_info.speeds;
-walls = path_info.walls;
 probe_coords = path_info.probe_coords;
 [probe_els, ~] = size(probe_coords);
 [num_scatterers, ~] = size(scatterers);
 
 % Work out the number of walls, depending on whether we are in the contact
 % or immersion case.
-if walls == 0 % We are in the contact case.
+if ~isstruct(path_geometry) % We are in the contact case.
     no_walls = 0;
 else % We are in the immersion case.
     [no_walls, ~] = size(path_geometry);
@@ -56,7 +55,7 @@ for scat = 1 : num_scatterers
     for tx = 1 : probe_els
         % In the contact case, we trace directly from probe to scatterer.
         % Check whether we are dealing with contact or immersion.
-        if walls == 0 % If we are in the direct contact case.
+        if ~isstruct(path_geometry) % If we are in the direct contact case.
             
             % There is only one leg. Fermat path == straight line from
             % probe to scatterer.

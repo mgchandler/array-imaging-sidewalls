@@ -19,7 +19,7 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array)
 % Unpack path and scatterer info.
 path_info = ray.path_info;
 path_geometry = path_info.path_geometry;
-if ray.path_info.walls == 0
+if ~isstruct(path_geometry)
     no_walls = 0;
 else
     [no_walls, ~, ~] = size(path_geometry);
@@ -30,7 +30,6 @@ modes = path_info.modes;
 probe_pitch = path_info.probe_pitch;
 scat_info = ray.scat_info;
 probe_coords = path_info.probe_coords;
-walls = path_info.walls;
 medium_ids = path_info.medium_ids;
 density = path_info.densities;
 scatterers = scat_info.image_block;
@@ -53,7 +52,7 @@ ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.min_dists = zeros(probe_els, num_scatterers, no_walls+1, 4);
 
 % If we are in the direct contact case
-if ray.path_info.walls == 0
+if ~isstruct(path_geometry)
     for scat = 1 : num_scatterers
         for tx = 1 : probe_els
             
@@ -150,9 +149,9 @@ else
                 ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), inv_inc_out_angles(:, 2), flip(speeds));
                 
                 % Trans/refl
-                ray_weights.transrefl(tx, scat, freq_idx) = fn_TR_coeff(walls, medium_ids, modes, inc_out_angles(:, 1), ...
+                ray_weights.transrefl(tx, scat, freq_idx) = fn_TR_coeff(medium_ids, modes, inc_out_angles(:, 1), ...
                                                                         mat_speeds, density);
-                ray_weights.inv_transrefl(tx, scat, freq_idx) = fn_TR_coeff(flip(walls), flip(medium_ids), flip(modes), ...
+                ray_weights.inv_transrefl(tx, scat, freq_idx) = fn_TR_coeff(flip(medium_ids), flip(modes), ...
                                                                             inv_inc_out_angles(:, 1), mat_speeds, density);
 
                 % We are in skip contact or immersion case. Check which,

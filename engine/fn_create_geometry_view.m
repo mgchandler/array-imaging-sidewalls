@@ -1,4 +1,4 @@
-function view = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq)
+function view = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer)
 % Computes a single view resulting from signal reflecting from the
 % geometry, and as a result does not require two paths in the same way that
 % fn_create_view does.
@@ -21,7 +21,7 @@ function view = fn_create_geometry_view(path_info, all_geometries, probe_as_scat
 [probe_els, ~] = size(probe_as_scatterer.image_block); 
 
 % Compute the ray.
-ray = fn_compute_ray(probe_as_scatterer, path_info, all_geometries, probe_freq);
+ray = fn_compute_ray(probe_as_scatterer, path_info, all_geometries);
 
 % Initialise this view's arrays.
 view.name = path_info.name;
@@ -43,18 +43,18 @@ for t_el = 1 : probe_els
     end
 end
 
-% Get the ray weights.
-[~, ~, num_freqs] = size(ray.weights.weights);
-view.weights = zeros(probe_els^2, num_freqs);
-el = 1;
-for ii = 1 : probe_els
-    for jj = 1 : probe_els
-        view.weights(el, :) = ( ...
-            ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
-        );
-
-    el = el+1;
-    end
-end
+% % Get the ray weights.
+% [~, ~, num_freqs] = size(ray.weights.weights);
+% view.weights = zeros(probe_els^2, num_freqs);
+% el = 1;
+% for ii = 1 : probe_els
+%     for jj = 1 : probe_els
+%         view.weights(el, :) = ( ...
+%             ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
+%         );
+% 
+%     el = el+1;
+%     end
+% end
 
 end

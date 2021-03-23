@@ -25,7 +25,6 @@ view.name = sprintf('%s-%s', path1.path_info.name, reverse(path2.path_info.name)
 % Initialise variables.
 view.min_times = zeros(probe_els ^ 2, num_scatterers);
 view.probe_txrx = zeros(probe_els ^ 2, 2);
-view.scatterer_coords = zeros(num_scatterers, 3);
 view.valid_path = zeros(probe_els ^ 2, num_scatterers);
 
 % Assemble view from paths.

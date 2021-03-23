@@ -1,4 +1,4 @@
-function TR = fn_TR_coeff(wall_ids, medium_ids, mode_ids, inc_angles, material_speeds, densities)
+function TR = fn_TR_coeff(medium_ids, mode_ids, inc_angles, material_speeds, densities)
 % Computes the overall transmission/reflection coefficient for a ray as it
 % travels from probe to scatterer. Only computes for a single ray, so this
 % function assumes that the loop over probe and scatterer is in the parent
@@ -16,7 +16,7 @@ function TR = fn_TR_coeff(wall_ids, medium_ids, mode_ids, inc_angles, material_s
 %       Identity of the mode of each leg of the ray. Each element can be
 %       treated as a logical test of whether the current mode is
 %       transverse.
-% - inc_angles : array (no_walls, 1)
+% - inc_angles : array (no_legs, 1)
 %       Incident angles on each wall for each leg of the ray (note that the
 %       last leg will not have an incident angle, so this one is omitted).
 % - material_speeds : array (3, 1)
@@ -32,7 +32,7 @@ function TR = fn_TR_coeff(wall_ids, medium_ids, mode_ids, inc_angles, material_s
 % - TR : complex
 %       The total calculated transmission/reflection coefficient.
 
-no_walls = size(wall_ids);
+no_walls = size(inc_angles, 1) - 1;
 
 TR = 1.0;
 

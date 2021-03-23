@@ -39,8 +39,6 @@ function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds
 
 [probe_els, ~] = size(probe_coords);
 
-assert(or(max_no_refl==1, max_no_refl==2), "fn_make_geometry_views: max number of reflections should be >1.")
-
 % Set up variables required for calculations.
 probe_as_scatterer.image_block = probe_coords;
 probe_as_scatterer.x_shape = 1;
@@ -48,8 +46,6 @@ probe_as_scatterer.z_shape = 1;
 probe_as_scatterer.type = "image";
 
 couplant_spd = mat_speeds(1);
-mat_long_spd = mat_speeds(2);
-mat_shear_spd = mat_speeds(3);
 
 num_walls = size(all_geometries, 1);
 
@@ -58,18 +54,15 @@ for wall = 1:size(all_geometries, 1)
     wall_names(wall) = all_geometries(wall).name;
 end
 
-mat_1_spd = [mat_long_spd, mat_long_spd, mat_shear_spd, mat_shear_spd];
-mat_2_spd = [mat_long_spd, mat_shear_spd, mat_long_spd, mat_shear_spd];
-modes = [[0, 0]; [0, 1]; [1, 0]; [1, 1]];
-names = [["L", "L"]; ["L", "T"]; ["T", "L"]; ["T", "T"]];
-names2 = ["L", "T"];
+names = ["L", "T"];
 
 if ~ismember("F", wall_names)
 %% If we are in contact.
-    tot_num_views = ( ...
-        (1 <= max_no_refl) * 2^2 * num_walls + ...
-        (2 <= max_no_refl) * 2^3 * num_walls*(num_walls - 1) ...
-    );
+    tot_num_views = 0;
+    for refl = 1:max_no_refl
+        tot_num_views = tot_num_views + ...
+            2^(refl + 1) * num_walls * (num_walls - 1)^(refl - 1);
+    end
     
     view_el = 1;
     for refl = 1:max_no_refl
@@ -82,7 +75,6 @@ if ~ismember("F", wall_names)
         end
         view_speeds = mat_speeds(view_modes+2);
 
-        walls = 2*ones(refl, 1);
         medium_ids = ones(refl+1, 1);
         
         % Generate wall indices
@@ -115,11 +107,11 @@ if ~ismember("F", wall_names)
         for wall = 1:size(view_geometries, 1)
             for view = 1:size(view_modes, 1)
                 % Get the name of this path.
-                name = sprintf("%s", names2(view_modes(view, 1)+1));
-                rev_name = sprintf("%s", names2(view_modes(view, end)+1));
+                name = sprintf("%s", names(view_modes(view, 1)+1));
+                rev_name = sprintf("%s", names(view_modes(view, end)+1));
                 for mode = 2:size(view_modes, 2)
-                    name = sprintf("%s %s %s", name, view_geometries(wall, mode-1).name, names2(view_modes(view, mode)+1));
-                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+2-mode).name, names2(view_modes(view, end+1-mode)+1));
+                    name = sprintf("%s %s %s", name, view_geometries(wall, mode-1).name, names(view_modes(view, mode)+1));
+                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+2-mode).name, names(view_modes(view, end+1-mode)+1));
                 end
                 
                 path_info = fn_path_info( ...
@@ -129,7 +121,6 @@ if ~ismember("F", wall_names)
                     view_geometries(wall, :).', ...
                     view_speeds(view, :), ...
                     mat_speeds, ...
-                    walls, ...
                     medium_ids, ...
                     densities, ...
                     probe_freq, ...
@@ -138,9 +129,9 @@ if ~ismember("F", wall_names)
                 );
                 
                 if exist("Views", "var")==0
-                    Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq), tot_num_views, 1);
+                    Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer), tot_num_views, 1);
                 else
-                    Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq);
+                    Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer);
                 end
                 view_el = view_el + 1;
             end
@@ -151,6 +142,8 @@ else
 %% If we are in immersion.
     
     where_F = logical(wall_names=="F");
+    
+    assert(max_no_refl <= 2, "fn_make_geometry_views: for immersion, max number of geometry reflections must be <= 2.")
     
     num_walls = num_walls - 1;
     tot_num_views = ( ...
@@ -210,11 +203,11 @@ else
         for wall = 1:size(view_geometries, 1)
             for view = 1:size(view_modes, 1)
                 % Get the name of this path.
-                name = sprintf("%s", names2(view_modes(view, 1)+1));
-                rev_name = sprintf("%s", names2(view_modes(view, end)+1));
+                name = sprintf("%s", names(view_modes(view, 1)+1));
+                rev_name = sprintf("%s", names(view_modes(view, end)+1));
                 for mode = 2:size(view_modes, 2)
-                    name = sprintf("%s %s %s", name, view_geometries(wall, mode).name, names2(view_modes(view, mode)+1));
-                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+1-mode).name, names2(view_modes(view, end+1-mode)+1));
+                    name = sprintf("%s %s %s", name, view_geometries(wall, mode).name, names(view_modes(view, mode)+1));
+                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+1-mode).name, names(view_modes(view, end+1-mode)+1));
                 end
                 
                 path_info = fn_path_info( ...
@@ -233,9 +226,9 @@ else
                 );
                 
                 if exist("Views", "var")==0
-                    Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq), tot_num_views, 1);
+                    Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer), tot_num_views, 1);
                 else
-                    Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer, probe_freq);
+                    Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer);
                 end
                 view_el = view_el + 1;
             end
@@ -250,5 +243,24 @@ for view = 1:size(Views, 1)
 end
 
 Views(~valid_view) = [];
+
+% Get weights of valid views only.
+
+for view = 1:size(Views, 1)
+    Views(view).ray.weights = fn_compute_ray_weights(Views(view).ray, probe_freq);
+    ray = Views(view).ray;
+    [~, ~, num_freqs] = size(ray.weights.weights);
+    Views(view).weights = zeros(probe_els^2, num_freqs);
+    el = 1;
+    for ii = 1 : probe_els
+        for jj = 1 : probe_els
+            Views(view).weights(el, :) = ( ...
+                ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
+            );
+
+        el = el+1;
+        end
+    end
+end
     
 end
