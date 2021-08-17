@@ -39,7 +39,6 @@ for leg = 1:no_legs
     % can treat `current` as the origin, so simply take the -ve of the
     % ray direction.
     if leg ~= no_legs
-        basis = path_geometry(leg).basis;
         dist = reshape(-dists(leg, 1:3), 3, 1);
         cart_inc = linsolve(path_geometry(leg).basis, dist);
     else

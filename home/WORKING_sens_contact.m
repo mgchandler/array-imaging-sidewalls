@@ -26,14 +26,14 @@ new_options.scat_info = fn_scat_info( ...
     [[32.5e-3, 0.0, 27.5e-3]], ...
     'ang_pts_over_2pi', 120 ...
 );
-new_options.material_params.couplant_speed = 1490.0;
-new_options.material_params.couplant_density = 1000.0;
+new_options.material_params.couplant_speed = 340.0;
+new_options.material_params.couplant_density = 1.2;
 new_options.material_params.solid_long_speed = 6320.0;
 new_options.material_params.solid_shear_speed = 3130.0;
 new_options.material_params.solid_density = 2700;
 % new_options.probe_standoff = 10e-3;
-new_options.max_no_reflections = 1;
-new_options.model_geometry = 1;
+new_options.max_no_reflections = 0;
+new_options.model_geometry = 0;
 new_options.wall_for_imaging = "S2";
 model_options = fn_default_model_options(new_options);
 
@@ -46,7 +46,7 @@ profile -memory on -historysize 25000000
 % Run sensitivity                                                         %
 % ---------------------------------------------------------------------- %%
 
-fn_sens(model_options);
+% fn_sens(model_options);
 
 
 
@@ -77,7 +77,7 @@ fn_sens(model_options);
 % new_options.savename = sprintf('TFM SDH Immersion Backwall Signal Testing');
 % model_options = fn_default_model_options(new_options);
 % 
-% fn_tfm(model_options);
+fn_tfm(model_options);
 
 
 

@@ -16,7 +16,7 @@ function directivity = fn_sinc_directivity(theta, el_width, lambda)
 % OUTPUTS : complex
 %       Directivity.
 
-directivity = sinc((el_width/lambda) * sin(theta));
-% directivity = el_width * sinc((el_width/(2*lambda)) * sin(theta));
+% directivity = sinc((el_width/lambda) * sin(theta));
+directivity = sinc((el_width/(lambda)) * sin(theta));
 
 end

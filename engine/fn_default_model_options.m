@@ -82,6 +82,10 @@ function model_options = fn_default_model_options(varargin)
 %           When max_no_reflections > 1 and there is more than one wall,
 %           imaged views will include reflections from the wall with name
 %           equal to this string value.
+%       - FMC_data : struct : DEFAULT none
+%           If FMC data generated externally, it can be passed in using
+%           this option. The simulation will be skipped and the program
+%           will proceed straight to the TFM.
 %
 % OUTPUTS:
 % - model_options : struct (1, 1)
@@ -126,6 +130,8 @@ model_options.max_no_reflections = 0;
 model_options.model_geometry = 0;
 model_options.wall_for_imaging = 'B1';
 
+model_options.FMC_data = 0;
+
 if nargin == 1
     new_options = varargin{1};
     option_fieldnames = fieldnames(new_options);
@@ -144,6 +150,16 @@ end
 
 if model_options.max_no_reflections > size(model_options.geometry, 1)
     error('fn_default_model_options: too many reflections for walls provided')
+end
+
+if isstruct(model_options.FMC_data)
+    if ~and(isfield(model_options.FMC_data, 'time'), isfield(model_options.FMC_data, 'data'))
+        error('fn_default_model_options: FMC_data field requires both time and data fields.')
+    elseif size(model_options.FMC_data.time, 1) ~= size(model_options.FMC_data.data, 1)
+        error('fn_default_model_options: FMC_data field requires both time and data fields be same size.')
+    end
+elseif model_options.FMC_data ~= 0
+    error('fn_default_model_options: FMC_data must be zero or struct.')
 end
 
 end

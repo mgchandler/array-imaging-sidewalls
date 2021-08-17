@@ -215,8 +215,10 @@ if is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
-                        sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
-                        sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+...%                         sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
+...%                         sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+                        sprintf("%s %s", mode1_name, mode2_name), ...
+                        sprintf("%s %s", mode2_name, mode1_name), ...
                         [mode1, mode2], ...
                         path_geometry, ...
                         [speeds(mode1+1), speeds(mode2+1)], ...
@@ -284,8 +286,10 @@ elseif ~is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
-                        sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
-                        sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
+...%                         sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
+...%                         sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
+                        sprintf("%s %s", mode1_name, mode2_name), ...
+                        sprintf("%s %s", mode2_name, mode1_name), ...
                         [0, mode1, mode2], ...
                         path_geometry, ...
                         [couplant_speed, speeds(mode1+1), speeds(mode2+1)], ...
@@ -370,8 +374,8 @@ if Number_of_ims == 3
     im_width = 450;
     im_height = 240;
 elseif Number_of_ims == 21
-    plot_x = 7;
-    plot_z = 3;
+    plot_x = 3;
+    plot_z = 7;
     im_width = 1280;
     im_height = 670;
 elseif Number_of_ims == 55
@@ -433,91 +437,15 @@ clear xmin xmax zmin zmax scatterer_coords sens_i sens_k
 
 tic;
 
-grid_pt = 0;
-for xpt_im = 1:xpts+1
-    for zpt_im = 1:zpts+1
-        grid_pt = grid_pt + 1;
-
 % ----------------------------------------------------------------------- %
 % Simulation Step                                                         %
 % ----------------------------------------------------------------------- %
 
-        for view = 1 : Number_of_ims
-            weights = Views(view).weights(:, grid_pt, 1);
-            scat_amp = Views(view).scat_amps(:, grid_pt, 1);
-            valid_path = Views(view).valid_path(:, grid_pt);
-            in_geometry = are_points_in_geometry(grid_pt);
-            amp = conj(scat_amp .* weights .* valid_path * in_geometry);
-            out_freq_spec = fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, grid_pt), amp, 0);
-            
-            clear weights scat_amp amp
-
-            % Convert back to time.
-            [FMC_time, FMC_time_data] = fn_convert_spectrum_to_time(freq, out_freq_spec, fft_pts, time_pts);
-            FMC_time = FMC_time';
-            
-            clear out_freq_spec
-
-            % Hilbert Filtering (?) from fast_DAS function
-            diagonals = spdiags([1:length(FMC_time)]' < length(FMC_time)/2, 0, length(FMC_time), length(FMC_time));
-            FMC_time_data = ifft(diagonals * fft(FMC_time_data));
-            
-            clear diagonals
-        
-% ----------------------------------------------------------------------- %
-% Imaging Step                                                            %
-% ----------------------------------------------------------------------- %
-            
-            if boxsize == 0
-                tau = reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]);
-                Im = (sum(diag(interp1(FMC_time, FMC_time_data, tau(:, zpt_im, xpt_im), 'linear', 0))) ...
-                );
-            else
-                tau = repmat(reshape(Views(view).min_times, [probe_els^2, zpts+1, xpts+1]),1,3,3);
-                Im = zeros(boxsize*2+1);
-                for s_i = sens_i_min(xpt_im):sens_i_max(xpt_im)
-                    for s_k = sens_k_min(zpt_im):sens_k_max(zpt_im)
-                        Im(s_k-sens_k_min(zpt_im)+1, s_i-sens_i_min(xpt_im)+1) = ( ...
-                            sum(diag(interp1(FMC_time, FMC_time_data, tau(:, s_k, s_i), 'linear', 0))) ...
-                        );
-                    end
-                end
-            end
-             
-            Sens(view).image(zpt_im, xpt_im) = max(Im, [], 'all');
-            
-            clear tau
-
-        end
-        
-%% ---------------------------------------------------------------------- %
-% Estimate Loop Runtime                                                   %
-% ---------------------------------------------------------------------- %%
-
-        if and(xpt_im == 1, zpt_im == 1)
-            timing = double(toc);
-            fprintf('    One loop performed in %.1f secs\n', timing);
-            est_runtime = timing * xsize * zsize / (PIXEL^2);
-            if est_runtime < 60
-                fprintf('    Estimated runtime is %.1f secs\n', est_runtime);
-            elseif (est_runtime / 60) < 60
-                fprintf('    Estimated runtime is %.1f mins\n', est_runtime/60);
-            else
-                fprintf('    Estimated runtime is %.2f hrs\n', est_runtime/3600);
-            end
-        elseif and(xpt_im == round((xpts+1)/2), zpt_im == 1)
-            timing = double(toc);
-            est_runtime = timing * 2;
-            if est_runtime < 60
-                fprintf('    Updated est runtime is %.1f secs\n', est_runtime);
-            elseif (est_runtime / 60) < 60
-                fprintf('    Updated est runtime is %.1f mins\n', est_runtime/60);
-            else
-                fprintf('    Updated est runtime is %.2f hrs\n', est_runtime/3600);
-            end
-        end
-
-    end
+for view = 1 : Number_of_ims
+    weights = Views(view).weights;
+    scat_amp = Views(view).scat_amps;
+    valid_path = Views(view).valid_path;
+    Sens(view).image = reshape(sum(conj(scat_amp .* weights .* valid_path .* are_points_in_geometry'), 1)/size(weights, 1), zpts+1, xpts+1);
 end
 
 time_3 = double(toc);
@@ -548,12 +476,14 @@ end
 
 % Plot.
 fig = figure(1);
-ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
+% ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
 if image_block_info.type == "crack"
     sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
 end
+t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
 for im = 1:Number_of_ims
-    ax(im) = subplot(plot_z, plot_x, im);
+    h(im) = nexttile;
+%     ax(im) = subplot(plot_z, plot_x, im);
     imagesc(x*UC, z*UC, Sens(im).db_image);
     hold on
     title(Sens(im).name)
@@ -562,24 +492,22 @@ for im = 1:Number_of_ims
     for wall = 1:size(geometry, 1)
         plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
     end
+    
+    if mod(im, plot_x) ~= 1
+        set(gca, 'yticklabel', {[]})
+    end
+    if im <= Number_of_ims - plot_x
+        set(gca, 'xticklabel', {[]})
+    end
+    
     axis equal; axis tight;
 end
+xlabel(t, 'x (mm)')
+ylabel(t, 'z (mm)')
 
-% Resize image and move for colorbar
-set(fig, 'Position', [20, 20, im_width, im_height])
-posa = cell2mat(get(ax, 'Position'));
-h = colorbar;
-set(ax(im), 'Position', posa(im, :))
-set(ax, 'units', 'pix')
-set(h, 'units', 'pix')
-posf = get(fig, 'Position'); % gives x left, y bottom, width, height
-set(fig, 'Position',  [posf(1:2) posf(3)*1.1 posf(4)])
-hpos = h.Position;
-posa = cell2mat(get(ax, 'Position'));
-pos1 = posa(1, :);
-set(h, 'Position', [hpos(1)+10, hpos(2), hpos(3)*2, pos1(2)-hpos(2)+pos1(4)])
-
-h.Label.String = 'dB';
+c = colorbar(h(1), 'AxisLocation','in');
+c.Layout.Tile = 'north';
+c.Label.String = 'dB';
 
 
 
