@@ -70,6 +70,7 @@ solid_density = model_options.material_params.solid_density;
 max_num_reflections = model_options.max_no_reflections;
 model_geometry = model_options.model_geometry;
 multi_freq = model_options.multi_freq;
+norm_to = model_options.norm_to;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
@@ -320,7 +321,7 @@ end
 
 time_1 = double(toc);
 
-fprintf('Setup time %.2f secs.\n', time_1);
+fn_print_time('Setup', time_1)
 
 clear max_num_reflections no_walls mode_names speeds num_reflections_in_path
 clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
@@ -377,8 +378,8 @@ if ~isstruct(model_options.FMC_data)
     end
 
     time_2 = double(toc);
-
-    fprintf('Rays traced in %.2f secs.\n', time_2);
+    
+    fn_print_time('Rays traced', time_2)
 
     clear probe_angle probe_frequency el_length couplant_speed couplant_density
     clear solid_long_speed solid_shear_speed solid_density
@@ -411,7 +412,7 @@ if ~isstruct(model_options.FMC_data)
     if model_geometry
         [num_geom_views, ~] = size(backwall_views);
         for view = 1 : num_geom_views
-            bw_amp = conj(backwall_views(view).weights .* backwall_views(view).valid_paths);
+            bw_amp = conj(backwall_views(view).weights .* backwall_views(view).valid_path);
             out_freq_spec = out_freq_spec + ...
                 fn_propagate_spectrum_mc(freq, in_freq_spec, backwall_views(view).min_times, bw_amp, 0);
         end
@@ -426,14 +427,17 @@ if ~isstruct(model_options.FMC_data)
     diagonals = spdiags([1:length(FMC_time)]' < length(FMC_time)/2, 0, length(FMC_time), length(FMC_time));
     FMC_time_data = ifft(diagonals * fft(FMC_time_data));
     
-    figure(2)
-    imagesc(linspace(0, max_t, time_pts)*10^6, [1:32], abs(FMC_time_data(:, 1:32))')
+    plot_time = linspace(0, max_t, time_pts)*10^6;
+    figure(3)
+    imagesc(plot_time, [1:1024], abs(FMC_time_data)')
     xlabel('Time (us)')
     ylabel('tx-rx Index')
+    xsize = xmax - xmin;
+    zsize = zmax - zmin;
 
     time_3 = double(toc);
-
-    fprintf('Simulated in in %.2f secs\n', time_3);
+    
+    fn_print_time('Simulated', time_3)
 
     clear model_geometry time_pts freq in_freq_spec fft_pts out_freq_spec
     clear num_scatterers scatterer view diagonals
@@ -451,7 +455,9 @@ else
     FMC_time_data = model_options.FMC_data.data;
     
     figure(2)
-    imagesc(FMC_time(1251:11251)*10^6, [1:1024], abs(FMC_time_data(1251:11251, :))')
+    FMC_for_plotting = abs(FMC_time_data');
+    FMC_for_plotting(:, 1:751) = 0;
+    imagesc(FMC_time(251:end)*10^6, [1:32], FMC_for_plotting)
     xlabel('Time (us)')
     ylabel('tx-rx Index')
 end
@@ -520,18 +526,12 @@ Number_of_ims = size(Views_im, 1);
 if Number_of_ims == 3
     plot_x = 3;
     plot_z = 1;
-    im_width = 450;
-    im_height = 240;
 elseif Number_of_ims == 21
     plot_x = 3;
     plot_z = 7;
-    im_width = 1280;
-    im_height = 670;
 elseif Number_of_ims == 55
     plot_x = 11;
     plot_z = 5;
-    im_width = 1280;
-    im_height = 670;
 else
     error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
 end
@@ -561,7 +561,7 @@ end
 
 time_4 = double(toc);
 
-fprintf('Imaged in %.2f secs\n', time_4);
+fn_print_time('Imaged', time_4)
 
 clear FMC_time FMC_time_data xpts zpts are_points_in_geometry tr_pair view tau
 
@@ -573,11 +573,15 @@ clear FMC_time FMC_time_data xpts zpts are_points_in_geometry tr_pair view tau
 
 tic
 
-max_ = 0;
-for view = 1 : Number_of_ims
-    if max(abs(Ims(view).image(:))) > max_
-        max_ = max(abs(Ims(view).image(:)));
+if norm_to == 0
+    max_ = 0;
+    for view = 1 : Number_of_ims
+        if max(abs(Ims(view).image(:))) > max_
+            max_ = max(abs(Ims(view).image(:)));
+        end
     end
+else
+    max_ = norm_to;
 end
 
 for view = 1 : Number_of_ims
@@ -602,7 +606,7 @@ for im = 1:Number_of_ims
     end
     for s = 1 : size(scat_info.image_block, 1)
         if scat_info.type ~= 'image'
-            rectangle('Position', [scat_info.image_block(s, 1)*UC - 2.5, scat_info.image_block(s, 3)*UC - 2.5, 5, 5], 'EdgeColor', 'r');
+            rectangle('Position', [scat_info.image_block(s, 1)*UC - 1, scat_info.image_block(s, 3)*UC - 1, 2, 2], 'EdgeColor', 'r');
         end
     end
     
@@ -644,7 +648,7 @@ c.Label.String = 'dB';
 
 time_5 = double(toc);
 
-fprintf('Plotted in %.2f secs\n', time_5);
+fn_print_time('Plotted', time_5)
 
 if isstruct(model_options.FMC_data)
     times = [time_1];
@@ -659,11 +663,11 @@ if savepath ~= ""
     filename_fig = sprintf('%s.fig', savename);
     filename_mat = sprintf('%s.mat', savename);
     savefig(filename_fig)
-    if exist('Views')
-        save(filename_mat, 'times', 'Ims', 'Views')
-    else
-        save(filename_mat, 'times', 'Ims')
-    end
+%     if exist('Views')
+%         save(filename_mat, 'times', 'Ims', 'Views')
+%     else
+    save(filename_mat, 'times', 'Ims')
+%     end
 end
 % close all
 

@@ -27,7 +27,7 @@ ray = fn_compute_ray(probe_as_scatterer, path_info, all_geometries);
 view.name = path_info.name;
 view.min_times = zeros(probe_els ^ 2, 1);
 view.probe_txrx = zeros(probe_els ^ 2, 2);
-view.valid_paths = zeros(probe_els ^ 2, 1);
+view.valid_path = zeros(probe_els ^ 2, 1);
 view.ray = ray;
 
 el = 1;
@@ -37,7 +37,7 @@ for t_el = 1 : probe_els
 
         view.min_times(el, 1) = ray.min_times(t_el, r_el);
         view.probe_txrx(el, :) = [t_el, r_el];
-        view.valid_paths(el) = ray.valid_paths(t_el) .* ray.valid_paths(r_el);
+        view.valid_path(el) = ray.valid_paths(t_el) .* ray.valid_paths(r_el);
 
         el = el+1;
     end

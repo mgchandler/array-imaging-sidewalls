@@ -29,6 +29,9 @@ scat_info = path1.scat_info;
 
 scat_amps = zeros(probe_els^2, num_scatterers, num_freqs);
 
+theta = linspace(-pi, pi, size(scat_info.matrix(1).matr, 1));
+[T1, T2] = meshgrid(theta, theta);
+
 el = 1;
 for tx = 1 : probe_els
     for rx = 1 : probe_els
@@ -58,6 +61,7 @@ for tx = 1 : probe_els
                         scat_matrix = scat_info.matrix(inc_mode*2 + out_mode + 1).matr;
                         
                         scat_amps(el, scat, freq) = fn_scattering_bilinear_interp(scat_matrix, inc_angle_on_scat, out_angle_on_scat);
+%                         scat_amps(el, scat, freq) = interp2(T1, T2, scat_matrix, inc_angle_on_scat, out_angle_on_scat, 'linear');
 
                     else % Matrices have not been found, instead compute using function.
                         inc_mode = path1_info.modes(end);

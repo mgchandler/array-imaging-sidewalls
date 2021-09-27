@@ -50,6 +50,10 @@ if ~inc_mode % If incident mode is longitudinal.
     if ~out_mode % If outgoing mode is longitudinal.
         C_n_2_alpha = C_n_i(n, 2, alpha, beta);
         D_n_2_alpha = D_n_i(n, 2, alpha);
+        
+        a = 1i / (2*alpha);
+        numer = C_n_2_alpha .* C_n_1_beta - D_n_2_alpha .* D_n_1_beta;
+        denom = C_n_1_alpha .* C_n_1_beta - D_n_1_alpha .* D_n_1_beta;
 
         A_n_L = 1i / (2 * alpha) * ( ...
             1 + (C_n_2_alpha .* C_n_1_beta - D_n_2_alpha .* D_n_1_beta) ./ ...

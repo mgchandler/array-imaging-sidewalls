@@ -18,9 +18,10 @@ There are two additional folders provided:
 	
 To do:
 - [ ] Fix multi frequency model.
-- [ ] Move away from specifying wall indices in ray weights function, so that general walls will be defined.
-	- [ ] This may require probe and scatterer definitions as walls, so find a way to make this work also.
 - [ ] Adapt code to allow for multiple types of scatterers to be simulated at once.
+- [x] Move away from specifying wall indices in ray weights function, so that general walls will be defined.
+	- [ ] This may require probe and scatterer definitions as walls, so find a way to make this work also.
+- [x] Align sensitivity with arim to improve runtime.
 - [x] Update TFM back and frontwall views to make sure they still work with new geometry structures.
 - [x] Go back and fix backwall views and frontwall view functions with respect to new method of calculating ray_weights.
 - [x] Create a function fn_scat_info, comparable to fn_path_info.

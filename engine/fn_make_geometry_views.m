@@ -239,7 +239,7 @@ end
 
 valid_view = zeros(size(Views));
 for view = 1:size(Views, 1)
-    valid_view(view) = any(Views(view).valid_paths);
+    valid_view(view) = any(Views(view).valid_path);
 end
 
 Views(~valid_view) = [];

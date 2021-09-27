@@ -69,10 +69,7 @@ savename = model_options.savename;
 geometry = model_options.geometry;
 max_num_reflections = model_options.max_no_reflections;
 wall_for_imaging = model_options.wall_for_imaging;
-
-% Additional parameters not directly dependent on inputs.
-oversampling = 10;
-no_cycles = 5;
+norm_to = model_options.norm_to;
 
 no_walls = size(geometry, 1);
 
@@ -117,23 +114,6 @@ probe_coords = probe_coords.' * rot_matrix;
 probe_coords(:, 3) = probe_coords(:, 3) - probe_standoff - 1e-5;
 
 clear probe_angle rot_matrix
-
-
-
-%% ---------------------------------------------------------------------- %
-% Input signal                                                            %
-% ---------------------------------------------------------------------- %%
-
-% Create input signal.
-time_step = 1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
-max_t = 1.1 * 4 * (sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed));
-if probe_standoff ~= 0
-    max_t = max_t + sqrt(probe_standoff^2 + (el_length*probe_els)^2) / couplant_speed;
-end            
-time_pts = ceil(max_t / time_step);
-[~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
-
-clear probe_standoff oversampling no_cycles time_step max_t
 
 
 
@@ -312,7 +292,7 @@ end
 
 time_1 = double(toc);
 
-fprintf('Setup time %.2f secs.\n', time_1);
+fn_print_time('Setup', time_1)
 
 clear el_length couplant_speed couplant_density solid_long_speed solid_shear_speed solid_density
 clear max_num_reflections no_walls is_contact mode_names speeds mode mode_name wall mode1 mode2
@@ -356,7 +336,6 @@ end
 
 % Reuse imaging paths for 
 image_block_info.image_block = image_block;
-scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
 
 % Compute Imaging Paths
 Paths = repmat(fn_compute_ray(image_block_info, Path_info_list(1), geometry, probe_frequency), 1, num_paths);
@@ -371,18 +350,12 @@ Number_of_ims = size(Views, 1);
 if Number_of_ims == 3
     plot_x = 3;
     plot_z = 1;
-    im_width = 450;
-    im_height = 240;
 elseif Number_of_ims == 21
     plot_x = 3;
     plot_z = 7;
-    im_width = 1280;
-    im_height = 670;
 elseif Number_of_ims == 55
     plot_x = 11;
     plot_z = 5;
-    im_width = 1280;
-    im_height = 670;
 else
     error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
 end
@@ -394,7 +367,7 @@ end
 
 time_2 = double(toc);
 
-fprintf('Rays traced in %.2f secs.\n', time_2);
+fn_print_time('Rays traced', time_2)
 
 clear Paths
 
@@ -417,17 +390,8 @@ are_points_in_geometry = (image_block(:,1) >= xmin) .* ...
                          (image_block(:,1) <= xmax) .* ...
                          (image_block(:,3) >= zmin) .* ...
                          (image_block(:,3) < zmax);
-                     
-% Set up sens_i and sens_k indices for referencing when setting values of
-% the Sens image.
-sens_i = [1:xpts+1]+xpts+1;
-sens_k = [1:zpts+1]+zpts+1;
-sens_i_min = sens_i-boxsize;
-sens_i_max = sens_i+boxsize;
-sens_k_min = sens_k-boxsize;
-sens_k_max = sens_k+boxsize;
 
-clear xmin xmax zmin zmax scatterer_coords sens_i sens_k
+clear xmin xmax zmin zmax scatterer_coords
 
 
 
@@ -450,7 +414,7 @@ end
 
 time_3 = double(toc);
 
-fprintf('Finished Sensitivity Loop in %.2f secs\n', time_3);
+fn_print_time('Finished Sensitivity Loop', time_3)
 
 clear PIXEL probe_els boxsize xsize zsize time_pts freq in_freq_spec fft_pts
 clear xpts zpts are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max
@@ -463,11 +427,15 @@ clear grid_pt xpt_im zpt_im view FMC_time FMC_time_data
 % ---------------------------------------------------------------------- %%
 tic;
 
-max_ = 0;
-for view = 1 : Number_of_ims
-    if max(abs(Sens(view).image(:))) > max_
-        max_ = max(abs(Sens(view).image(:)));
+if norm_to == 0
+    max_ = 0;
+    for view = 1 : Number_of_ims
+        if max(abs(Sens(view).image(:))) > max_
+            max_ = max(abs(Sens(view).image(:)));
+        end
     end
+else
+    max_ = norm_to;
 end
 
 for view = 1 : Number_of_ims
@@ -513,7 +481,7 @@ c.Label.String = 'dB';
 
 time_4 = double(toc);
 
-fprintf('Plotted in %.2f secs\n', time_4);
+fn_print_time('Plotted', time_4)
 
 times = [time_1, time_2, time_3, time_4];
 
@@ -524,7 +492,7 @@ if savepath ~= ""
     filename_fig = sprintf('%s.fig', savename);
     filename_mat = sprintf('%s.mat', savename);
     savefig(filename_fig)
-    save(filename_mat, 'times', 'Sens', 'Views', 'image_block_info')
+    save(filename_mat, 'times', 'Sens', 'image_block_info')
 end
 % close all
 
