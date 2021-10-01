@@ -32,13 +32,13 @@ else
     theta = (inc_angle + 2*pi)';
 end
 
-alpha = 2 * pi * sdh_radius / lambda_L;
-beta = 2 * pi * sdh_radius / lambda_T;
+alpha = 2 * pi * sdh_radius ./ lambda_L;
+beta = 2 * pi * sdh_radius ./ lambda_T;
 
-N = 4*ceil(alpha); % Brind and Achenbach recommended truncation for 10E-6 relative accuracy.
-n = [0:N-1];
+N = max([10, ceil(4*alpha), ceil(4*beta)]); % Brind and Achenbach recommended truncation for 10E-6 relative accuracy.
+n = [0:N];
 
-epsilon_n = [1, 2*ones(1, N-1)]; % (2 - δ_0n)
+epsilon_n = [1, 2*ones(1, N)]; % (2 - δ_0n)
 
 C_n_1_alpha = C_n_i(n, 1, alpha, beta);
 C_n_1_beta = C_n_i(n, 1, beta, beta);

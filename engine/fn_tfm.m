@@ -127,8 +127,8 @@ clear rot_matrix
 % -------------------------------------------------------------------------
 
 % Create input signal.
-time_step = 1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
-max_t = 1.1 * 4 * sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed);
+time_step = 5e-8;%1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
+max_t = 3e-5;%1.1 * 4 * sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed);
 if probe_standoff ~= 0
     max_t = max_t + sqrt(probe_standoff^2 + (el_length*probe_els)^2) / couplant_speed;
 end  
@@ -210,10 +210,10 @@ if is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
-...%                         sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
-...%                         sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
-                        sprintf("%s %s", mode1_name, mode2_name), ...
-                        sprintf("%s %s", mode2_name, mode1_name), ...
+                        sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
+                        sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+...%                         sprintf("%s %s", mode1_name, mode2_name), ...
+...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [mode1, mode2], ...
                         path_geometry, ...
                         [speeds(mode1+1), speeds(mode2+1)], ...
@@ -292,10 +292,10 @@ elseif ~is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
-...%                         sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
-...%                         sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
-                        sprintf("%s %s", mode1_name, mode2_name), ...
-                        sprintf("%s %s", mode2_name, mode1_name), ...
+                        sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
+                        sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
+...%                         sprintf("%s %s", mode1_name, mode2_name), ...
+...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [0, mode1, mode2], ...
                         path_geometry, ...
                         [couplant_speed, speeds(mode1+1), speeds(mode2+1)], ...
@@ -339,9 +339,25 @@ if ~isstruct(model_options.FMC_data)
     tic;
 
     % Compute Imaging Paths
-    Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, probe_frequency), 1, num_paths);
-    for path = 2:num_paths
-        Paths(path) = fn_compute_ray(scat_info, Path_info_list(path), geometry, probe_frequency);
+    if multi_freq
+        frequency = freq(2:end);
+    else
+        frequency = probe_frequency;
+    end
+    Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
+    path = 1;
+    ii = 1;
+    while path < num_paths
+        ii = ii + 1;
+        if length(Path_info_list(ii).speeds) > 1
+            if wall_for_imaging == Path_info_list(ii).path_geometry.name
+                path = path + 1;
+                Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+            end
+        else % Must be direct
+            path = path+1;
+            Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+        end
     end
 
     % Create views from these paths.
@@ -604,11 +620,11 @@ for im = 1:Number_of_ims
     for wall = 1:size(geometry, 1)
         plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
     end
-    for s = 1 : size(scat_info.image_block, 1)
-        if scat_info.type ~= 'image'
-            rectangle('Position', [scat_info.image_block(s, 1)*UC - 1, scat_info.image_block(s, 3)*UC - 1, 2, 2], 'EdgeColor', 'r');
-        end
-    end
+%     for s = 1 : size(scat_info.image_block, 1)
+%         if scat_info.type ~= 'image'
+%             rectangle('Position', [scat_info.image_block(s, 1)*UC - 1, scat_info.image_block(s, 3)*UC - 1, 2, 2], 'EdgeColor', 'r');
+%         end
+%     end
     
     if mod(im, plot_x) ~= 1
         set(gca, 'yticklabel', {[]})
