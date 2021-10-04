@@ -169,4 +169,8 @@ elseif model_options.FMC_data ~= 0
     error('fn_default_model_options: FMC_data must be zero or struct.')
 end
 
+if model_options.el_length > model_options.probe_pitch
+    error('fn_default_model_options: Element length must not exceed element pitch.')
+end
+
 end

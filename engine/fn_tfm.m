@@ -61,7 +61,7 @@ wall_for_imaging = model_options.wall_for_imaging;
 probe_angle = model_options.probe_angle;
 probe_standoff = model_options.probe_standoff;
 probe_frequency = model_options.probe_frequency;
-el_length = model_options.el_length + PITCH;
+el_length = model_options.el_length;
 couplant_speed = model_options.material_params.couplant_speed;
 couplant_density = model_options.material_params.couplant_density;
 solid_long_speed = model_options.material_params.solid_long_speed;
@@ -102,7 +102,7 @@ zsize = zmax - zmin;
 
 UC = 1e3; % Unit conversion
 
-clear PITCH is_frontwall wall
+clear is_frontwall wall
 
 
 
@@ -113,7 +113,7 @@ clear PITCH is_frontwall wall
 rot_matrix = [cos(probe_angle) 0 sin(probe_angle); 0 1 0; -sin(probe_angle) 0 cos(probe_angle)];
 
 probe_coords = zeros(3, probe_els);
-probe_coords(1, :) = linspace(0, (probe_els - 1) * el_length, probe_els);
+probe_coords(1, :) = linspace(0, (probe_els - 1) * PITCH, probe_els);
 probe_coords(1, :) = probe_coords(1, :) - mean(probe_coords(1, :));
 probe_coords = probe_coords.' * rot_matrix;
 probe_coords(:, 3) = probe_coords(:, 3) - probe_standoff;
@@ -127,10 +127,10 @@ clear rot_matrix
 % -------------------------------------------------------------------------
 
 % Create input signal.
-time_step = 5e-8;%1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
-max_t = 3e-5;%1.1 * 4 * sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed);
+time_step = 1 / (probe_frequency * oversampling); % What is the meaning of oversampling here?
+max_t = 1.1 * 4 * sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shear_speed);
 if probe_standoff ~= 0
-    max_t = max_t + sqrt(probe_standoff^2 + (el_length*probe_els)^2) / couplant_speed;
+    max_t = max_t + sqrt(probe_standoff^2 + (PITCH*probe_els)^2) / couplant_speed;
 end  
 time_pts = ceil(max_t / time_step);
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
@@ -164,7 +164,8 @@ Path_info_list = repmat(fn_path_info( ...
     [couplant_density, solid_density], ...
     0, ...
     0, ...
-    probe_coords), ....
+    0, ...
+    probe_coords), ...
     num_paths, 1);
 
 % If we are in the contact case
@@ -188,6 +189,7 @@ if is_contact
             [1], ... % index for material identity
             [couplant_density, solid_density], ...
             probe_frequency, ...
+            PITCH, ...
             el_length, ...
             probe_coords ...
         );
@@ -221,6 +223,7 @@ if is_contact
                         [1, 1], ...
                         [couplant_density, solid_density], ...
                         probe_frequency, ...
+                        PITCH, ...
                         el_length, ...
                         probe_coords ...
                     );
@@ -265,6 +268,7 @@ elseif ~is_contact
             [0, 1], ...
             [couplant_density, solid_density], ...
             probe_frequency, ...
+            PITCH, ...
             el_length, ...
             probe_coords ...
         );
@@ -303,6 +307,7 @@ elseif ~is_contact
                         [0, 1, 1], ...
                         [couplant_density, solid_density], ...
                         probe_frequency, ...
+                        PITCH, ...
                         el_length, ...
                         probe_coords ...
                     );
@@ -352,6 +357,7 @@ if ~isstruct(model_options.FMC_data)
         if length(Path_info_list(ii).speeds) > 1
             if wall_for_imaging == Path_info_list(ii).path_geometry.name
                 path = path + 1;
+                name = Path_info_list(ii).name;
                 Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
             end
         else % Must be direct
@@ -377,7 +383,7 @@ if ~isstruct(model_options.FMC_data)
 
             backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
                 [couplant_speed solid_long_speed solid_shear_speed], ...
-                [couplant_density solid_density], probe_frequency, el_length, 1 ...
+                [couplant_density solid_density], probe_frequency, PITCH, el_length, 1 ...
             );
         end
 
@@ -387,10 +393,9 @@ if ~isstruct(model_options.FMC_data)
 
             backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
                 [couplant_speed solid_long_speed solid_shear_speed], ...
-                [couplant_density solid_density], probe_frequency, el_length, 1 ...
+                [couplant_density solid_density], probe_frequency, PITCH, el_length, 1 ...
             );
         end
-
     end
 
     time_2 = double(toc);
@@ -398,7 +403,7 @@ if ~isstruct(model_options.FMC_data)
     fn_print_time('Rays traced', time_2)
 
     clear probe_angle probe_frequency el_length couplant_speed couplant_density
-    clear solid_long_speed solid_shear_speed solid_density
+    clear solid_long_speed solid_shear_speed solid_density PITCH
 
 
 
@@ -414,6 +419,7 @@ if ~isstruct(model_options.FMC_data)
 
     for scatterer = 1 : num_scatterers
         for view = 1 : size(Views, 1)
+            name = Views(view).name;
             weights = Views(view).weights(:, scatterer, 1);
             scat_amp = Views(view).scat_amps(:, scatterer, 1);
             valid_path = Views(view).valid_path(:, scatterer);
@@ -448,6 +454,7 @@ if ~isstruct(model_options.FMC_data)
     imagesc(plot_time, [1:1024], abs(FMC_time_data)')
     xlabel('Time (us)')
     ylabel('tx-rx Index')
+    savefig(sprintf('%s_FMC.fig', savename));
     xsize = xmax - xmin;
     zsize = zmax - zmin;
 
