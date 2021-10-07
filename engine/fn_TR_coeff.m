@@ -32,7 +32,7 @@ function TR = fn_TR_coeff(medium_ids, mode_ids, inc_angles, material_speeds, den
 % - TR : complex
 %       The total calculated transmission/reflection coefficient.
 
-no_walls = size(inc_angles, 1) - 1;
+no_walls = size(inc_angles, 1);
 
 TR = 1.0;
 

@@ -88,6 +88,9 @@ function model_options = fn_default_model_options(varargin)
 %           absolute maximum intensity across all views will be used;
 %           otherwise the dB scale will be with reference to this value
 %           (i.e. 0dB => intensity = norm_to).
+%       - db_range_for_output : DEFAULT 40
+%           The range over which the TFMs will be plotted (i.e. [-db_range,
+%           0].
 %       - FMC_data : struct : DEFAULT none
 %           If FMC data generated externally, it can be passed in using
 %           this option. The simulation will be skipped and the program
@@ -136,6 +139,7 @@ model_options.max_no_reflections = 0;
 model_options.model_geometry = 0;
 model_options.wall_for_imaging = 'B1';
 model_options.norm_to = 0;
+model_options.db_range_for_output = 40;
 
 model_options.FMC_data = 0;
 

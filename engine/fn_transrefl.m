@@ -43,8 +43,8 @@ if is_transmission % Do transmission. Output material is opposite to material_in
     material_out = ~material_inc;
     if ~material_inc % If incident material is liquid. Output material must be solid.
         alpha_fluid = angle_inc;
-        alpha_l = asin(sin(alpha_fluid) * solid_long_speed / liquid_speed);
-        alpha_t = asin(sin(alpha_fluid) * solid_trans_speed / liquid_speed);
+        alpha_l = conj(asin(sin(alpha_fluid) * solid_long_speed / liquid_speed));
+        alpha_t = conj(asin(sin(alpha_fluid) * solid_trans_speed / liquid_speed));
         
         ct_cl2 = (solid_trans_speed * solid_trans_speed) / (solid_long_speed * solid_long_speed);
         cos_2_alpha_t = cos(2 * alpha_t);
@@ -77,8 +77,8 @@ if is_transmission % Do transmission. Output material is opposite to material_in
     else % Incident material must be solid. Incident mode can be longitudinal or transverse.
         if ~mode_inc % If incident mode is longitudinal
             alpha_l = angle_inc;
-            alpha_fluid = asin(sin(alpha_l) * liquid_speed / solid_long_speed);
-            alpha_t = asin(sin(alpha_l) * solid_trans_speed / solid_long_speed);
+            alpha_fluid = conj(asin(sin(alpha_l) * liquid_speed / solid_long_speed));
+            alpha_t = conj(asin(sin(alpha_l) * solid_trans_speed / solid_long_speed));
             
             ct_cl2 = (solid_trans_speed * solid_trans_speed) / (solid_long_speed * solid_long_speed);
             cos_2_alpha_t = cos(2 * alpha_t);
@@ -105,8 +105,8 @@ if is_transmission % Do transmission. Output material is opposite to material_in
             
         else % Incident mode must be transverse.
             alpha_t = angle_inc;
-            alpha_fluid = asin(sin(alpha_t) * liquid_speed / solid_trans_speed);
-            alpha_l = asin(sin(alpha_t) * solid_long_speed / solid_trans_speed);
+            alpha_fluid = conj(asin(sin(alpha_t) * liquid_speed / solid_trans_speed));
+            alpha_l = conj(asin(sin(alpha_t) * solid_long_speed / solid_trans_speed));
             
             ct_cl2 = (solid_trans_speed * solid_trans_speed) / (solid_long_speed * solid_long_speed);
             cos_2_alpha_t = cos(2 * alpha_t);
@@ -139,8 +139,8 @@ else % Do reflection. Output material is same as material_inc.
     if material_inc % If incident material is solid. Output material must be solid.
         if ~mode_inc % If incident mode is longitudinal.
             alpha_l = angle_inc;
-            alpha_fluid = asin(sin(alpha_l) * liquid_speed / solid_long_speed);
-            alpha_t = asin(sin(alpha_l) * solid_trans_speed / solid_long_speed);
+            alpha_fluid = conj(asin(sin(alpha_l) * liquid_speed / solid_long_speed));
+            alpha_t = conj(asin(sin(alpha_l) * solid_trans_speed / solid_long_speed));
 
             ct_cl2 = (solid_trans_speed * solid_trans_speed) / (solid_long_speed * solid_long_speed);
             cos_2_alpha_t = cos(2 * alpha_t);
@@ -175,8 +175,8 @@ else % Do reflection. Output material is same as material_inc.
             
         else % Incident mode must be transverse.
             alpha_t = angle_inc;
-            alpha_fluid = asin(sin(alpha_t) * liquid_speed / solid_trans_speed);
-            alpha_l = asin(sin(alpha_t) * solid_long_speed / solid_trans_speed);
+            alpha_fluid = conj(asin(sin(alpha_t) * liquid_speed / solid_trans_speed));
+            alpha_l = conj(asin(sin(alpha_t) * solid_long_speed / solid_trans_speed));
             
             ct_cl2 = (solid_trans_speed * solid_trans_speed) / (solid_long_speed * solid_long_speed);
             cos_2_alpha_t = cos(2 * alpha_t);
@@ -214,8 +214,8 @@ else % Do reflection. Output material is same as material_inc.
         % Note that this means both input and output mode must be
         % longitudinal.
         alpha_fluid = angle_inc;
-        alpha_l = asin(sin(alpha_fluid) * solid_long_speed / liquid_speed);
-        alpha_t = asin(sin(alpha_fluid) * solid_trans_speed / liquid_speed);
+        alpha_l = conj(asin(sin(alpha_fluid) * solid_long_speed / liquid_speed));
+        alpha_t = conj(asin(sin(alpha_fluid) * solid_trans_speed / liquid_speed));
         
         ct_cl2 = (solid_trans_speed * solid_trans_speed) / (solid_long_speed * solid_long_speed);
         cos_2_alpha_t = cos(2 * alpha_t);

@@ -71,6 +71,7 @@ max_num_reflections = model_options.max_no_reflections;
 model_geometry = model_options.model_geometry;
 multi_freq = model_options.multi_freq;
 norm_to = model_options.norm_to;
+db_range_for_output = model_options.db_range_for_output;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
@@ -132,7 +133,7 @@ max_t = 1.1 * 4 * sqrt(xsize ^ 2 + zsize ^ 2) / min(solid_long_speed, solid_shea
 if probe_standoff ~= 0
     max_t = max_t + sqrt(probe_standoff^2 + (PITCH*probe_els)^2) / couplant_speed;
 end  
-time_pts = ceil(max_t / time_step);
+time_pts = ceil(max_t / time_step)+1;
 [~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
 clear probe_standoff oversampling no_cycles time_step
@@ -212,8 +213,10 @@ if is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
+...%                %%  Use these names to include the wall in the path name
                         sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
                         sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+...%                %%  Use these names to exclude the wall in the path name
 ...%                         sprintf("%s %s", mode1_name, mode2_name), ...
 ...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [mode1, mode2], ...
@@ -296,8 +299,10 @@ elseif ~is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
+...%                %%  Use these names to include the wall in the path name
                         sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
                         sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
+...%                %%  Use these names to exclude the wall in the path name
 ...%                         sprintf("%s %s", mode1_name, mode2_name), ...
 ...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [0, mode1, mode2], ...
@@ -357,7 +362,6 @@ if ~isstruct(model_options.FMC_data)
         if length(Path_info_list(ii).speeds) > 1
             if wall_for_imaging == Path_info_list(ii).path_geometry.name
                 path = path + 1;
-                name = Path_info_list(ii).name;
                 Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
             end
         else % Must be direct
@@ -416,14 +420,13 @@ if ~isstruct(model_options.FMC_data)
     % Scatterer simulation.
     out_freq_spec = 0;
     num_scatterers = size(scat_info.image_block, 1);
-
+    
     for scatterer = 1 : num_scatterers
         for view = 1 : size(Views, 1)
-            name = Views(view).name;
             weights = Views(view).weights(:, scatterer, 1);
             scat_amp = Views(view).scat_amps(:, scatterer, 1);
             valid_path = Views(view).valid_path(:, scatterer);
-            amp = conj(scat_amp .* weights .* valid_path);
+            amp = (scat_amp .* weights .* valid_path);
             out_freq_spec = out_freq_spec + ...
                 fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
 
@@ -493,7 +496,6 @@ end
 
 tic
 
-db_range_for_output = 40;
 xpts = round(xsize / PIXEL);
 zpts = round(zsize / PIXEL);
 im_x = linspace(xmin, xmax, xpts+1);

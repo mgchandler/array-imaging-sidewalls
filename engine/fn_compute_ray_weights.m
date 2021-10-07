@@ -50,6 +50,7 @@ ray_weights.inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.inv_inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+ray_weights.c_out = zeros(probe_els,1);
 ray_weights.min_dists = zeros(probe_els, num_scatterers, no_walls+1, 4);
 
 % If we are in the direct contact case
@@ -77,6 +78,9 @@ if ~isstruct(path_geometry)
             ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
             ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
             ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
+            if scat==118
+                ray_weights.c_out(tx) = inc_out_angles(end, 3);
+            end
             ray_weights.min_dists(tx, scat, :, :) = min_dists;
             
             for freq_idx = 1 : num_freqs
@@ -141,6 +145,9 @@ else
             ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
             ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
             ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
+            if scat==118
+                ray_weights.c_out(tx) = inc_out_angles(end, 3);
+            end
             ray_weights.min_dists(tx, scat, :, :) = min_dists;
             
             for freq_idx = 1 : num_freqs
@@ -150,10 +157,11 @@ else
                 ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), inv_inc_out_angles(:, 2), flip(speeds));
                 
                 % Trans/refl
-                ray_weights.transrefl(tx, scat, freq_idx) = fn_TR_coeff(medium_ids, modes, inc_out_angles(:, 1), ...
+                inv_angles = conj(asin(sin(inc_out_angles(1:end-1, 1)) .* speeds(2:end) ./ speeds(1:end-1)));
+                ray_weights.transrefl(tx, scat, freq_idx) = fn_TR_coeff(medium_ids, modes, inc_out_angles(1:end-1, 1), ...
                                                                         mat_speeds, density);
                 ray_weights.inv_transrefl(tx, scat, freq_idx) = fn_TR_coeff(flip(medium_ids), flip(modes), ...
-                                                                            inv_inc_out_angles(:, 1), mat_speeds, density);
+                                                                            inv_angles, mat_speeds, density);
 
                 % We are in skip contact or immersion case. Check which,
                 % and then compute directivity.
