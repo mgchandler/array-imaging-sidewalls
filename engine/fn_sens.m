@@ -29,7 +29,7 @@ function fn_sens(model_options)
 %           - solid_shear_speed : double : DEFAULT = 3130.0
 %           - solid_density : double : DEFAULT = 2700.0
 %       - scat_info : struct : DEFAULT sdh located at (0, 22e-3)
-%       - boxsize : integer : DEFAULT = 0
+%       - boxsize : double : DEFAULT = 0
 %       - savepath : string : DEFAULT = ""
 %       - savename : string : DEFAULT = "sens MODE GEOM VIEWS PITCH PIXEL WALLS"
 %       - max_no_reflections : integer : DEFAULT = 1
@@ -90,6 +90,10 @@ elseif and(~is_frontwall, and(probe_standoff == 0, probe_angle == 0))
     is_contact = 1;
 else
     error('fn_sens: Invalid setup.')
+end
+
+if boxsize ~= 0
+    warning('fn_sens: boxsize=%0.2g is ignored', boxsize)
 end
 
 xsize = xmax - xmin;
@@ -316,14 +320,11 @@ db_range_for_output = 40;
 
 % The total number of points where scatterers will be placed in the x- and
 % z- axes.
-xpts = round(xsize / PIXEL) + 2*boxsize;
-zpts = round(zsize / PIXEL) + 2*boxsize;
-% The number of points in the box plotted for each individual
-% scatterer, from which the maximum is taken for the sensitivity plot.
-boxpix = boxsize * PIXEL;
+xpts = round(xsize / PIXEL);
+zpts = round(zsize / PIXEL);
 % Helper arrays for use in the meshgrid.
-x = linspace(xmin-boxpix, xmax+boxpix, xpts+1);
-z = linspace(zmin-boxpix, zmax+boxpix, zpts+1);
+x = linspace(xmin, xmax, xpts+1);
+z = linspace(zmin, zmax, zpts+1);
 % Meshgrid for assembling the image block.
 [X, Z] = meshgrid(x, z);
 % [im_X, im_Z] = meshgrid(im_x, im_z);

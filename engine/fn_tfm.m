@@ -29,7 +29,7 @@ function fn_tfm(model_options)
 %           - solid_shear_speed : double : DEFAULT = 3130.0
 %           - solid_density : double : DEFAULT = 2700.0
 %       - scat_info : struct : DEFAULT sdh located at (0, 22e-3)
-%       - boxsize : integer : DEFAULT = 0
+%       - boxsize : integer : DEFAULT = 2e-3
 %       - savepath : string : DEFAULT = ""
 %       - savename : string : DEFAULT = "sens MODE GEOM VIEWS PITCH PIXEL WALLS"
 %       - max_no_reflections : integer : DEFAULT = 1
@@ -57,6 +57,7 @@ savepath = model_options.savepath;
 savename = model_options.savename;
 geometry = model_options.geometry;
 wall_for_imaging = model_options.wall_for_imaging;
+boxsize = model_options.boxsize;
 
 probe_angle = model_options.probe_angle;
 probe_standoff = model_options.probe_standoff;
@@ -629,11 +630,13 @@ for im = 1:Number_of_ims
     for wall = 1:size(geometry, 1)
         plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
     end
-%     for s = 1 : size(scat_info.image_block, 1)
-%         if scat_info.type ~= 'image'
-%             rectangle('Position', [scat_info.image_block(s, 1)*UC - 1, scat_info.image_block(s, 3)*UC - 1, 2, 2], 'EdgeColor', 'r');
-%         end
-%     end
+    if boxsize ~= 0
+        for s = 1 : size(scat_info.image_block, 1)
+            if scat_info.type ~= 'image'
+                rectangle('Position', [scat_info.image_block(s, 1)*UC - boxsize*UC/2, scat_info.image_block(s, 3)*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'r');
+            end
+        end
+    end
     
     if mod(im, plot_x) ~= 1
         set(gca, 'yticklabel', {[]})

@@ -53,10 +53,9 @@ function model_options = fn_default_model_options(varargin)
 %           Details on the scatterer which will be modelled. Note that
 %           depending on the type of scatterer, different fields are
 %           required. Should be an output from the fn_scat_info function.
-%       - boxsize : integer : DEFAULT = 0
-%           The total length of the square window drawn around the
-%           scatterer when finding the peak amplitude in sensitivity
-%           calculations.
+%       - boxsize : double : DEFAULT = 0
+%           The size of the box in metres which is drawn around the defect
+%           in the TFM images. Has no effect in sensitivity.
 %       - savepath : string : DEFAULT = ""
 %           The path where the .fig and .mat files will be saved to. Note
 %           that if equal to "", then no files will be saved. The
