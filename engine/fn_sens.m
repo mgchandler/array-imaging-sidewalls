@@ -357,8 +357,8 @@ if Number_of_ims == 3
     plot_x = 3;
     plot_z = 1;
 elseif Number_of_ims == 21
-    plot_x = 3;
-    plot_z = 7;
+    plot_x = 7;
+    plot_z = 3;
 elseif Number_of_ims == 55
     plot_x = 11;
     plot_z = 5;

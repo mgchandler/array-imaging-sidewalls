@@ -453,14 +453,8 @@ if ~isstruct(model_options.FMC_data)
     diagonals = spdiags([1:length(FMC_time)]' < length(FMC_time)/2, 0, length(FMC_time), length(FMC_time));
     FMC_time_data = ifft(diagonals * fft(FMC_time_data));
     
-    plot_time = linspace(0, max_t, time_pts)*10^6;
     figure(3)
-    imagesc(plot_time, [1:1024], abs(FMC_time_data)')
-    xlabel('Time (us)')
-    ylabel('tx-rx Index')
-    savefig(sprintf('%s_FMC.fig', savename));
-    xsize = xmax - xmin;
-    zsize = zmax - zmin;
+    fn_plot_FMC_at_time(FMC_time_data, FMC_time, Path_info_list(1), Path_info_list(1), scat_info.image_block, sprintf('%s_FMC.fig', savename));
 
     time_3 = double(toc);
     
@@ -481,12 +475,9 @@ else
     FMC_time = model_options.FMC_data.time;
     FMC_time_data = model_options.FMC_data.data;
     
-    figure(2)
-    FMC_for_plotting = abs(FMC_time_data');
-    FMC_for_plotting(:, 1:751) = 0;
-    imagesc(FMC_time(251:end)*10^6, [1:32], FMC_for_plotting)
-    xlabel('Time (us)')
-    ylabel('tx-rx Index')
+    FMC_for_plotting = abs(FMC_time_data);
+    FMC_for_plotting(1:751, :) = 0;
+    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(1), Path_info_list(1), scat_info.image_block, sprintf('%s_FMC.png', savename));
 end
 
 
