@@ -1,4 +1,4 @@
-function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds, densities, probe_freq, probe_pitch, el_length, max_no_refl)
+function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds, densities, probe_freq, probe_pitch, el_length, max_no_refl, npw)
 % Computes signals which come from reflections of the wall geometry
 % (including frontwall reflections).
 %
@@ -126,7 +126,8 @@ if ~ismember("F", wall_names)
                     probe_freq, ...
                     probe_pitch, ...
                     el_length, ...
-                    probe_coords ...
+                    probe_coords, ...
+                    npw ...
                 );
                 
                 if exist("Views", "var")==0
@@ -259,12 +260,12 @@ end
 for view = 1:size(Views, 1)
     ray = Views(view).ray;
     if view_modes(view, 1) == view_modes(view, 2)
-        inv_dir = ray.weights.inv_directivity;
+        inv_dir = ray.weights.directivity;
     else
         where_inv = logical(and(Views(view).ray.path_info.path_geometry.name == view_walls, ...
                             and(Views(view).ray.path_info.modes(1) == view_modes(:, 2), ...
                                 Views(view).ray.path_info.modes(2) == view_modes(:, 1))));
-        inv_dir = Views(where_inv).ray.weights.inv_directivity;
+        inv_dir = Views(where_inv).ray.weights.directivity;
     end
     [~, ~, num_freqs] = size(ray.weights.weights);
     Views(view).weights = zeros(probe_els^2, num_freqs);
@@ -272,7 +273,7 @@ for view = 1:size(Views, 1)
     for ii = 1 : probe_els
         for jj = 1 : probe_els
             Views(view).weights(el, :) = ( ...
-                ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
+                ray.weights.weights(ii, jj, :) * ray.weights.directivity(jj, ii, :) ...
             );
 
         el = el+1;

@@ -1,4 +1,4 @@
-function directivity = fn_line_directivity(theta, long_lambda, shear_lambda, mode)
+function directivity = fn_line_directivity(theta, long_lambda, shear_lambda, mode, c44)
 % Computes the inherent directivity of the probe in contact with a solid,
 % assuming an infinitely long strip source with finite width. Functions
 % taken from Miller & Pursey (1954): Eqs 74, 93 and 94.
@@ -14,6 +14,8 @@ function directivity = fn_line_directivity(theta, long_lambda, shear_lambda, mod
 % - mode : logical
 %       mode of the ray for which directivity will be computed. Treated
 %       as a logical test of whether ray is shear.
+% - c44 : double
+%       shear modulus of the material.
 %
 % OUTPUTS:
 % - directivity : complex
@@ -31,11 +33,11 @@ sin_theta = sin(theta);
 cos_theta = cos(theta);
 
 if ~mode % If we want the longitudinal directivity, Eq 93.
-    directivity = ( ...
+    directivity = exp(3i/4 * pi) * sqrt(2/pi) / c44 * ( ...
         cos_theta * (mu^2 - 2 * sin_theta^2) / F_0(sin_theta, mu) ...
     );
 else % Then we want the shear directivity, Eq 94.
-    directivity = ( ...
+    directivity = exp(5i/4 * pi) * sqrt(2/pi) / c44 * ( ...
         mu^2.5 * ...
         sin(2*theta) * sqrt(mu^2 * sin_theta^2 - 1) / F_0(sin_theta*mu, mu) ...
     );

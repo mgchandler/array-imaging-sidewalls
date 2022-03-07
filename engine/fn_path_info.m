@@ -10,7 +10,8 @@ function path_info = fn_path_info( ...
     probe_frequency, ...
     pitch, ...
     el_length, ...
-    probe_coords ...
+    probe_coords, ...
+    npw ...
 )
 % Collects the information passed in into a single object which can then be
 % passed into the ray computation function.
@@ -18,6 +19,8 @@ function path_info = fn_path_info( ...
 % INPUTS:
 % - name : string
 %       The name of the path.
+% - rev_name : string
+%       The reversed name of the path
 % - modes : array (no_legs, 1)
 %       Array of logicals. Each logical is a test of whether the
 %       corresponding leg is shear or not (1 => shear, 0 => long).
@@ -43,8 +46,14 @@ function path_info = fn_path_info( ...
 %       fn_compute_ray function.
 % - pitch : double
 %       Pitch of the array.
+% - el_length : double
+%       Length of the element. Must be less than the pitch.
 % - probe_coords : array (probe_els, 3)
 %       3D cooridnates of the probe elements.
+% - npw : int
+%       When analytical directivity is not being used, this specifies which
+%       lookup table to use. Specifies the mesh fineness of the Abaqus FE
+%       model (nodes per longitudinal wavelength).
 %
 % OUTPUTS:
 % path_info : struct (1, 1)
@@ -64,5 +73,8 @@ path_info.probe_frequency = probe_frequency;
 path_info.probe_pitch = pitch;
 path_info.el_length = el_length;
 path_info.probe_coords = probe_coords;
+path_info.npw = npw;
+path_info.poisson = (mat_speeds(2)^2 - 2*mat_speeds(3)^2) / (2*mat_speeds(2)^2 - 2*mat_speeds(3)^2);
+path_info.modulus = 2 * densities(2) * mat_speeds(3)^2 * (1 + path_info.poisson);
 
 end

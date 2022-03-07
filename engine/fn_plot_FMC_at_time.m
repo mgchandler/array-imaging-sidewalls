@@ -52,6 +52,10 @@ for ii = 1:size(time_idxs, 1)
 end
 
 figure(2);
+t = tiledlayout(1,1,'Padding','tight');
+t.Units = 'inches';
+t.OuterPosition = [0.15 0.15 5 3];
+nexttile;
 imagesc(FMC_time*10^6, [1:size(FMC_data, 2)], grayFMC);
 hold on
 fg = imagesc(FMC_time*10^6, [1:size(FMC_data, 2)], color_FMC);
@@ -63,7 +67,7 @@ if savename ~= ""
     if contains(savename, ".fig")
         savefig(savename)
     else
-        saveas(gcf, savename)
+        exportgraphics(t, savename, 'Resolution', 500)
     end
 end
 

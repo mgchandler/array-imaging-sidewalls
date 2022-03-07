@@ -141,6 +141,7 @@ model_options.norm_to = 0;
 model_options.db_range_for_output = 40;
 
 model_options.FMC_data = 0;
+model_options.npw = 45;
 
 if nargin == 1
     new_options = varargin{1};

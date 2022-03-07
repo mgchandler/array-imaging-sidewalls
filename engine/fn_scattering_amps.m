@@ -29,8 +29,8 @@ scat_info = path1.scat_info;
 
 scat_amps = zeros(probe_els^2, num_scatterers, num_freqs);
 
-theta = linspace(-pi, pi, size(scat_info.matrix(1).matr, 1));
-[T1, T2] = meshgrid(theta, theta);
+% theta = linspace(-pi, pi, size(scat_info.matrix(1).matr, 1));
+% [T1, T2] = meshgrid(theta, theta);
 
 el = 1;
 for tx = 1 : probe_els

@@ -20,7 +20,7 @@ function view = fn_create_view(path1, path2)
 % Unpack paths.
 view.path_1 = path1;
 view.path_2 = path2;
-view.name = sprintf('%s-%s', path1.path_info.name, reverse(path2.path_info.name));
+view.name = sprintf('%s - %s', path1.path_info.name, path2.path_info.rev_name);
 
 % Initialise variables.
 view.min_times = zeros(probe_els ^ 2, num_scatterers);
@@ -39,6 +39,9 @@ for ii = 1 : probe_els
         % If path is not valid, it will be 0. If 1, path is valid. View
         % path will be invalid if either path is invalid, so multiply.
         view.valid_path(el, :) = path1.valid_paths(ii, :) .* path2.valid_paths(jj, :);
+        
+%         view.tx_angles(ii, :) = path1.weights.out_theta(ii, :, 1, 1);
+%         view.rx_angles(jj, :) = path2.weights.out_theta(jj, :, 1, 1);
     end
 end
 

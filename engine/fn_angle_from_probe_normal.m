@@ -23,8 +23,14 @@ dot_out = 0;
 
 rot_mat = [-1, -1, 1];
 
+default_orientation = [1, 0, 0];
+
 for ii = 1:3
-    norm_vector(ii, 1) = rot_mat(ii) * (probe_coords(end, 4-ii) - probe_coords(1, 4-ii));
+    if size(probe_coords, 1) ~= 1
+        norm_vector(ii, 1) = rot_mat(ii) * (probe_coords(end, 4-ii) - probe_coords(1, 4-ii));
+    else
+        norm_vector(ii, 1) = rot_mat(ii) * default_orientation(4-ii);
+    end
     ray_vector(ii, 1) = ray_geometry(end, ii) - ray_geometry(1, ii);
     
     norm_radius = norm_radius + norm_vector(ii, 1) * norm_vector(ii, 1);

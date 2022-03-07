@@ -34,12 +34,13 @@ probe_coords = path_info.probe_coords;
 medium_ids = path_info.medium_ids;
 density = path_info.densities;
 scatterers = scat_info.image_block;
+npw = path_info.npw;
+c44 = path_info.modulus / (2. * (1. + path_info.poisson));
 
 % Initialise beamspread, directivity and transmission/reflection coeffs.
 ray_weights.beamspread = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_beamspread = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.directivity = zeros(probe_els, num_scatterers, num_freqs);
-ray_weights.inv_directivity = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.transrefl = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_transrefl = zeros(probe_els, num_scatterers, num_freqs);
 % Total weights for each frequency.
@@ -101,15 +102,9 @@ if ~isstruct(path_geometry)
                 % We are in direct contact path.
                 % We want the outgoing angle from the probe.
                 ray_weights.directivity(tx, scat, freq_idx) = ...
-                    fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...
-                    fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                % Inverse directivity required in backwall view only, so
-                % calculate it here. Note that we want the angle the ray
-                % makes from the probe normal: in the inverse angle data,
-                % this is equivalent to the last angle of incidence.
-                ray_weights.inv_directivity(tx, scat, freq_idx) = ...
-                    fn_sinc_directivity(inc_out_angles(end, 1), el_length, speeds(end)/freq_array(freq_idx)) * ...
-                    fn_line_directivity(inc_out_angles(end, 1), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(end));
+                    fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...%;
+...%                     fn_linedir_lookup(inc_out_angles(1, 2), modes(1), min_dists(1, 4));
+                    fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1), c44);
             end
         end
     end
@@ -167,25 +162,34 @@ else
                 % and then compute directivity.
                 if medium_ids(1) == 1 % If solid then contact.
                     ray_weights.directivity(tx, scat, freq_idx) = ...
-                        fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...
-                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                    ray_weights.inv_directivity(tx, scat, freq_idx) = ...
-                        fn_sinc_directivity(inc_out_angles(end, 1), el_length, speeds(end)/freq_array(freq_idx)) * ...
-                        fn_line_directivity(inc_out_angles(end, 1), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(end));
-                else % Must be liquid, so immersion.
+                        fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...%;
+...%                         fn_linedir_lookup(inc_out_angles(1, 2), modes(1), min_dists(1, 4));
+                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1), c44);
+              else % Must be liquid, so immersion.
                     ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(end)/freq_array(freq_idx));
-                    ray_weights.inv_directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(end, 1), el_length, speeds(1)/freq_array(freq_idx));
                 end
             end
         end
     end
 end
 
+% theta_for_dir = reshape(ray_weights.out_theta(:, :, 1, 1), [], 1);
+% modes_for_dir = modes(1);
+% dists_for_dir = reshape(ray_weights.min_dists(:, :, 1, 4), [], 1);
+% 
+% useabs = 0;
+% if useabs
+%     linedir = abs(fn_linedir_lookup(theta_for_dir, modes_for_dir, dists_for_dir, npw));
+% else
+%     linedir = fn_linedir_lookup(theta_for_dir, modes_for_dir, dists_for_dir, npw);
+% end
+% ray_weights.directivity(:, :, 1) = ray_weights.directivity(:, :, 1) .* reshape(linedir, probe_els, num_scatterers); %
+
 % Calculate the total ray weights, for convenience in calculation later.
 ray_weights.weights = ( ...
     ray_weights.transrefl .* ray_weights.directivity .* ray_weights.beamspread ...
 );
 ray_weights.inv_weights = ( ...
-    ray_weights.inv_transrefl .* ray_weights.directivity .* ray_weights.inv_beamspread ...
+    ray_weights.inv_transrefl .* ray_weights.inv_beamspread .* ray_weights.directivity ...
 ) .* sqrt(speeds(end)/reshape(freq_array', 1,1,num_freqs));
 end
