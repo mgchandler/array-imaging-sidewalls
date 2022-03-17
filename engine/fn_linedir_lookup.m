@@ -43,9 +43,9 @@ end
 
 % Interpolate within directivity data.
 if mode
-    dir_out = interp2(rmags, phi, dS, rad, theta, 'cubic', 0);
+    dir_out = interp2(rmags, phi, dS, rad, theta, 'cubic', 0);% * 3.5187/8.5841;
 else
-    dir_out = interp2(rmags, phi, dL, rad, theta, 'cubic', 0);
+    dir_out = interp2(rmags, phi, dL, rad, theta, 'cubic', 0);% * 5.2098/7.1250;
 end
 
 end

@@ -186,6 +186,9 @@ end
 ray_weights.directivity(:, :, 1) = ray_weights.directivity(:, :, 1) .* reshape(linedir, probe_els, num_scatterers); %
 
 % Calculate the total ray weights, for convenience in calculation later.
+% Note sqrt(lambda) here comes from the fact that the scattering matrix is
+% defined as the amplitude of a scattered wave that would be measured if
+% the distance between defect and receiver is one wavelength (Zhang, 2008)
 ray_weights.weights = ( ...
     ray_weights.transrefl .* ray_weights.directivity .* ray_weights.beamspread ...
 );

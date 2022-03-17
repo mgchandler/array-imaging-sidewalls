@@ -1,180 +1,145 @@
 function model_options = fn_default_model_options(varargin)
 % Returns the default model options if no inputs are given, and overwrites
-% the defaults when these are provided.
+% the defaults when these are provided. Note that the architecture is laid
+% out such that it is compatible with the AbaqusInputFileGeneration .yaml
+% files.
 %
 % INPUTS:
 % - new_options : OPTIONAL struct (1, 1)
 %       Structure containing options which will overwrite the defaults.
 %       Possible options to include as fields are:
-%       - pixel : double : DEFAULT = 5.0e-3
-%           The pixel resolution of the resulting image.
-%       - probe_els : integer : DEFAULT = 32
-%           The number of elements in the probe. Note that the probe is
-%           centered at the coordinates (0, 0, 0) if there is no standoff.
-%       - probe_angle : double : DEFAULT = 0
-%           The angle the probe makes with the front wall in radians. Note 
-%           that in the contact case, this must be set to zero. In the 
-%           immersion case, the standoff must be at least large enough to
-%           account for the swing angle made by the probe when angle is
-%           non-zero.
-%       - probe_standoff : double : DEFAULT = 0
-%           The standoff of the probe with respect to the front wall. Note
-%           that in the contact case, this must be set to zero. In the 
-%           mmersion case, the standoff must be at least large enough to
-%           account foe the swing angle made by the probe when angle is
-%           non-zero.
-%       - probe_frequency : double : DEFAULT = 5.0e+6
-%           The centre frequency of the probe.
-%       - probe_pitch : double : DEFAULT = 1.0e-3
-%           The pitch of the probe array. Must be positive real.
-%       - el_length : double : DEFAULT = 0.0
-%           The additional length each probe element on top of the probe
-%           pitch.
-%       - geom_shape : struct (1, 1)
-%           The rectangular area which will be imaged at the end. This must
-%           fully contain the geometry of the inspection block. Fields are
-%           - xmin : double : DEFAULT = -25.0e-3
-%           - xmax : double : DEFAULT =  25.0e-3
-%           - zmin : double : DEFAULT =   0.0e-3
-%           - zmax : double : DEFAULT =  40.0e-3
-%       - multi_freq : logical : DEFAULT = 0
-%           Logical switch for whether to use the multi-frequency model or
-%           not. Default behaviour is to use the single-frequency model.
-%           Contact requires the single-frequency model.
-%       - material_params : struct (1, 1)
-%           A structure detailing the various properties of the couplant
-%           and the inspection block. Fields are
-%           - couplant_speed : double : DEFAULT = 340.0
-%           - couplant_density : double : DEFAULT = 1.2
-%           - solid_long_speed : double : DEFAULT = 6320.0
-%           - solid_shear_speed : double : DEFAULT = 3130.0
-%           - solid_density : double : DEFAULT = 2700.0
-%       - scat_info : struct : DEFAULT sdh located at (0, 22e-3)
-%           Details on the scatterer which will be modelled. Note that
-%           depending on the type of scatterer, different fields are
-%           required. Should be an output from the fn_scat_info function.
-%       - boxsize : double : DEFAULT = 0
-%           The size of the box in metres which is drawn around the defect
-%           in the TFM images. Has no effect in sensitivity.
-%       - savepath : string : DEFAULT = ""
-%           The path where the .fig and .mat files will be saved to. Note
-%           that if equal to "", then no files will be saved. The
-%           `savename` field will be unused.
-%       - savename : string : DEFAULT = "sens MODE GEOM VIEWS PITCH PIXEL WALLS"
-%           The name which will files will be saved as. The file types
-%           (.fig and .mat) will be appended to this string.
-%       - max_no_reflections : integer : DEFAULT = 1
-%           The maximum number of reflections which will be made from the
-%           walls of the geometry when tracing rays from probe to
-%           scatterer.
-%       - model_geometry : logical : DEFAULT = 0
-%           Logical switch for whether to include the signal reflected from
-%           the front and backwall. Note that this is not checked for in
-%           fn_sens, as this signal is never modelled, and is only used in
-%           fn_tfm.
-%       - geometry : struct (no_walls, 1) : DEFAULT backwall
-%           A structure containing all of the walls in the geometry, which
-%           will be passed into ray tracing steps. Note that the presence
-%           of a frontwall in this object defines whether we are in the
-%           contact or immersion case.
-%       - wall_for_imaging : string : DEFAULT 'B1'
-%           When max_no_reflections > 1 and there is more than one wall,
-%           imaged views will include reflections from the wall with name
-%           equal to this string value.
-%       - norm_to : double : DEFAULT 0
-%           The reference value which will be used when normalising the
-%           images. A value of zero is interpretted to mean that the
-%           absolute maximum intensity across all views will be used;
-%           otherwise the dB scale will be with reference to this value
-%           (i.e. 0dB => intensity = norm_to).
-%       - db_range_for_output : DEFAULT 40
-%           The range over which the TFMs will be plotted (i.e. [-db_range,
-%           0].
-%       - FMC_data : struct : DEFAULT none
+%       - data : struct : DEFAULT none
 %           If FMC data generated externally, it can be passed in using
 %           this option. The simulation will be skipped and the program
 %           will proceed straight to the TFM.
+%       - material : struct
+%           - couplant_density : double : DEFAULT 1.2
+%           - couplant_v : double : DEFAULT 340.0
+%           - density : double : DEFAULT 2700.0
+%           - modulus : double : DEFAULT 70e9
+%           - poisson : double : DEFAULT 0.34
+%       - mesh : struct
+%           - geom : struct
+%               - x : double array
+%                   List of x coordinates
+%               - y : double array
+%                   List of z coordinates
+%               - geometry : struct
+%                   Output from fn_make_geometry()
+%           - sdh : struct
+%               - info : struct
+%                   Output from fn_scat_info()
+%       - model : struct
+%           - boxsize : double : DEFAULT 0.0
+%           - db_range : double : DEFAULT 40.0
+%           - max_no_reflections : integer : DEFAULT 1
+%           - model_geom : logical : DEFAULT 1
+%           - multi_freq : logical : DEFAULT 0
+%           - norm_to : double : DEFAULT 0
+%           - npw : double : DEFAULT 45
+%           - pixel : double : DEFAULT 0.5e-3
+%           - savename : string : DEFAULT "TFM-Sens Image Plot"
+%           - savepath : string : DEFAULT ""
+%           - wall_for_imaging : string : DEFAULT "B1"
+%       - probe : struct
+%           - angle : double : DEFAULT 0
+%           - freq : double : DEFAULT 5.0e+6
+%           - num_els : integer : DEFAULT 32
+%           - standoff : double : DEFAULT 0
+%           - separation : double : DEFAULT 0.05e-3
+%           - width : double : DEFAULT 0.45e-3
 %
 % OUTPUTS:
 % - model_options : struct (1, 1)
 %       Structure containing the specified options.
 
-model_options.pixel = 5.0e-3;
-model_options.probe_els = 32;
-model_options.probe_angle = 0;
-model_options.probe_standoff = 0;
-model_options.probe_frequency = 5.0e+6;
-model_options.probe_pitch = 1.0e-3;
-model_options.el_length = 0;
+model_options.data = 0;
 
-xmin = -25.0e-3;
-xmax =  25.0e-3;
-zmin =   0.0e-3;
-zmax =  40.0e-3;
+model_options.material.couplant_density = 1.2;
+model_options.material.couplant_v = 340.0;
+model_options.material.density = 2700.0;
+model_options.material.modulus = 70.0e+9;
+model_options.material.poisson = 0.34;
 
-model_options.geom_shape.xmin = xmin;
-model_options.geom_shape.xmax = xmax;
-model_options.geom_shape.zmin = zmin;
-model_options.geom_shape.zmax = zmax;
-model_options.multi_freq = 0;
-model_options.material_params.couplant_speed = 340.0;
-model_options.material_params.couplant_density = 1.2;
-model_options.material_params.solid_long_speed = 6320.0;
-model_options.material_params.solid_shear_speed = 3130.0;
-model_options.material_params.solid_density = 2700;
-model_options.scat_info = fn_scat_info( ...
-    "sdh", ...
-    1.0e-3, ...
-    model_options.material_params.solid_long_speed/model_options.probe_frequency, ...
-    model_options.material_params.solid_shear_speed/model_options.probe_frequency, ...
-    deg2rad(0), ...
-    [[10.0e-3, 0.0, 22.0e-3]], ...
-    'ang_pts_over_2pi', 120 ...
+model_options.mesh.geom.shape.xmax =  25.0e-3;
+model_options.mesh.geom.shape.xmin = -25.0e-3;
+model_options.mesh.geom.shape.zmax =  40.0e-3;
+model_options.mesh.geom.shape.zmin =   0.0e-3;
+model_options.mesh.geom.geometry = fn_make_geometry(1, 500, ...
+        [model_options.mesh.geom.shape.xmin, 0.0, model_options.mesh.geom.shape.zmax], ...
+        [model_options.mesh.geom.shape.xmax, 0.0, model_options.mesh.geom.shape.zmax], ...
+        [model_options.mesh.geom.shape.xmax, 0.0, model_options.mesh.geom.shape.zmin] ...
 );
-model_options.boxsize = 0;
-model_options.savepath = "";
-model_options.savename = 'TFM-Sens Image Plot';
-model_options.max_no_reflections = 0;
-model_options.model_geometry = 0;
-model_options.wall_for_imaging = 'B1';
-model_options.norm_to = 0;
-model_options.db_range_for_output = 40;
 
-model_options.FMC_data = 0;
-model_options.npw = 45;
+model_options.model.boxsize = 0.0;
+model_options.model.db_range = 40.0;
+model_options.model.max_no_reflections = 1;
+model_options.model.model_geom = 1;
+model_options.model.multi_freq = 0;
+model_options.model.norm_to = 0;
+model_options.model.npw = 45;
+model_options.model.pixel = 0.5e-3;
+model_options.model.savename = "TFM-Sens Image Plot";
+model_options.model.savepath = "";
+model_options.model.wall_for_imaging = "B1";
+
+model_options.probe.angle = 0;
+model_options.probe.freq = 5.0e+6;
+model_options.probe.num_els = 32;
+model_options.probe.standoff = 0;
+model_options.probe.separation = 0.05e-3;
+model_options.probe.width = 0.45e-3;
+
+model_options.mesh.sdh.info = fn_scat_info( ...
+        "sdh", ...
+        1.0e-3, ...
+        6317.01/model_options.probe.freq, ...
+        3110.28/model_options.probe.freq, ...
+        deg2rad(0), ...
+        [[10.0e-3, 0.0, 22.0e-3]], ...
+        'ang_pts_over_2pi', 120 ...
+);
+
+
 
 if nargin == 1
     new_options = varargin{1};
     option_fieldnames = fieldnames(new_options);
     for arg = 1:size(option_fieldnames, 1)
-        model_options.(option_fieldnames{arg}) = new_options.(option_fieldnames{arg});
+        if ~isfield(model_options, option_fieldnames{arg})
+            model_options.(option_fieldnames{arg}) = new_options.(option_fieldnames{arg});
+        elseif ~isstruct(model_options.(option_fieldnames{arg}))
+            model_options.(option_fieldnames{arg}) = new_options.(option_fieldnames{arg});
+        else
+            model_fieldnames = fieldnames(new_options.(option_fieldnames{arg}));
+            for arg1 = 1:size(model_fieldnames, 1)
+                model_options.(option_fieldnames{arg}).(model_fieldnames{arg1}) = new_options.(option_fieldnames{arg}).(model_fieldnames{arg1});
+            end
+        end
     end
 elseif nargin ~= 0
     error('fn_default_model_options: wrong number of inputs.')
 end
 
-if ~isfield(model_options, 'geometry')
-    model_options.geometry = fn_make_geometry(1, 500, ...
-        [xmin, 0.0, zmax], [xmax, 0.0, zmax], [xmax, 0.0, zmin] ...
+if isfield(model_options.mesh, 'geom')
+    geom_corners = [cell2mat(model_options.mesh.geom.x); zeros(size(model_options.mesh.geom.x)); cell2mat(model_options.mesh.geom.y)].';
+    model_options.mesh.geom.geometry = fn_make_geometry(1, 500, ...
+        geom_corners ...
     );
 end
 
-if model_options.max_no_reflections > size(model_options.geometry, 1)
+if model_options.model.max_no_reflections > size(model_options.mesh.geom.geometry, 1)
     error('fn_default_model_options: too many reflections for walls provided')
 end
 
-if isstruct(model_options.FMC_data)
-    if ~and(isfield(model_options.FMC_data, 'time'), isfield(model_options.FMC_data, 'data'))
+if isstruct(model_options.data)
+    if ~and(isfield(model_options.data, 'time'), isfield(model_options.data, 'data'))
         error('fn_default_model_options: FMC_data field requires both time and data fields.')
-    elseif size(model_options.FMC_data.time, 1) ~= size(model_options.FMC_data.data, 1)
+    elseif size(model_options.data.time, 1) ~= size(model_options.data.data, 1)
         error('fn_default_model_options: FMC_data field requires both time and data fields be same size.')
     end
-elseif model_options.FMC_data ~= 0
+elseif model_options.data ~= 0
     error('fn_default_model_options: FMC_data must be zero or struct.')
-end
-
-if model_options.el_length > model_options.probe_pitch
-    error('fn_default_model_options: Element length must not exceed element pitch.')
 end
 
 end

@@ -5,36 +5,49 @@ function fn_tfm(model_options)
 % xmax location.
 %
 % INPUTS:
-% - model_options : struct (1, 1)
-%       Structure containing options which the program will run with. For
-%       more details on what each one is, see the fn_default_model_options
-%       function. Possible options to include as fields are:
-%       - pixel : double : DEFAULT = 5.0e-3
-%       - probe_els : integer : DEFAULT = 32
-%       - probe_angle : double : DEFAULT = 0
-%       - probe_standoff : double : DEFAULT = 0
-%       - probe_frequency : double : DEFAULT = 5.0e+6
-%       - probe_pitch : double : DEFAULT = 1.0e-3
-%       - el_length : double : DEFAULT = 0.0
-%       - geom_shape : struct (1, 1)
-%           - xmin : double : DEFAULT = -25.0e-3
-%           - xmax : double : DEFAULT =  25.0e-3
-%           - zmin : double : DEFAULT =   0.0e-3
-%           - zmax : double : DEFAULT =  40.0e-3
-%       - multi_freq : logical : DEFAULT = 0
-%       - material_params : struct (1, 1)
-%           - couplant_speed : double : DEFAULT = 340.0
-%           - couplant_density : double : DEFAULT = 1.2
-%           - solid_long_speed : double : DEFAULT = 6320.0
-%           - solid_shear_speed : double : DEFAULT = 3130.0
-%           - solid_density : double : DEFAULT = 2700.0
-%       - scat_info : struct : DEFAULT sdh located at (0, 22e-3)
-%       - boxsize : integer : DEFAULT = 2e-3
-%       - savepath : string : DEFAULT = ""
-%       - savename : string : DEFAULT = "sens MODE GEOM VIEWS PITCH PIXEL WALLS"
-%       - max_no_reflections : integer : DEFAULT = 1
-%       - model_geometry : logical : DEFAULT = 0
-%       - geometry : struct (no_walls, 1) : DEFAULT backwall
+% - model_options : struct 
+%       Structure containing options which will overwrite the defaults.
+%       Possible options to include as fields are:
+%       - data : struct : DEFAULT none
+%           If FMC data generated externally, it can be passed in using
+%           this option. The simulation will be skipped and the program
+%           will proceed straight to the TFM.
+%       - material : struct
+%           - couplant_density : double : DEFAULT 1.2
+%           - couplant_v : double : DEFAULT 340.0
+%           - density : double : DEFAULT 2700.0
+%           - modulus : double : DEFAULT 70e9
+%           - poisson : double : DEFAULT 0.34
+%       - mesh : struct
+%           - geom : struct
+%               - x : double array
+%                   List of x coordinates
+%               - y : double array
+%                   List of z coordinates
+%               - geometry : struct
+%                   Output from fn_make_geometry()
+%           - sdh : struct
+%               - info : struct
+%                   Output from fn_scat_info()
+%       - model : struct
+%           - boxsize : double : DEFAULT 0.0
+%           - db_range : double : DEFAULT 40.0
+%           - max_no_reflections : integer : DEFAULT 1
+%           - model_geom : logical : DEFAULT 1
+%           - multi_freq : logical : DEFAULT 0
+%           - norm_to : double : DEFAULT 0
+%           - npw : double : DEFAULT 45
+%           - pixel : double : DEFAULT 0.5e-3
+%           - savename : string : DEFAULT "TFM-Sens Image Plot"
+%           - savepath : string : DEFAULT ""
+%           - wall_for_imaging : string : DEFAULT "B1"
+%       - probe : struct
+%           - angle : double : DEFAULT 0
+%           - freq : double : DEFAULT 5.0e+6
+%           - num_els : integer : DEFAULT 32
+%           - standoff : double : DEFAULT 0
+%           - separation : double : DEFAULT 0.05e-3
+%           - width : double : DEFAULT 0.45e-3
 
 
 
@@ -44,36 +57,36 @@ tic;
 % Unpack model_config and model_options                                   %
 % ---------------------------------------------------------------------- %%
 
-PITCH = model_options.probe_pitch;
-PIXEL = model_options.pixel;
+PITCH = model_options.probe.width + model_options.probe.separation;
+PIXEL = model_options.model.pixel;
 
-probe_els = model_options.probe_els;
-xmin = model_options.geom_shape.xmin;
-xmax = model_options.geom_shape.xmax;
-zmin = model_options.geom_shape.zmin;
-zmax = model_options.geom_shape.zmax;
-scat_info = model_options.scat_info;
-savepath = model_options.savepath;
-savename = model_options.savename;
-geometry = model_options.geometry;
-wall_for_imaging = model_options.wall_for_imaging;
-boxsize = model_options.boxsize;
+probe_els = model_options.probe.num_els;
+xmin = min(cell2mat(model_options.mesh.geom.x));
+xmax = max(cell2mat(model_options.mesh.geom.x));
+zmin = min(cell2mat(model_options.mesh.geom.y));
+zmax = max(cell2mat(model_options.mesh.geom.y));
+scat_info = model_options.mesh.sdh.info;
+savepath = model_options.model.savepath;
+savename = model_options.model.savename;
+geometry = model_options.mesh.geom.geometry;
+wall_for_imaging = model_options.model.wall_for_imaging;
+boxsize = model_options.model.boxsize;
 
-probe_angle = model_options.probe_angle;
-probe_standoff = model_options.probe_standoff;
-probe_frequency = model_options.probe_frequency;
-el_length = model_options.el_length;
-couplant_speed = model_options.material_params.couplant_speed;
-couplant_density = model_options.material_params.couplant_density;
-solid_long_speed = model_options.material_params.solid_long_speed;
-solid_shear_speed = model_options.material_params.solid_shear_speed;
-solid_density = model_options.material_params.solid_density;
-max_num_reflections = model_options.max_no_reflections;
-model_geometry = model_options.model_geometry;
-multi_freq = model_options.multi_freq;
-norm_to = model_options.norm_to;
-db_range_for_output = model_options.db_range_for_output;
-npw = model_options.npw;
+probe_angle = model_options.probe.angle;
+probe_standoff = model_options.probe.standoff;
+probe_frequency = model_options.probe.freq;
+el_length = model_options.probe.width;
+couplant_speed = model_options.material.couplant_v;
+couplant_density = model_options.material.couplant_density;
+solid_long_speed = sqrt(model_options.material.modulus * (1 - model_options.material.poisson) / (model_options.material.density * (1 + model_options.material.poisson) * (1 - 2*model_options.material.poisson)));
+solid_shear_speed = sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
+solid_density = model_options.material.density;
+max_num_reflections = model_options.model.max_no_reflections;
+model_geometry = model_options.model.model_geom;
+multi_freq = model_options.model.multi_freq;
+norm_to = model_options.model.norm_to;
+db_range_for_output = model_options.model.db_range;
+npw = model_options.model.npw;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
@@ -345,7 +358,7 @@ clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
     
 
 % If no FMC data supplied, then skip simulation.
-if ~isstruct(model_options.FMC_data)
+if ~isstruct(model_options.data)
 
 
     %% ---------------------------------------------------------------------- %
@@ -478,8 +491,8 @@ else
     xsize = xmax - xmin;
     zsize = zmax - zmin;
     
-    FMC_time = model_options.FMC_data.time;
-    FMC_time_data = model_options.FMC_data.data;
+    FMC_time = model_options.data.time;
+    FMC_time_data = model_options.data.data;
     
     FMC_for_plotting = abs(FMC_time_data);
     FMC_for_plotting(1:751, :) = 0;
@@ -564,7 +577,7 @@ for view = 1 : Number_of_ims
     Ims(view).name = Views_im(view).name;
 end
 
-clear PIXEL xmin xmax zmin zmax xsize zsize num_paths Path_info_list image_block
+clear PIXEL xsize zsize num_paths Path_info_list image_block
 clear image_block_info scatterer_coords Paths_im
 
 
@@ -675,7 +688,7 @@ time_5 = double(toc);
 
 fn_print_time('Plotted', time_5)
 
-if isstruct(model_options.FMC_data)
+if isstruct(model_options.data)
     times = [time_1];
 else
     times = [time_1, time_2, time_3, time_4, time_5];

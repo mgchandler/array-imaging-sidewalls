@@ -12,7 +12,7 @@ function geometry = fn_make_geometry(is_contiguous, N, varargin)
 %       open (C-shaped).
 % - N : integer
 %       Number of points to discretise walls into.
-% - point : array (1, 3)
+% - point : array (n, 3)
 %       3D coordinates of the ends of walls. When is_contiguous == 0, an
 %       even number of points must be provided. Each pair of points are
 %       then treated as the ends of the walls. When is_contiguous == 1, N+1
@@ -26,12 +26,14 @@ function geometry = fn_make_geometry(is_contiguous, N, varargin)
 
 assert(or(is_contiguous==0, is_contiguous==1), ...
     "fn_make_geometry: is_contiguous is not logical.")
-assert(nargin >= 4, ...
+assert(nargin >= 3, ...
     "fn_make_geometry: Insufficient number of points.")
+corners = zeros(0, 3);
 for point = 1 : nargin-2
     coords = varargin{point};
-    assert(length(coords) == 3, ...
+    assert(size(coords, 2) == 3, ...
         "fn_make_geometry: Points have invalid number of dimensions.")
+    corners = [corners; coords];
 end
 
 side_count = 0;
@@ -41,15 +43,17 @@ other_count = 0;
 % If the walls are not contiguous, treat each pair of points as the ends of
 % the wall.
 if ~is_contiguous
-    assert(int8(length(varargin)/2) == length(varargin)/2, ...
+    assert(int8(size(corners, 1)/2) == size(corners, 1)/2, ...
         "fn_make_geometry: Incorrect number of points.")
-    no_walls = length(varargin)/2;
+    no_walls = size(corners, 1)/2;
 
     geometry = repmat(fn_make_wall('name', [0,0,0], [0,0,0], 1, 1), no_walls, 1);
     
     for wall = 1:no_walls
-        start_point = varargin{2*wall - 1};
-        end_point = varargin{2*wall};
+        start_point = corners(2*wall - 1, :);
+        end_point = corners(2*wall, :);
+%         start_point = varargin{2*wall - 1};
+%         end_point = varargin{2*wall};
         
         wall_id = 0;
         
@@ -74,13 +78,15 @@ if ~is_contiguous
     
 % If the walls are contiguous.
 else
-    no_walls = length(varargin) - 1;
+    no_walls = size(corners, 1) - 1;
 
     geometry = repmat(fn_make_wall('name', [0,0,0], [0,0,0], 1, 1), no_walls, 1);
     
     for wall = 1:no_walls
-        start_point = varargin{wall};
-        end_point = varargin{wall + 1};
+        start_point = corners(wall, :);
+        end_point = corners(wall + 1, :);
+%         start_point = varargin{wall};
+%         end_point = varargin{wall + 1};
         
         wall_id = 0;
         
