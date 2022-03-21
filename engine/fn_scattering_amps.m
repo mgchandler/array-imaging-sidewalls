@@ -60,6 +60,9 @@ for tx = 1 : probe_els
                         out_mode = path2_info.modes(end);
                         scat_matrix = scat_info.matrix(inc_mode*2 + out_mode + 1).matr;
                         
+                        if scat == 793
+                            a = 1;
+                        end
                         scat_amps(el, scat, freq) = fn_scattering_bilinear_interp(scat_matrix, inc_angle_on_scat, out_angle_on_scat);
 %                         scat_amps(el, scat, freq) = interp2(T1, T2, scat_matrix, inc_angle_on_scat, out_angle_on_scat, 'linear');
 

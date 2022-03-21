@@ -10,11 +10,11 @@ for y = 1:size(yaml_options.mesh.geom.y, 2)
     yaml_options.mesh.geom.y{y} = -yaml_options.mesh.geom.y{y};
 end
 yaml_options.model.boxsize = 1.0e-3;
-yaml_options.model.pixel = 1.0e-3;
+yaml_options.model.pixel = 2.0e-3;
 yaml_options.model.model_geom = 0;
 yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
-yaml_options.model.max_no_reflections = 0;
+yaml_options.model.max_no_reflections = 1;
 yaml_options.model.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls\array-imaging-sidewalls matlab\output';
 yaml_options.model.savename = 'SDH Refl - Valid Paths';
 % new_options.geometry = fn_make_geometry(0, 500, ...

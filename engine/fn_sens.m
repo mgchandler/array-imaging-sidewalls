@@ -61,10 +61,11 @@ PITCH = model_options.probe.width + model_options.probe.separation;
 PIXEL = model_options.model.pixel;
 
 probe_els = model_options.probe.num_els;
-xmin = min(cell2mat(model_options.mesh.geom.x));
-xmax = max(cell2mat(model_options.mesh.geom.x));
-zmin = min(cell2mat(model_options.mesh.geom.y));
-zmax = max(cell2mat(model_options.mesh.geom.y));
+% Mins and maxes used for grid, so make it slightly smaller than the geometry.
+xmin = min(cell2mat(model_options.mesh.geom.x)) + 0.01e-3;
+xmax = max(cell2mat(model_options.mesh.geom.x)) - 0.01e-5;
+zmin = min(cell2mat(model_options.mesh.geom.y)) + 0.01e-5;
+zmax = max(cell2mat(model_options.mesh.geom.y)) - 0.01e-5;
 scat_info = model_options.mesh.sdh.info;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;
@@ -380,8 +381,8 @@ if Number_of_ims == 3
     plot_x = 3;
     plot_z = 1;
 elseif Number_of_ims == 21
-    plot_x = 7;
-    plot_z = 3;
+    plot_x = 3;
+    plot_z = 7;
 elseif Number_of_ims == 55
     plot_x = 11;
     plot_z = 5;
