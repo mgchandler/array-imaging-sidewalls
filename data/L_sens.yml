@@ -28,11 +28,11 @@ probe:
   cycles: 5
   
   # <double> REQUIRED Element width. Set to 0.0 if a point source is required.
-  width: 0.5e-3
+  width: 0.53e-3
   
   # <double> OPTIONAL Separation between elements. Unused if one element is used. Pitch =
   # Separation + Width.
-  separation: 0.0e-3
+  separation: 0.1e-3
   
   # <int> REQUIRED Number of elements modelled. One input file generated per element, such that a
   # full FMC data set can be captured.
@@ -49,7 +49,7 @@ probe:
 
 mesh:
   # <int> REQUIRED Number of nodes which will be generated per wavelength. Should be >10.
-  n_per_wl: 45
+  n_per_wl: 0
   
   # <str> REQUIRED Code for which element type to use. Plain strain triangular: CPE3
   el_type: CPE3
@@ -114,7 +114,7 @@ mesh:
      
     # <double list> REQUIRED List of radii for SDHs.
     r: 
-     - 0.5e-3
+     - 0.2e-3
      
      
 

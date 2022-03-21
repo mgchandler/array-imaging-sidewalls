@@ -86,7 +86,8 @@ model_geometry = model_options.model.model_geom;
 multi_freq = model_options.model.multi_freq;
 norm_to = model_options.model.norm_to;
 db_range_for_output = model_options.model.db_range;
-npw = model_options.model.npw;
+npw = model_options.mesh.n_per_wl;
+image_block_info = model_options.mesh.sdh.info;
 
 no_walls = size(geometry, 1);
 
@@ -363,7 +364,6 @@ for xpt = 1 : xpts+1
 end
 
 % Reuse imaging paths for 
-image_block_info.type = "point";
 image_block_info.image_block = image_block;
 
 % Compute Imaging Paths

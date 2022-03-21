@@ -86,7 +86,7 @@ model_geometry = model_options.model.model_geom;
 multi_freq = model_options.model.multi_freq;
 norm_to = model_options.model.norm_to;
 db_range_for_output = model_options.model.db_range;
-npw = model_options.model.npw;
+npw = model_options.mesh.n_per_wl;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 10;
