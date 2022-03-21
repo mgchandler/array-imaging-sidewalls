@@ -1,7 +1,7 @@
 clear
 
-v_L = 6317.0122248907810;
-v_S = 3110.2818131859126;
+v_L = 6320;%6317.0122248907810;
+v_S = 3130;%3110.2818131859126;
 
 yaml_options = yaml.loadFile("L_sens.yml");
 yaml_options.material.couplant_v = 340.0;
@@ -10,11 +10,11 @@ for y = 1:size(yaml_options.mesh.geom.y, 2)
     yaml_options.mesh.geom.y{y} = -yaml_options.mesh.geom.y{y};
 end
 yaml_options.model.boxsize = 1.0e-3;
-yaml_options.model.pixel = 2.0e-3;
+yaml_options.model.pixel = 1.0e-3;
 yaml_options.model.model_geom = 0;
 yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
-
+yaml_options.model.max_no_reflections = 0;
 yaml_options.model.savepath = 'C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls\array-imaging-sidewalls matlab\output';
 yaml_options.model.savename = 'SDH Refl - Valid Paths';
 % new_options.geometry = fn_make_geometry(0, 500, ...
@@ -23,7 +23,7 @@ yaml_options.model.savename = 'SDH Refl - Valid Paths';
 % );
 yaml_options.mesh.sdh.info = fn_scat_info( ...
     "sdh", ...
-    1.0e-3, ...
+    .5e-3, ...
     v_L/5e6, ...
     v_S/5e6, ...
     deg2rad(0), ...
