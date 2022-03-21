@@ -1,0 +1,165 @@
+job:
+  # <str> REQUIRED Name used for file generation. Should contain no spaces or special characters.
+  name: L_sens
+
+
+
+material:
+  # <str> REQUIRED Material name. Passed through for names, so should be user friendly.
+  name: Aluminium
+  
+  # <double> REQUIRED Material density. Aluminium: 2700.0 kg m^{-3}
+  density: 2700.0
+  
+  # <double> REQUIRED Material Young's modulus. Aluminium: 70.0e+9 Pa
+  modulus: 70.0e+9
+  
+  # <double> REQUIRED Material Poisson's ratio. Aluminium: 0.34
+  poisson: 0.34
+  
+  
+  
+probe:
+  # <double> REQUIRED Probe centre frequency.
+  freq: 5.0e+6
+  
+  # <int> OPTIONAL Number of cycles to use for input signal. Required if "amplitude" is not
+  # included.
+  cycles: 5
+  
+  # <double> REQUIRED Element width. Set to 0.0 if a point source is required.
+  width: 0.5e-3
+  
+  # <double> OPTIONAL Separation between elements. Unused if one element is used. Pitch =
+  # Separation + Width.
+  separation: 0.0e-3
+  
+  # <int> REQUIRED Number of elements modelled. One input file generated per element, such that a
+  # full FMC data set can be captured.
+  num_els: 32
+  
+  # <str> OPTIONAL Filename for file containing input signal. Used in favour of generating the
+  # signal every time. Required if "cycles" is not included.
+  amplitude: 5MHz_pulse.csv
+  
+  # <double> OPTIONAL Total time which the job will be run for.
+  # time_len = 1.5e-5
+
+
+
+mesh:
+  # <int> REQUIRED Number of nodes which will be generated per wavelength. Should be >10.
+  n_per_wl: 45
+  
+  # <str> REQUIRED Code for which element type to use. Plain strain triangular: CPE3
+  el_type: CPE3
+  
+  # <str> REQUIRED Which profile to use when producing the geometry.
+  # - "halfcirc" : D-shaped solid. Specify diameter using coordinates in "geom" field, assumes 
+  #                diameter colinear with x-axis. Half-space generated for -ve y.
+  # - "poly" : Polygonal solid. Specify corners using coordinates in "geom" field. Note that no
+  #            checks are made to ensure the geometry is valid.
+  profile: poly
+  
+  # Geometry. Assumes coordinates are listed contiguously starting at the top right, moving
+  # clockwise. Do not repeat the first coordinate to complete the segments. Note that the first 
+  # and last coordinates should be colinear with the x-axis.
+  geom:
+    # <double list> REQUIRED List of x-coordinates used to generate geometry.
+    x: 
+     - -25.00e-3
+     -  24.99e-3
+     -  24.99e-3
+     -  40.01e-3
+     -  40.01e-3
+     
+    # <double list> REQUIRED List of y-coordinates used to generate geometry.
+    y: 
+     - -25.01e-3
+     - -25.01e-3
+     - -45.01e-3
+     - -45.01e-3
+     -  -0.01e-3
+     
+    # <int list> OPTIONAL List of walls which will be used to generate SRM layers. 0th wall 
+    # connects 0th coord to 1st coord. Unused if profile is "halfcirc", which is automatically
+    # modelled as half-infinite. It will be assumed that there are no elements which are more 
+    # extreme than those in the SRM (e.g. if a square η-shaped geometry were used and the SRM was
+    # on the left-most wall, it would work as intended. If the SRM were at the bottom of the
+    # shorter leg only, then the longer leg will be effectively truncated to the same length as
+    # the shorter, resulting in the same results as an n-shaped geometry).
+    # SRM:
+     # - 0
+     # - 2
+     
+  # OPTIONAL Filleted corner. Currently only one supported.
+  # fillet:
+    # # <int> REQUIRED Index of the corner to which the fillet will be applied, as it appears in the
+    # # geometry coordinate list.
+    # idx: 3
+    
+    # # <double> REQUIRED Radius of fillet.
+    # r: 5.0e-3
+     
+  # OPTIONAL Side-drilled hole parameters. Note that checks are not made to ensure the hole is
+  # entirely contained within the geometry. Each hole treated independently in order.
+  sdh:
+    # <double list> REQUIRED List of x-coordinates of SDHs.
+    x: 
+     - 0.0e-3
+     
+    # <double list> REQUIRED List of y-coordinates of SDHs.
+    y: 
+     - -17.5e-3
+     
+    # <double list> REQUIRED List of radii for SDHs.
+    r: 
+     - 0.5e-3
+     
+     
+
+# <str list> REQUIRED List of which output fields to capture. Name of each field should be the
+# field name in Abaqus. Common to use displacement "U".
+output:
+ - CF2:
+    # <str> REQUIRED "field" or "history".
+    type: history
+    
+    # <str> REQUIRED "Node" or "Element"
+    output: Node
+    
+    # <int> OPTIONAL Frequency with which to capture data. Often used for history. Required if
+    # "t_int" is not included.
+    # freq: 4
+    
+    # <double> OPTIONAL Time step with which to capture data. Often used for field. Required if
+    # "freq" is not included. Note: this increment will only approximate the actual one used, as
+    # it will be converted to freq = t_int / model_time_step.
+    t_int: 5e-9
+    
+    # <str> OPTIONAL Identifier for which node or element set to record output. Required if "sets"
+    # is not included.
+    # - "arc" : Intended for use with "halfcirc" profile; generate arcs with regular radial spacing
+    #           at a set number of angles.
+    # - "rand" : Intended for use with "halfcirc" profile; grab random nodes within the mesh.
+    # - "active" : For use with PAUT, records the input signal on the active element only for each
+    #              input file.
+    set: active
+    
+    # <str> OPTIONAL Which sets to use for recording outputs. Required if "set" is not included.
+    # - <int>, <int> : (e.g. "sets: 1, 32") Intended for use with "poly" profile and FMC datasets.
+    #                  Records history for all probes contained within these values (inlusive).
+    # sets: 1, 32
+    
+ - U:
+    # <str> REQUIRED "field" or "history".
+    type: history
+    
+    # <str> REQUIRED "Node" or "Element"
+    output: Node
+    
+    # <double> OPTIONAL Time step with which to capture data.
+    t_int: 5e-9
+    
+    # <str> OPTIONAL Which sets to use for recording outputs.
+    sets: 1, 32

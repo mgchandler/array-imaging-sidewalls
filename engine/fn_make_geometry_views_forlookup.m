@@ -1,4 +1,4 @@
-function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds, densities, probe_freq, probe_pitch, el_length, max_no_refl, npw)
+function Views = fn_make_geometry_views_forlookup(probe_coords, all_geometries, mat_speeds, densities, probe_freq, probe_pitch, el_length, max_no_refl, npw)
 % Computes signals which come from reflections of the wall geometry
 % (including frontwall reflections).
 %
