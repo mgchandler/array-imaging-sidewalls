@@ -90,15 +90,17 @@ model_options.probe.standoff = 0;
 model_options.probe.separation = 0.05e-3;
 model_options.probe.width = 0.45e-3;
 
-model_options.mesh.sdh.info = fn_scat_info( ...
-        "sdh", ...
-        1.0e-3, ...
-        6317.01/model_options.probe.freq, ...
-        3110.28/model_options.probe.freq, ...
-        deg2rad(0), ...
-        [[10.0e-3, 0.0, 22.0e-3]], ...
-        'ang_pts_over_2pi', 120 ...
-);
+% Construct contents of fn_scat_info() outside of the function so that it
+% can be rewritten if required from external options, and then call the
+% function later to generate matrices.
+model_options.mesh.scat.type = "sdh";
+model_options.mesh.scat.x = 10.0e-3;
+model_options.mesh.scat.y =  0.0;
+model_options.mesh.scat.z = 22.0e-3;
+model_options.mesh.scat.r =  1.0e-3;
+model_options.mesh.scat.lambdaL = 6317.01/model_options.probe.freq;
+model_options.mesh.scat.lambdaT = 3110.28/model_options.probe.freq;
+model_options.mesh.scat.angle = 0.0;
 
 
 
@@ -111,9 +113,18 @@ if nargin == 1
         elseif ~isstruct(model_options.(option_fieldnames{arg}))
             model_options.(option_fieldnames{arg}) = new_options.(option_fieldnames{arg});
         else
-            model_fieldnames = fieldnames(new_options.(option_fieldnames{arg}));
-            for arg1 = 1:size(model_fieldnames, 1)
-                model_options.(option_fieldnames{arg}).(model_fieldnames{arg1}) = new_options.(option_fieldnames{arg}).(model_fieldnames{arg1});
+            suboption_fieldnames = fieldnames(new_options.(option_fieldnames{arg}));
+            for arg1 = 1:size(suboption_fieldnames, 1)
+                if ~isfield(model_options.(option_fieldnames{arg}), suboption_fieldnames{arg1})
+                    model_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1}) = new_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1});
+                elseif ~isstruct(model_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1}))
+                    model_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1}) = new_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1});
+                else
+                    subsuboption_fieldnames = fieldnames(new_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1}));
+                    for arg2 = 1:size(subsuboption_fieldnames, 1)
+                        model_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1}).(subsuboption_fieldnames{arg2}) = new_options.(option_fieldnames{arg}).(suboption_fieldnames{arg1}).(subsuboption_fieldnames{arg2});
+                    end
+                end
             end
         end
     end
@@ -121,8 +132,22 @@ elseif nargin ~= 0
     error('fn_default_model_options: wrong number of inputs.')
 end
 
+if isfield(model_options.mesh, 'scat')
+    model_options.mesh.scat = fn_scat_info( ...
+            model_options.mesh.scat.type, ...
+            model_options.mesh.scat.x, ...
+            model_options.mesh.scat.y, ...
+            model_options.mesh.scat.z, ...
+            model_options.mesh.scat.r, ...
+            model_options.mesh.scat.lambdaL, ...
+            model_options.mesh.scat.lambdaT, ...
+            model_options.mesh.scat.angle, ...
+            'ang_pts_over_2pi', 120 ...
+    );
+end
+
 if isfield(model_options.mesh, 'geom')
-    geom_corners = [cell2mat(model_options.mesh.geom.x); zeros(size(model_options.mesh.geom.x)); cell2mat(model_options.mesh.geom.y)].';
+    geom_corners = [cell2mat(model_options.mesh.geom.x); zeros(size(model_options.mesh.geom.x)); cell2mat(model_options.mesh.geom.z)].';
     model_options.mesh.geom.geometry = fn_make_geometry(1, 5000, ...
         geom_corners ...
     );

@@ -26,9 +26,8 @@ function fn_tfm(model_options)
 %                   List of z coordinates
 %               - geometry : struct
 %                   Output from fn_make_geometry()
-%           - sdh : struct
-%               - info : struct
-%                   Output from fn_scat_info()
+%           - scat : struct
+%               Output from fn_scat_info()
 %       - model : struct
 %           - boxsize : double : DEFAULT 0.0
 %           - db_range : double : DEFAULT 40.0
@@ -63,9 +62,9 @@ PIXEL = model_options.model.pixel;
 probe_els = model_options.probe.num_els;
 xmin = min(cell2mat(model_options.mesh.geom.x));
 xmax = max(cell2mat(model_options.mesh.geom.x));
-zmin = min(cell2mat(model_options.mesh.geom.y));
-zmax = max(cell2mat(model_options.mesh.geom.y));
-scat_info = model_options.mesh.sdh.info;
+zmin = min(cell2mat(model_options.mesh.geom.z));
+zmax = max(cell2mat(model_options.mesh.geom.z));
+scat_info = model_options.mesh.scat;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;
 geometry = model_options.mesh.geom.geometry;
@@ -439,7 +438,7 @@ if ~isstruct(model_options.data)
 
     % Scatterer simulation.
     out_freq_spec = 0;
-    num_scatterers = size(scat_info.image_block, 1);
+    num_scatterers = size(scat_info.x, 1);
     
     for scatterer = 1 : num_scatterers
         for view = 1 : size(Views, 1)
@@ -496,7 +495,7 @@ else
     
     FMC_for_plotting = abs(FMC_time_data);
     FMC_for_plotting(1:751, :) = 0;
-    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(3), Path_info_list(6), scat_info.image_block, sprintf('%s_FMC.png', savename));
+    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(3), Path_info_list(6), [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_FMC.png', savename));
 end
 
 
@@ -524,7 +523,7 @@ for xpt = 1 : xpts+1
     end
 end
 
-image_block_info = fn_scat_info("image", image_block);
+image_block_info = fn_scat_info("image", image_block(:, 1), image_block(:, 2), image_block(:, 3));
 scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
 are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
                          (scatterer_coords(:,:,1) <= xmax) .* ...
@@ -641,9 +640,9 @@ for im = 1:Number_of_ims
         plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
     end
     if boxsize ~= 0
-        for s = 1 : size(scat_info.image_block, 1)
+        for s = 1 : size(scat_info.x, 1)
             if scat_info.type ~= 'image'
-                rectangle('Position', [scat_info.image_block(s, 1)*UC - boxsize*UC/2, scat_info.image_block(s, 3)*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'r');
+                rectangle('Position', [scat_info.x(s)*UC - boxsize*UC/2, scat_info.z(s)*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'r');
             end
         end
     end

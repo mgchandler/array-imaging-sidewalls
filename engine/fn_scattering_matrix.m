@@ -36,7 +36,7 @@ scat_matrix(4).matr = zeros(ang_pts_over_2pi);
     
 if scat_info.type == "sdh"
     % Unpack scatterer info.
-    sdh_radius = scat_info.radius;
+    sdh_radius = scat_info.r(1);
     lambda_L = scat_info.lambdaL;
     lambda_T = scat_info.lambdaT;
     

@@ -26,7 +26,7 @@ function ray = fn_compute_ray(scat_info, path_info, varargin)
 %       path taken and the ray weights.
 
 % Unpack scat_info and path_info structures.
-scatterers = scat_info.image_block;
+scatterers = [scat_info.x, scat_info.y, scat_info.z];
 path_geometry = path_info.path_geometry;
 speeds = path_info.speeds;
 probe_coords = path_info.probe_coords;

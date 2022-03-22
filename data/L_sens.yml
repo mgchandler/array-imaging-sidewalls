@@ -67,19 +67,19 @@ mesh:
   geom:
     # <double list> REQUIRED List of x-coordinates used to generate geometry.
     x: 
-     - -25.00e-3
-     -  24.99e-3
-     -  24.99e-3
-     -  40.01e-3
-     -  40.01e-3
+     - -25.05e-3
+     -  24.95e-3
+     -  24.95e-3
+     -  40.05e-3
+     -  40.05e-3
      
     # <double list> REQUIRED List of y-coordinates used to generate geometry.
-    y: 
-     - -25.01e-3
-     - -25.01e-3
-     - -45.01e-3
-     - -45.01e-3
-     -  -0.01e-3
+    z: 
+     - -25.05e-3
+     - -25.05e-3
+     - -45.05e-3
+     - -45.05e-3
+     -   0.05e-3
      
     # <int list> OPTIONAL List of walls which will be used to generate SRM layers. 0th wall 
     # connects 0th coord to 1st coord. Unused if profile is "halfcirc", which is automatically
@@ -103,13 +103,16 @@ mesh:
      
   # OPTIONAL Side-drilled hole parameters. Note that checks are not made to ensure the hole is
   # entirely contained within the geometry. Each hole treated independently in order.
-  sdh:
+  scat:
+    # <string> REQUIRED Label for the type of scatterer. Program is built to accept only 'sdh'.
+    type: sdh
+    
     # <double list> REQUIRED List of x-coordinates of SDHs.
     x: 
      - 0.0e-3
      
     # <double list> REQUIRED List of y-coordinates of SDHs.
-    y: 
+    z: 
      - -17.5e-3
      
     # <double list> REQUIRED List of radii for SDHs.

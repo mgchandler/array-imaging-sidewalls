@@ -33,7 +33,7 @@ scat_info = ray.scat_info;
 probe_coords = path_info.probe_coords;
 medium_ids = path_info.medium_ids;
 density = path_info.densities;
-scatterers = scat_info.image_block;
+scatterers = [scat_info.x, scat_info.y, scat_info.z];
 npw = path_info.npw;
 c44 = path_info.modulus / (2. * (1. + path_info.poisson));
 

@@ -26,9 +26,8 @@ function fn_sens(model_options)
 %                   List of z coordinates
 %               - geometry : struct
 %                   Output from fn_make_geometry()
-%           - sdh : struct
-%               - info : struct
-%                   Output from fn_scat_info()
+%           - scat : struct
+%               Output from fn_scat_info() function.
 %       - model : struct
 %           - boxsize : double : DEFAULT 0.0
 %           - db_range : double : DEFAULT 40.0
@@ -62,11 +61,11 @@ PIXEL = model_options.model.pixel;
 
 probe_els = model_options.probe.num_els;
 % Mins and maxes used for grid, so make it slightly smaller than the geometry.
-xmin = min(cell2mat(model_options.mesh.geom.x)) + 0.01e-3;
-xmax = max(cell2mat(model_options.mesh.geom.x)) - 0.01e-5;
-zmin = min(cell2mat(model_options.mesh.geom.y)) + 0.01e-5;
-zmax = max(cell2mat(model_options.mesh.geom.y)) - 0.01e-5;
-scat_info = model_options.mesh.sdh.info;
+xmin = min(cell2mat(model_options.mesh.geom.x)) + 0.1e-3;
+xmax = max(cell2mat(model_options.mesh.geom.x)) - 0.1e-5;
+zmin = min(cell2mat(model_options.mesh.geom.z)) + 0.1e-5;
+zmax = max(cell2mat(model_options.mesh.geom.z)) - 0.1e-5;
+scat_info = model_options.mesh.scat;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;
 geometry = model_options.mesh.geom.geometry;
@@ -88,7 +87,7 @@ multi_freq = model_options.model.multi_freq;
 norm_to = model_options.model.norm_to;
 db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
-image_block_info = model_options.mesh.sdh.info;
+image_block_info = model_options.mesh.scat;
 
 no_walls = size(geometry, 1);
 
@@ -365,7 +364,9 @@ for xpt = 1 : xpts+1
 end
 
 % Reuse imaging paths for 
-image_block_info.image_block = image_block;
+image_block_info.x = image_block(:, 1);
+image_block_info.y = image_block(:, 2);
+image_block_info.z = image_block(:, 3);
 
 % Compute Imaging Paths
 Paths = repmat(fn_compute_ray(image_block_info, Path_info_list(1), geometry, probe_frequency), 1, num_paths);
