@@ -41,6 +41,7 @@ c44 = path_info.modulus / (2. * (1. + path_info.poisson));
 ray_weights.beamspread = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_beamspread = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.directivity = zeros(probe_els, num_scatterers, num_freqs);
+ray_weights.idirectivity = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.transrefl = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_transrefl = zeros(probe_els, num_scatterers, num_freqs);
 % Total weights for each frequency.
@@ -103,9 +104,14 @@ if ~isstruct(path_geometry)
                 % We want the outgoing angle from the probe.
                 ray_weights.directivity(tx, scat, freq_idx) = ...
                     fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx));
+                ray_weights.idirectivity(tx, scat, freq_idx) = ...
+                    fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...
+                    fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                 if npw == 0
                     ray_weights.directivity(tx, scat, freq_idx) = ray_weights.directivity(tx, scat, freq_idx) * ...
-                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1), c44);
+                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+                    ray_weights.directivity(tx, scat, freq_idx) = ray_weights.idirectivity(tx, scat, freq_idx) * ...
+                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                 end
             end
         end
@@ -165,11 +171,14 @@ else
                 if medium_ids(1) == 1 % If solid then contact.
                     ray_weights.directivity(tx, scat, freq_idx) = ...
                         fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx));
+                    ray_weights.idirectivity(tx, scat, freq_idx) = ...
+                        fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...
+                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                     if npw == 0
                         ray_weights.directivity(tx, scat, freq_idx) = ray_weights.directivity(tx, scat, freq_idx) * ...
-                            fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1), c44);
+                            fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                     end
-              else % Must be liquid, so immersion.
+                else % Must be liquid, so immersion.
                     ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(end)/freq_array(freq_idx));
                 end
             end
@@ -197,7 +206,7 @@ end
 % the distance between defect and receiver is one wavelength (Zhang, 2008)
 ray_weights.weights = ( ...
     ray_weights.transrefl .* ray_weights.directivity .* ray_weights.beamspread ...
-);
+) ./ c44;
 ray_weights.inv_weights = ( ...
     ray_weights.inv_transrefl .* ray_weights.inv_beamspread .* ray_weights.directivity ...
 ) .* sqrt(speeds(end)/reshape(freq_array', 1,1,num_freqs));

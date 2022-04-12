@@ -26,7 +26,7 @@ assert(size(FMC_data, 1) == size(FMC_time, 1), "fn_plot_FMC_at_time: FMC_data an
 assert(size(pixel_coord, 1) == 1, "fn_plot_FMC_at_time: Incorrect number of pixels provided.")
 assert(size(pixel_coord, 2) == 3, "fn_plot_FMC_at_time: Incorrect number of dimensions in pixel.")
 
-pixel_info = fn_scat_info("image", pixel_coord);
+pixel_info = fn_scat_info("image", pixel_coord(1), pixel_coord(2), pixel_coord(3));
 tx_path = fn_compute_ray(pixel_info, path_info_tx);
 rx_path = fn_compute_ray(pixel_info, path_info_rx);
 

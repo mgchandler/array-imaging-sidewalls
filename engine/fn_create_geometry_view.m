@@ -18,7 +18,7 @@ function view = fn_create_geometry_view(path_info, all_geometries, probe_as_scat
 % - view
 %       A single view which reflects from the geometry.
 
-[probe_els, ~] = size(probe_as_scatterer.image_block); 
+[probe_els, ~] = size(probe_as_scatterer.x); 
 
 % Compute the ray.
 ray = fn_compute_ray(probe_as_scatterer, path_info, all_geometries);

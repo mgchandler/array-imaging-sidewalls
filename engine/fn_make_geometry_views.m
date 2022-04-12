@@ -40,9 +40,11 @@ function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds
 [probe_els, ~] = size(probe_coords);
 
 % Set up variables required for calculations.
-probe_as_scatterer.image_block = probe_coords;
-probe_as_scatterer.x_shape = 1;
-probe_as_scatterer.z_shape = 1;
+probe_as_scatterer.x = probe_coords(:, 1);
+probe_as_scatterer.y = probe_coords(:, 2);
+probe_as_scatterer.z = probe_coords(:, 3);
+% probe_as_scatterer.x_shape = 1;
+% probe_as_scatterer.z_shape = 1;
 probe_as_scatterer.type = "image";
 
 couplant_spd = mat_speeds(1);

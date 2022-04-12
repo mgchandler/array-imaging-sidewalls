@@ -73,6 +73,7 @@ model_options.mesh.geom.geometry = fn_make_geometry(1, 1000, ...
 
 model_options.model.boxsize = 0.0;
 model_options.model.db_range = 40.0;
+model_options.model.interp_method = 'linear';
 model_options.model.max_no_reflections = 1;
 model_options.model.model_geom = 1;
 model_options.model.multi_freq = 0;

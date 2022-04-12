@@ -10,7 +10,7 @@ for kk = 1:size(yaml_options.mesh.geom.z, 2)
     yaml_options.mesh.geom.z{kk} = -yaml_options.mesh.geom.z{kk};
 end
 yaml_options.model.boxsize = 1.0e-3;
-yaml_options.model.pixel = 5.0e-3;
+yaml_options.model.pixel = 1.0e-3;
 yaml_options.model.model_geom = 0;
 yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;

@@ -8,7 +8,7 @@ function dir_out = fn_linedir_lookup(theta, mode, rad, npw)
 assert(length(mode) == 1, 'fn_linedir_lookup: mode should have length 1.')
 
 % Read table
-filename = sprintf('D_rdm1_%dnpw.dir.lookup.dat', npw);
+filename = sprintf('D_rdm1_%dnpw.dir_k.lookup.dat', npw);
 dir = readtable(filename);
 
 % Get unique radii for which we have directivity values.
@@ -43,9 +43,9 @@ end
 
 % Interpolate within directivity data.
 if mode
-    dir_out = interp2(rmags, phi, dS, rad, theta, 'cubic', 0);% * 3.5187/8.5841;
+    dir_out = interp2(rmags, phi, dS, rad, theta, 'cubic', 0);% * 4.57441218/7.28705187;%3.5187/8.5841;
 else
-    dir_out = interp2(rmags, phi, dL, rad, theta, 'cubic', 0);% * 5.2098/7.1250;
+    dir_out = interp2(rmags, phi, dL, rad, theta, 'cubic', 0);% * 5.39475481/7.46521882;%5.2098/7.1250;
 end
 
 end
