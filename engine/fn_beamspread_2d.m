@@ -1,4 +1,4 @@
-function beam_spread = fn_beamspread_2d(dists, alphas, speeds)
+function beam_spread = fn_beamspread_2d(dists, alphas, speeds, freq)
 % Computes the beam spreading in 2D by finding the virtual distance of the
 % ray. The function assumes that the ray has already been found. Note that
 % this function was designed to only find one beam spread value: loops

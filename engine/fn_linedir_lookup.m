@@ -8,7 +8,7 @@ function dir_out = fn_linedir_lookup(theta, mode, rad, npw)
 assert(length(mode) == 1, 'fn_linedir_lookup: mode should have length 1.')
 
 % Read table
-filename = sprintf('D_rdm1_%dnpw.dir_k.lookup.dat', npw);
+filename = sprintf('D_rdm1_%dnpw.dir.lookup.dat', npw);
 dir = readtable(filename);
 
 % Get unique radii for which we have directivity values.
