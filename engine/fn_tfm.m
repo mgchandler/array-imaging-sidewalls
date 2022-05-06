@@ -352,7 +352,7 @@ else
     
     FMC_for_plotting = abs(FMC_time_data);
     FMC_for_plotting(1:751, :) = 0;
-    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(3), Path_info_list(6), [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_FMC.png', savename));
+%     fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(3), Path_info_list(6), [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_FMC.png', savename));
 end
 
 
@@ -491,10 +491,13 @@ for view = 1 : Number_of_ims
    Ims(view).db_image = 20 * log10(abs(Ims(view).image) ./ max_); 
 end
 
+% im_idxs = [4, 12, 17];
+
 % Plot.
 fig = figure(1);
 t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
 for im = 1:Number_of_ims
+%     im = im_idxs(im1);
     h(im) = nexttile;
     imagesc(im_x*UC, im_z*UC, Ims(im).db_image);
     hold on

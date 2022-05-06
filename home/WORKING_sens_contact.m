@@ -10,7 +10,7 @@ for kk = 1:size(yaml_options.mesh.geom.z, 2)
     yaml_options.mesh.geom.z{kk} = -yaml_options.mesh.geom.z{kk};
 end
 yaml_options.model.boxsize = 1.0e-3;
-yaml_options.model.pixel = 1.0e-3;
+yaml_options.model.pixel = .5e-3;
 yaml_options.model.model_geom = 0;
 yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
@@ -23,7 +23,7 @@ yaml_options.model.savename = 'Backwall Sensitivity';
 % );
 yaml_options.mesh.scat.lambdaL = v_L/5e6;
 yaml_options.mesh.scat.lambdaT = v_S/5e6;
-yaml_options.model.wall_for_imaging = "B1";
+yaml_options.model.wall_for_imaging = "S2";
 model_options = fn_default_model_options(yaml_options);
 
 % profile clear

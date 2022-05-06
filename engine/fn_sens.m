@@ -70,7 +70,6 @@ savepath = model_options.model.savepath;
 savename = model_options.model.savename;
 geometry = model_options.mesh.geom.geometry;
 wall_for_imaging = model_options.model.wall_for_imaging;
-boxsize = model_options.model.boxsize;
 
 probe_angle = model_options.probe.angle;
 probe_standoff = model_options.probe.standoff;
@@ -108,10 +107,6 @@ elseif and(~is_frontwall, and(probe_standoff == 0, probe_angle == 0))
     is_contact = 1;
 else
     error('fn_sens: Invalid setup.')
-end
-
-if boxsize ~= 0
-    warning('fn_sens: boxsize=%0.2g is ignored', boxsize)
 end
 
 xsize = xmax - xmin;
@@ -375,6 +370,11 @@ for path = 2:num_paths
 end
 clear probe_frequency num_paths path Path_info_list boxpix X Z pt xpt zpt path
 
+time_2 = double(toc);
+fn_print_time('Rays traced', time_2)
+
+tic
+
 % Create views from these paths.
 Views = fn_make_views(Paths, 1);
 Number_of_ims = size(Views, 1);
@@ -396,9 +396,9 @@ for view = 1 : Number_of_ims
     Sens(view).name = Views(view).name;
 end
 
-time_2 = double(toc);
+time_3 = double(toc);
 
-fn_print_time('Rays traced', time_2)
+fn_print_time('Views created', time_3)
 
 clear Paths
 
@@ -443,9 +443,9 @@ for view = 1 : Number_of_ims
     Sens(view).image = reshape(sum(conj(scat_amp .* weights .* valid_path .* are_points_in_geometry'), 1)/size(weights, 1), zpts+1, xpts+1);
 end
 
-time_3 = double(toc);
+time_4 = double(toc);
 
-fn_print_time('Finished Sensitivity Loop', time_3)
+fn_print_time('Finished Sensitivity Loop', time_4)
 
 clear PIXEL probe_els boxsize xsize zsize time_pts freq in_freq_spec fft_pts
 clear xpts zpts are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max
@@ -510,11 +510,11 @@ c.Label.String = 'dB';
 
 
 
-time_4 = double(toc);
+time_5 = double(toc);
 
-fn_print_time('Plotted', time_4)
+fn_print_time('Plotted', time_5)
 
-times = [time_1, time_2, time_3, time_4];
+times = [time_1, time_2, time_3, time_4, time_5];
 
 
 

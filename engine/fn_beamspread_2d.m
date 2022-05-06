@@ -1,4 +1,4 @@
-function beam_spread = fn_beamspread_2d(dists, alphas, speeds, freq)
+function beam_spread = fn_beamspread_2d(dists, alphas, speeds, varargin)
 % Computes the beam spreading in 2D by finding the virtual distance of the
 % ray. The function assumes that the ray has already been found. Note that
 % this function was designed to only find one beam spread value: loops
@@ -22,13 +22,22 @@ function beam_spread = fn_beamspread_2d(dists, alphas, speeds, freq)
 % OUTPUTS:
 % - beam_spread : double
 %       bs = 1 / sqrt(virtual_distance), method taken from the Appendix of
-%       Budyn [1]
+%       Budyn [1]. Virtual distance is the distance which the ray appears
+%       to have travelled in the last leg of the ray, based on the virtual
+%       projection of the beam (distance M2' -> M3 in Fig 7b in source).
 %
 % REFERENCES:
 % [1] : N. Budyn, R. Bevan, et al., "A Model for Multiview Ultrasonic Array
 %       Inspection of Small Two-DImensional Defects," in IEEE Transactions
 %       on Ultrasonics, Ferroelectrics, and Frequency Control, vol. 66, no.
 %       6, 1129-1139, Jun 2019 (doi:10.1109/TUFFC.2019.2909988)
+
+if nargin > 0
+    freq = varargin{1};
+    last_k = 2 * pi * freq / speeds(end);
+else
+    last_k = 1;
+end
 
 [no_legs, ~] = size(dists);
 gamma_list = zeros(no_legs-1, 1);
@@ -55,6 +64,7 @@ if no_legs ~= 1
     end
 end
 
+% beam_spread = 1/sqrt(last_k * virtual_distance);
 beam_spread = 1/sqrt(virtual_distance);
 
 end

@@ -149,6 +149,14 @@ end
 
 if isfield(model_options.mesh, 'geom')
     geom_corners = [cell2mat(model_options.mesh.geom.x); zeros(size(model_options.mesh.geom.x)); cell2mat(model_options.mesh.geom.z)].';
+    if isfield(model_options.mesh, 'profile')
+        if strcmp(model_options.mesh.profile, 'halfcirc')
+            geom_radius = abs(geom_corners(1, 1) - geom_corners(2, 1))/2;
+            geom_corners = [geom_corners(1, :); [geom_corners(1,1), 0.0, geom_radius]; [geom_corners(end,1), 0.0, geom_radius]; geom_corners(end, :)];
+            model_options.mesh.geom.x = num2cell(geom_corners(:, 1));
+            model_options.mesh.geom.z = num2cell(geom_corners(:, 3));
+        end
+    end
     model_options.mesh.geom.geometry = fn_make_geometry(1, 5000, ...
         geom_corners ...
     );
