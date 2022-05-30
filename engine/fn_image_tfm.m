@@ -1,52 +1,4 @@
-function [FMC_time, FMC_time_data] = fn_simulate_fmc(model_options)
-% Computes the sensitivity maps for an array in contact with the solid
-% block being inspected. Currently works for a rectangular block with some
-% depth defined as the zmax location, and sidewall location defined as the
-% xmax location.
-%
-% INPUTS:
-% - model_options : struct 
-%       Structure containing options which will overwrite the defaults.
-%       Possible options to include as fields are:
-%       - data : struct : DEFAULT none
-%           If FMC data generated externally, it can be passed in using
-%           this option. The simulation will be skipped and the program
-%           will proceed straight to the TFM.
-%       - material : struct
-%           - couplant_density : double : DEFAULT 1.2
-%           - couplant_v : double : DEFAULT 340.0
-%           - density : double : DEFAULT 2700.0
-%           - modulus : double : DEFAULT 70e9
-%           - poisson : double : DEFAULT 0.34
-%       - mesh : struct
-%           - geom : struct
-%               - x : double array
-%                   List of x coordinates
-%               - y : double array
-%                   List of z coordinates
-%               - geometry : struct
-%                   Output from fn_make_geometry()
-%           - scat : struct
-%               Output from fn_scat_info()
-%       - model : struct
-%           - boxsize : double : DEFAULT 0.0
-%           - db_range : double : DEFAULT 40.0
-%           - max_no_reflections : integer : DEFAULT 1
-%           - model_geom : logical : DEFAULT 1
-%           - multi_freq : logical : DEFAULT 0
-%           - norm_to : double : DEFAULT 0
-%           - npw : double : DEFAULT 45
-%           - pixel : double : DEFAULT 0.5e-3
-%           - savename : string : DEFAULT "TFM-Sens Image Plot"
-%           - savepath : string : DEFAULT ""
-%           - wall_for_imaging : string : DEFAULT "B1"
-%       - probe : struct
-%           - angle : double : DEFAULT 0
-%           - freq : double : DEFAULT 5.0e+6
-%           - num_els : integer : DEFAULT 32
-%           - standoff : double : DEFAULT 0
-%           - separation : double : DEFAULT 0.05e-3
-%           - width : double : DEFAULT 0.45e-3
+function [Ims, Views_im] = fn_image_tfm(FMC_time, FMC_time_data, model_options, varargin)
 
 tic;
 
@@ -55,13 +7,19 @@ tic;
 % ---------------------------------------------------------------------- %%
 
 PITCH = model_options.probe.width + model_options.probe.separation;
+PIXEL = model_options.model.pixel;
 
 probe_els = model_options.probe.num_els;
+xmin = min(cell2mat(model_options.mesh.geom.x));
+xmax = max(cell2mat(model_options.mesh.geom.x));
+zmin = min(cell2mat(model_options.mesh.geom.z));
+zmax = max(cell2mat(model_options.mesh.geom.z));
 scat_info = model_options.mesh.scat;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;
 geometry = model_options.mesh.geom.geometry;
 wall_for_imaging = model_options.model.wall_for_imaging;
+boxsize = model_options.model.boxsize;
 
 probe_angle = model_options.probe.angle;
 probe_standoff = model_options.probe.standoff;
@@ -73,13 +31,9 @@ solid_long_speed = sqrt(model_options.material.modulus * (1 - model_options.mate
 solid_shear_speed = sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
 solid_density = model_options.material.density;
 max_num_reflections = model_options.model.max_no_reflections;
-model_geometry = model_options.model.model_geom;
-multi_freq = model_options.model.multi_freq;
+norm_to = model_options.model.norm_to;
+db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
-
-% Additional parameters not directly dependent on inputs.
-oversampling = 10;
-no_cycles = 5;
 
 no_walls = size(geometry, 1);
 
@@ -102,12 +56,15 @@ else
     error('fn_sens: Invalid setup.')
 end
 
-clear is_frontwall wall
+xsize = xmax - xmin;
+zsize = zmax - zmin;
+
+UC = 1e3; % Unit conversion
 
 
 
 %% ------------------------------------------------------------------------
-% Set up the scene.
+% Get probe for plotting later
 % -------------------------------------------------------------------------
 
 rot_matrix = [cos(probe_angle) 0 sin(probe_angle); 0 1 0; -sin(probe_angle) 0 cos(probe_angle)];
@@ -119,8 +76,6 @@ probe_coords = probe_coords.' * rot_matrix;
 probe_coords(:, 3) = probe_coords(:, 3) - probe_standoff;
 
 clear rot_matrix
-
-
 
 %% ---------------------------------------------------------------------- %
 % Scatterer Simulation path info - Contact                                %
@@ -315,157 +270,232 @@ elseif ~is_contact
 end
 
 time_1 = double(toc);
-fn_print_time('Simulation setup', time_1)
-
-clear max_num_reflections no_walls mode_names speeds num_reflections_in_path
-clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
-
+fn_print_time('Imaging setup', time_1)
 
 %% ---------------------------------------------------------------------- %
-% Create simulation views                                                 %
+% Imaging Setup                                                           %
 % ---------------------------------------------------------------------- %%
-% Precompute views for all scatterers, as well as imaging views.
 
 tic;
 
-% Compute Imaging Paths
-if multi_freq
-    error("fn_simulate_fmc: multi frequency not implemented")
-%     frequency = freq(2:end);
-else
-    frequency = probe_frequency;
-end
-Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
-path = 1;
-ii = 1;
-while path < num_paths
-    ii = ii + 1;
-    if length(Path_info_list(ii).speeds) > 1
-        if wall_for_imaging == Path_info_list(ii).path_geometry.name
-            path = path + 1;
-            Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+xpts = round(xsize / PIXEL);
+zpts = round(zsize / PIXEL);
+im_x = linspace(xmin, xmax, xpts+1);
+im_z = linspace(zmin, zmax, zpts+1);
+    
+% If Views_im passed in, do not recompute.
+if nargin > 3
+    for narg = 1 : nargin-3
+        arg = varargin{narg};
+        if isa(arg, 'struct')
+            Views_im = arg;
         end
-    else % Must be direct
-        path = path+1;
-        Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
     end
+else
+    tic
+
+    [X, Z] = meshgrid(im_x, im_z);
+
+    pt = 1;
+    image_block = zeros((xpts+1)*(zpts+1), 3);
+
+    for xpt = 1 : xpts+1
+        for zpt = 1 : zpts+1
+            image_block(pt, 1) = X(zpt, xpt);
+            image_block(pt, 3) = Z(zpt, xpt);
+            pt = pt + 1;
+        end
+    end
+
+    image_block_info = fn_scat_info("image", image_block(:, 1), image_block(:, 2), image_block(:, 3));
+    scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
+    are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
+                             (scatterer_coords(:,:,1) <= xmax) .* ...
+                             (scatterer_coords(:,:,3) >= zmin) .* ...
+                             (scatterer_coords(:,:,3) <  zmax);
+
+    Paths_im = repmat(fn_compute_ray(image_block_info, Path_info_list(1)), 1, num_paths);
+    thispath = 1;
+    for path = 2:size(Path_info_list, 1)
+        % Only get the paths we want to image. This will always include direct
+        % paths (when path_geometry field == 0), and may include some extra
+        % ones if we are modelling wall reflections.
+        if is_contact
+            if ~isstruct(Path_info_list(path).path_geometry) % If direct contact
+                Paths_im(thispath) = fn_compute_ray(image_block_info, Path_info_list(path));
+                thispath = thispath + 1;
+            elseif Path_info_list(path).path_geometry(end).name == wall_for_imaging
+                Paths_im(thispath) = fn_compute_ray(image_block_info, Path_info_list(path));
+                thispath = thispath + 1;
+            end
+        else
+            if Path_info_list(path).path_geometry(end).name == "F" % If direct immersion
+                Paths_im(thispath) = fn_compute_ray(image_block_info, Path_info_list(path));
+                thispath = thispath + 1;
+            elseif Path_info_list(path).path_geometry(end).name == wall_for_imaging
+                Paths_im(thispath) = fn_compute_ray(image_block_info, Path_info_list(path));
+                thispath = thispath + 1;
+            end
+        end
+    end
+
+    Views_im = fn_make_views(Paths_im, 1);
 end
 
-% Create views from these paths.
-Views = fn_make_views(Paths, 0);
-
-clear Paths
-
-
-
-%% ---------------------------------------------------------------------- %
-% Geometry setup.   NEEDS WORK                                            %
-% ---------------------------------------------------------------------- %%
-
-% If we are in the contact case. There is no frontwall.
-if is_contact
-    if model_geometry
-
-        backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
-            [couplant_speed solid_long_speed solid_shear_speed], ...
-            [couplant_density solid_density], probe_frequency, PITCH, el_length, 1, npw ...
-        );
-    end
-
-% If we are in the immersion case. There will be a frontwall reflection.
+Number_of_ims = size(Views_im, 1);
+if Number_of_ims == 3
+    plot_x = 3;
+    plot_z = 1;
+elseif Number_of_ims == 21
+    plot_x = 3;
+    plot_z = 7;
+elseif Number_of_ims == 55
+    plot_x = 11;
+    plot_z = 5;
 else
-    if model_geometry
+    error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
+end
 
-        backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
-            [couplant_speed solid_long_speed solid_shear_speed], ...
-            [couplant_density solid_density], probe_frequency, PITCH, el_length, 1 ...
-        );
-    end
+Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
+for view = 1 : Number_of_ims
+    Ims(view).name = Views_im(view).name;
 end
 
 time_2 = double(toc);
-
 fn_print_time('Rays traced', time_2)
 
-clear probe_angle el_length couplant_density solid_density PITCH
-
-
-
-%% ------------------------------------------------------------------------
-% Input signal
-% -------------------------------------------------------------------------
-
-% Create input signal.
-time_step = 1 / (probe_frequency * oversampling);
-max_t = 0;
-for view = 1:size(Views, 1)
-    max_in_view = max(Views(view).min_times(:));
-    max_t = max(max_t, max_in_view);
-end
-if model_geometry
-    for view = 1:size(backwall_views, 1)
-        max_in_view = max(backwall_views(view).min_times(:));
-        max_t = max(max_t, max_in_view);
-    end
-end
-max_t = 1.25 * max_t; % Bit of extra room on the end
-time_pts = ceil(max_t / time_step)+1;
-[~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
-
-clear probe_standoff oversampling no_cycles time_step
+clear PIXEL xsize zsize num_paths Path_info_list image_block
+clear image_block_info scatterer_coords Paths_im
 
 
 
 %% ---------------------------------------------------------------------- %
-% Simulation.                                                             %
+% Imaging                                                                 %
+% ---------------------------------------------------------------------- %%
+
+tic;
+
+% Lookup times in FMC data.
+
+if strcmp(model_options.model.interp_method, 'lanczos')
+    for tr_pair = 1 : probe_els ^ 2
+        for view = 1 : Number_of_ims
+            tau = reshape(Views_im(view).min_times(tr_pair, :), [zpts+1, xpts+1]);
+            Ims(view).image = Ims(view).image + are_points_in_geometry .* ...
+                fn_lanczos_interp(FMC_time, FMC_time_data(:, tr_pair), tau, 3);
+        end
+    end
+else % Assume linear interpolation as default.
+    for tr_pair = 1 : probe_els ^ 2
+        for view = 1 : Number_of_ims
+            tau = reshape(Views_im(view).min_times(tr_pair, :), [zpts+1, xpts+1]);
+            Ims(view).image = Ims(view).image + are_points_in_geometry .* ...
+                interp1(FMC_time, FMC_time_data(:, tr_pair), tau, 'linear', 0);
+        end
+    end
+end
+
+time_4 = double(toc);
+
+fn_print_time('Imaged', time_4)
+
+clear FMC_time FMC_time_data xpts zpts are_points_in_geometry tr_pair view tau
+
+
+
+%% ---------------------------------------------------------------------- %
+% Plotting.                                                               %
 % ---------------------------------------------------------------------- %%
 
 tic
 
-% Scatterer simulation.
-out_freq_spec = 0;
-num_scatterers = size(scat_info.x, 1);
-
-for scatterer = 1 : num_scatterers
-    for view = 1 : size(Views, 1)
-        weights = Views(view).weights(:, scatterer, 1);
-        scat_amp = Views(view).scat_amps(:, scatterer, 1);
-        valid_path = Views(view).valid_path(:, scatterer);
-        amp = (scat_amp .* weights .* valid_path);
-        out_freq_spec = out_freq_spec + ...
-            fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
-
-        clear weights scat_amp amp
+if norm_to == 0
+    max_ = 0;
+    for view = 1 : Number_of_ims
+        if max(abs(Ims(view).image(:))) > max_
+            max_ = max(abs(Ims(view).image(:)));
+        end
     end
+else
+    max_ = norm_to;
 end
 
-if model_geometry
-    [num_geom_views, ~] = size(backwall_views);
-    for view = 1 : num_geom_views
-        bw_amp = conj(backwall_views(view).weights .* backwall_views(view).valid_path);
-        out_freq_spec = out_freq_spec + ...
-            fn_propagate_spectrum_mc(freq, in_freq_spec, backwall_views(view).min_times, bw_amp, 0);
-    end
+for view = 1 : Number_of_ims
+   Ims(view).db_image = 20 * log10(abs(Ims(view).image) ./ max_); 
 end
 
-% Convert back to time.
-[FMC_time, FMC_time_data] = fn_convert_spectrum_to_time(freq, out_freq_spec, fft_pts, time_pts);
-FMC_time = FMC_time';
+% im_idxs = [4, 12, 17];
 
-% Hilbert Filtering (?) from fast_DAS function
-diagonals = spdiags([1:length(FMC_time)]' < length(FMC_time)/2, 0, length(FMC_time), length(FMC_time));
-FMC_time_data = ifft(diagonals * fft(FMC_time_data));
+% Plot.
+fig = figure(1);
+t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
+for im = 1:Number_of_ims
+%     im = im_idxs(im1);
+    h(im) = nexttile;
+    imagesc(im_x*UC, im_z*UC, Ims(im).db_image);
+    hold on
+    title(Ims(im).name)
+    caxis([-db_range_for_output, 0])
+    plot(probe_coords(:, 1)*UC, probe_coords(:, 3)*UC, 'go');
+    for wall = 1:size(geometry, 1)
+        plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
+    end
+    if boxsize ~= 0
+        for s = 1 : size(scat_info.x, 1)
+            if strcmp(scat_info.type, 'image')
+                rectangle('Position', [scat_info.x(s)*UC - boxsize*UC/2, scat_info.z(s)*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'r');
+            end
+        end
+    end
+    
+    if mod(im, plot_x) ~= 1
+        set(gca, 'yticklabel', {[]})
+    end
+    if im <= Number_of_ims - plot_x
+        set(gca, 'xticklabel', {[]})
+    end
+    
+    axis equal; axis tight;
+end
+xlabel(t, 'x (mm)')
+ylabel(t, 'z (mm)')
 
-%     figure(3)
-%     fn_plot_FMC_at_time(FMC_time_data, FMC_time, Path_info_list(3), Path_info_list(5), [[0, 0, 12.5e-3]], sprintf('%s_FMC.png', savename));
+c = colorbar(h(1), 'AxisLocation','in');
+c.Layout.Tile = 'north';
+c.Label.String = 'dB';
 
-time_3 = double(toc);
-fn_print_time('Simulated', time_3)
+% % Resize image and move for colorbar
+% set(fig, 'Position', [20, 20, im_width, im_height])
+% posa = cell2mat(get(ax, 'Position'));
+% h = colorbar;
+% for im = 1 : Number_of_ims
+%     set(ax(im), 'Position', [posa(im, 1), posa(im, 2)*0.8, posa(im, 3)*1.1, posa(im, 4)*1.1])
+% end
+% set(ax, 'units', 'pix')
+% set(h, 'units', 'pix')
+% posf = get(fig, 'Position'); % gives x left, y bottom, width, height
+% set(fig, 'Position',  [posf(1:2) posf(3)*1.1 posf(4)])
+% hpos = h.Position;
+% posa = cell2mat(get(ax, 'Position'));
+% pos1 = posa(1, :);
+% set(h, 'Position', [hpos(1)+10, hpos(2), hpos(3)*2, pos1(2)-hpos(2)+pos1(4)])
+% 
+% h.Label.String = 'dB';
+
+
+
+time_5 = double(toc);
+
+fn_print_time('Plotted', time_5)
+
+
 
 if savepath ~= ""
     cd(savepath)
-    filename =  sprintf('%s_FMC.mat', savename);
-    save(filename, "FMC_time", "FMC_time_data", "Views")
+    filename_fig = sprintf('%s.fig', savename);
+    filename_mat = sprintf('%s.mat', savename);
+    savefig(filename_fig)
+    save(filename_mat, 'Ims')
 end
-    
+
 end

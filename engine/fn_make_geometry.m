@@ -11,7 +11,11 @@ function geometry = fn_make_geometry(is_contiguous, N, varargin)
 %       geometry does not have to be closed (e.g. ☐-shaped), and can be
 %       open (C-shaped).
 % - N : integer
-%       Number of points to discretise walls into.
+%       Number of points to discretise walls into. Note that this should be
+%       a function of the expected final TFM pixel size: if wall pixels are
+%       >= image pixels, then it is very likely that there will be extreme
+%      inaccuracy in rays which reflect close to the wall. Try to keep wall
+%      pixels at about 0.1 * image pixels (not checked).
 % - point : array (n, 3)
 %       3D coordinates of the ends of walls. When is_contiguous == 0, an
 %       even number of points must be provided. Each pair of points are
