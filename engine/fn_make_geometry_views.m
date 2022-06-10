@@ -254,7 +254,7 @@ view_walls = repmat("", size(Views));
 view_modes = zeros(size(Views, 1), 2);
 
 for view = 1:size(Views, 1)
-    Views(view).ray.weights = fn_compute_ray_weights(Views(view).ray, probe_freq);
+%     Views(view).ray.weights = fn_compute_ray_weights(Views(view).ray, probe_freq);
     view_walls(view) = Views(view).ray.path_info.path_geometry.name;
     view_modes(view, :) = Views(view).ray.path_info.modes(:);
 end
@@ -275,7 +275,7 @@ for view = 1:size(Views, 1)
     for ii = 1 : probe_els
         for jj = 1 : probe_els
             Views(view).weights(el, :) = ( ...
-                ray.weights.weights(ii, jj, :) * ray.weights.directivity(jj, ii, :) ...
+                ray.weights.weights(ii, jj, :) * ray.weights.directivity(jj, ii, :) .* (1i * densities(medium_ids(end)+1) * view_speeds(view, end))...
             );
 
         el = el+1;

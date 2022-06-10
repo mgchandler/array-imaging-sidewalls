@@ -21,7 +21,7 @@ function view = fn_create_geometry_view(path_info, all_geometries, probe_as_scat
 [probe_els, ~] = size(probe_as_scatterer.x); 
 
 % Compute the ray.
-ray = fn_compute_ray(probe_as_scatterer, path_info, all_geometries);
+ray = fn_compute_ray(probe_as_scatterer, path_info, all_geometries, path_info.probe_frequency);
 
 % Initialise this view's arrays.
 view.name = path_info.name;

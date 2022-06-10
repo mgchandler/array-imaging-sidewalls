@@ -475,6 +475,7 @@ end
 
 % Plot.
 fig = figure(1);
+
 % ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
 if image_block_info.type == "crack"
     sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
@@ -501,12 +502,14 @@ for im = 1:Number_of_ims
     
     axis equal; axis tight;
 end
-xlabel(t, 'x (mm)')
-ylabel(t, 'z (mm)')
+xlabel(t, 'x (mm)', 'Fontname', 'Serif')
+ylabel(t, 'z (mm)', 'Fontname', 'Serif')
 
 c = colorbar(h(1), 'AxisLocation','in');
 c.Layout.Tile = 'north';
 c.Label.String = 'dB';
+
+set(findall(gcf, '-property', 'Fontname'), 'Fontname', 'Serif')
 
 
 

@@ -28,14 +28,20 @@ scat_info = path1.scat_info;
 [num_freqs, ~] = size(freq_array);
 
 scat_amps = zeros(probe_els^2, num_scatterers, num_freqs);
+
 if isfield(scat_info, 'matrix')
     inc_mode = path1_info.modes(end);
     out_mode = path2_info.modes(end);
     scat_matrix = scat_info.matrix(inc_mode*2 + out_mode + 1).matr;
-    inc_angles = path1.weights.inc_theta(view.probe_txrx(:, 1), :, end, 2) - scat_info.angle;
-    out_angles = path2.weights.inc_theta(view.probe_txrx(:, 2), :, 1, 2) - scat_info.angle;
     theta = linspace(-pi, pi, size(scat_matrix, 1));
-    scat_amps = interp2(theta, theta, scat_matrix, inc_angles, out_angles);
+    % Loop over element pairs. Could vectorise over element as well as
+    % scatterers, but out-of-memory error arises for high element number
+    % and small pixel size.
+    for el = 1 : probe_els^2
+        inc_angles = path1.weights.inc_theta(view.probe_txrx(el, 1), :, end, 2) - scat_info.angle;
+        out_angles = path2.weights.inc_theta(view.probe_txrx(el, 2), :, 1, 2) - scat_info.angle;
+        scat_amps(el, :, :) = interp2(theta, theta, scat_matrix, inc_angles, out_angles);
+    end
 else
     el = 1;
     for tx = 1 : probe_els

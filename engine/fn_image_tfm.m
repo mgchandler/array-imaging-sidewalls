@@ -282,7 +282,27 @@ xpts = round(xsize / PIXEL);
 zpts = round(zsize / PIXEL);
 im_x = linspace(xmin, xmax, xpts+1);
 im_z = linspace(zmin, zmax, zpts+1);
-    
+
+[X, Z] = meshgrid(im_x, im_z);
+
+pt = 1;
+image_block = zeros((xpts+1)*(zpts+1), 3);
+
+for xpt = 1 : xpts+1
+    for zpt = 1 : zpts+1
+        image_block(pt, 1) = X(zpt, xpt);
+        image_block(pt, 3) = Z(zpt, xpt);
+        pt = pt + 1;
+    end
+end
+
+image_block_info = fn_scat_info("image", image_block(:, 1), image_block(:, 2), image_block(:, 3));
+scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
+are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
+                         (scatterer_coords(:,:,1) <= xmax) .* ...
+                         (scatterer_coords(:,:,3) >= zmin) .* ...
+                         (scatterer_coords(:,:,3) <  zmax);
+                         
 % If Views_im passed in, do not recompute.
 if nargin > 3
     for narg = 1 : nargin-3
@@ -294,25 +314,7 @@ if nargin > 3
 else
     tic
 
-    [X, Z] = meshgrid(im_x, im_z);
 
-    pt = 1;
-    image_block = zeros((xpts+1)*(zpts+1), 3);
-
-    for xpt = 1 : xpts+1
-        for zpt = 1 : zpts+1
-            image_block(pt, 1) = X(zpt, xpt);
-            image_block(pt, 3) = Z(zpt, xpt);
-            pt = pt + 1;
-        end
-    end
-
-    image_block_info = fn_scat_info("image", image_block(:, 1), image_block(:, 2), image_block(:, 3));
-    scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
-    are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
-                             (scatterer_coords(:,:,1) <= xmax) .* ...
-                             (scatterer_coords(:,:,3) >= zmin) .* ...
-                             (scatterer_coords(:,:,3) <  zmax);
 
     Paths_im = repmat(fn_compute_ray(image_block_info, Path_info_list(1)), 1, num_paths);
     thispath = 1;
