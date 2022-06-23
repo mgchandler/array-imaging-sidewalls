@@ -410,7 +410,7 @@ if model_geometry
 end
 max_t = 1.25 * max_t; % Bit of extra room on the end
 time_pts = ceil(max_t / time_step)+1;
-[~, ~, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
+[t11, t12, freq, in_freq_spec, fft_pts] = fn_create_input_signal(time_pts, probe_frequency, time_step , no_cycles);
 
 clear probe_standoff oversampling no_cycles time_step
 
@@ -467,5 +467,10 @@ if savepath ~= ""
     filename =  sprintf('%s_FMC.mat', savename);
     save(filename, "FMC_time", "FMC_time_data", "Views")
 end
+
+
+FMC_for_plotting = abs(FMC_time_data);
+FMC_for_plotting(1:751, :) = 0;
+fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(1), Path_info_list(1), [-44.0e-3, 0.0, 37.5e-3], sprintf('%s_FMC.png', savename));
     
 end

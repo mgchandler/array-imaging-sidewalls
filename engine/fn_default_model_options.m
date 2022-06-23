@@ -41,6 +41,7 @@ function model_options = fn_default_model_options(varargin)
 %           - savename : string : DEFAULT "TFM-Sens Image Plot"
 %           - savepath : string : DEFAULT ""
 %           - wall_for_imaging : string : DEFAULT "B1"
+%           - image_range : double array : DEFAULT [geom.shape.xmin, geom.shape.xmax, geom.shape.zmin, geom.shape.zmax]
 %       - probe : struct
 %           - angle : double : DEFAULT 0
 %           - freq : double : DEFAULT 5.0e+6
@@ -83,6 +84,7 @@ model_options.model.pixel = 0.5e-3;
 model_options.model.savename = "TFM-Sens Image Plot";
 model_options.model.savepath = "";
 model_options.model.wall_for_imaging = "B1";
+model_options.model.image_range = [model_options.mesh.geom.shape.xmin, model_options.mesh.geom.shape.xmax, model_options.mesh.geom.shape.zmin, model_options.mesh.geom.shape.zmax];
 
 model_options.probe.angle = 0;
 model_options.probe.freq = 5.0e+6;
@@ -160,6 +162,18 @@ if isfield(model_options.mesh, 'geom')
     model_options.mesh.geom.geometry = fn_make_geometry(1, 5000, ...
         geom_corners ...
     );
+    % If image_range not provided, then take it from geometry.
+    if nargin == 1
+        if isfield(new_options, 'model')
+            if ~isfield(new_options.model, 'image_range')
+                model_options.model.image_range = [min(geom_corners(:, 1))+.01e-3, max(geom_corners(:, 1))-.01e-3, min(geom_corners(:, 3))+.01e-3, max(geom_corners(:, 3))-.01e-3];
+            end
+        else
+            model_options.model.image_range = [min(geom_corners(:, 1))+.01e-3, max(geom_corners(:, 1))-.01e-3, min(geom_corners(:, 3))+.01e-3, max(geom_corners(:, 3))-.01e-3];
+        end
+    else
+        model_options.model.image_range = [min(geom_corners(:, 1))+.01e-3, max(geom_corners(:, 1))-.01e-3, min(geom_corners(:, 3))+.01e-3, max(geom_corners(:, 3))-.01e-3];
+    end
 end
 
 if model_options.model.max_no_reflections > size(model_options.mesh.geom.geometry, 1)

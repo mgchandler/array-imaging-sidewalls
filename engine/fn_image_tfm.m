@@ -10,10 +10,10 @@ PITCH = model_options.probe.width + model_options.probe.separation;
 PIXEL = model_options.model.pixel;
 
 probe_els = model_options.probe.num_els;
-xmin = min(cell2mat(model_options.mesh.geom.x));
-xmax = max(cell2mat(model_options.mesh.geom.x));
-zmin = min(cell2mat(model_options.mesh.geom.z));
-zmax = max(cell2mat(model_options.mesh.geom.z));
+xmin = model_options.model.image_range(1);
+xmax = model_options.model.image_range(2);
+zmin = model_options.model.image_range(3);
+zmax = model_options.model.image_range(4);
 scat_info = model_options.mesh.scat;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;

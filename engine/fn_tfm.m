@@ -89,6 +89,7 @@ if ~isstruct(model_options.data)
 
     [FMC_time, FMC_time_data] = fn_simulate_fmc(model_options);
 
+
 %% ---------------------------------------------------------------------- %
 % Load FMC data                                                           %
 % ---------------------------------------------------------------------- %%
@@ -98,7 +99,7 @@ else
     
     FMC_for_plotting = abs(FMC_time_data);
 %     FMC_for_plotting(1:751, :) = 0;
-    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(2), Path_info_list(2), [30.0e-3, 0.0, 12.0e-3], sprintf('%s_FMC.png', savename));
+%     fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(2), Path_info_list(2), [30.0e-3, 0.0, 12.0e-3], sprintf('%s_FMC.png', savename));
 end
 
 

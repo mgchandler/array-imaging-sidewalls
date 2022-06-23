@@ -50,53 +50,47 @@ ray.path_info = path_info;
 ray.scat_info = scat_info;
 ray.valid_paths = zeros(probe_els, 1);
 
-% Calculate the fermat path.
-for scat = 1 : num_scatterers
-    for tx = 1 : probe_els
-        % In the contact case, we trace directly from probe to scatterer.
-        % Check whether we are dealing with contact or immersion.
-        if ~isstruct(path_geometry) % If we are in the direct contact case.
-            
-            % There is only one leg. Fermat path == straight line from
-            % probe to scatterer.
-            min_times = sqrt( ...
-                (scatterers(scat, 1) - probe_coords(tx, 1)) ^ 2 + ...
-                (scatterers(scat, 3) - probe_coords(tx, 3)) ^ 2) / ...
-            speeds(1);
-            
-            % Get the ray coordinates for use with fn_valid_paths.
-            ray_coords(tx, scat, 1, :) = probe_coords(tx, :);
-            ray_coords(tx, scat, 2, :) = scatterers(scat, :);
-            
-            % Collect the values.
-            ray.min_times(tx, scat) = min_times;
-        
-            
-        % We must be in the skip contact case, or the immersion case. In
-        % other words, we will have more than one leg, and thus we need to
-        % use the Dijkstra method to calculate the fermat path.
-        else 
-            
-            % Initialise the arrays for minimum times and associated wall
-            % indices (i.e. the index of the discrete point on the wall
-            % which the ray is transmitted through/reflected from.
-            min_times = zeros(wall_pixels, 1);
-            wall_idxs = linspace(1, wall_pixels, wall_pixels);
-
-            % First and last legs of the ray are simple to calculate. Treat
-            % them differently. Start with first leg.
-            
-            % Calculate the time taken to travel from the probe to all
-            % points on the first wall.
-            min_times(:, 1) = ( ...
-                sqrt((path_geometry(1).coords(:, 1) - probe_coords(tx, 1)) .^ 2 + ...
-                     (path_geometry(1).coords(:, 3) - probe_coords(tx, 3)) .^ 2) ./ speeds(1) ...
-            );
-
-            % If more than one boundary is present, then we will have
-            % middle legs that we must consider - this is where the
-            % efficiency improvement of Dijkstra comes in.
-            if no_walls > 1
+% Calculate the Fermat path. In direct contact, trace directly from probe to
+% to scatterer.
+if ~isstruct(path_geometry)
+    % Only one leg, so Fermat path is just a straight line from probe to
+    % scatterer.
+    ray.min_times = sqrt( ...
+        (scatterers(:, 1).' - probe_coords(:, 1)) .^ 2 + ...
+        (scatterers(:, 3).' - probe_coords(:, 3)) .^ 2) / ...
+    speeds(1);
+    
+    % Get ray coordinates to use with fn_valid_paths.
+    ray_coords(:, :, 1, :) = repmat( ...
+        reshape(probe_coords, probe_els, 1, 1, 3), ...
+        1, num_scatterers, 1, 1);
+    ray_coords(:, :, 2, :) = repmat( ...
+        reshape(scatterers, 1, num_scatterers, 1, 3), ...
+        probe_els, 1, 1, 1);
+else
+    % Skip contact or immersion. We have more than one leg, thus use
+    % Dijkstra to calculate Fermat path.
+    wall_idxs = linspace(1, wall_pixels, wall_pixels);
+    
+    % When imaging, likely to be fewer elements than pixels, so vectorise
+    % over scatterers and loop over images. Cannot do both as the 3D array
+    % is huge.
+    % We could vectorise over both when simulating, as fewer scatterers
+    % expected so 3D array smaller, but speedup is negligible.
+    for tx = 1:probe_els
+        % First and last legs are simple, so treat them differently.
+        min_times = repmat(reshape(sqrt( ...
+            (path_geometry(1).coords(:, 1).' - probe_coords(tx, 1)) .^ 2 + ...
+            (path_geometry(1).coords(:, 3).' - probe_coords(tx, 3)) .^ 2) / ...
+        speeds(1), 1, wall_pixels), num_scatterers, 1);
+    
+        % If more than one wall, then we have middle legs. This is where
+        % Dijkstra is more efficient than brute force. Note that we have to
+        % loop over scatterers in here to reduce array size of
+        % min_times_matrix, so we lose vectorisation improvements.
+        if no_walls > 1
+            for scat = 1:num_scatterers
+                for wall = 2:no_walls
                 % Compute the times from all points on the previous wall to
                 % all points on the next wall, i.e. compute a total of 
                 % (nth_wall_points)*((n+1)th_wall_points) times. Add these
@@ -104,8 +98,7 @@ for scat = 1 : num_scatterers
                 % the time from the probe to the kth point on the nth wall,
                 % added to the time calculated from the kth point on the
                 % nth wall to all points on the (n+1)th wall.
-                for wall = 2 : no_walls
-                    min_times_matrix = min_times + ...
+                    min_times_matrix = min_times(scat, :).' + ...
                         sqrt((path_geometry(wall).coords(:, 1).' - path_geometry(wall-1).coords(:, 1)).^2 + ...
                              (path_geometry(wall).coords(:, 3).' - path_geometry(wall-1).coords(:, 3)).^2) ./ speeds(wall);
                     
@@ -116,7 +109,7 @@ for scat = 1 : num_scatterers
                 % further.
                     [find_i, find_j] = ind2sub(size(min_times_matrix), find(min_times_matrix == min(min_times_matrix, [], 2)));
                     for k = 1 : wall_pixels
-                        min_times(k, 1) = min_times_matrix(find_i(k), find_j(k));
+                        min_times(scat, k) = min_times_matrix(find_i(k), find_j(k));
                     end
                     idxs = wall_idxs(:, find_i);
                     wall_idxs = zeros(wall, wall_pixels);
@@ -124,30 +117,100 @@ for scat = 1 : num_scatterers
                     wall_idxs(wall, :) = linspace(1, wall_pixels, wall_pixels);
                 end
             end
-
-            % Finally, compute the last leg.
-            min_times = min_times + ...
-                sqrt((scatterers(scat, 1) - path_geometry(end).coords(:, 1)) .^ 2 + ...
-                     (scatterers(scat, 3) - path_geometry(end).coords(:, 3)) .^ 2) ./ speeds(no_walls + 1);
-            
-            % Now that we have reached the scatterer, find the path which
-            % takes the least time. Record this time, and the wall indices
-            % which describe the path taken through the geometry.
-            find_i = find(min_times == min(min_times, [], 'all'));
-            if size(find_i, 1) > 1
-                find_i = find_i(1);
-            end
-            ray.min_times(tx, scat) = min_times(find_i);
-            ray.wall_idxs(tx, scat, 1:no_walls) = wall_idxs(:, find_i);
-            
-            ray_coords(tx, scat, 1, :) = probe_coords(tx, :);
-            for wall = 1:no_walls
-                ray_coords(tx, scat, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
-            end
-            ray_coords(tx, scat, end, :) = scatterers(scat, :);
-                
         end
+        
+        % Finally, compute the last leg.
+        min_times = min_times + ...
+            sqrt((scatterers(:, 1) - path_geometry(end).coords(:, 1).') .^ 2 + ...
+                 (scatterers(:, 3) - path_geometry(end).coords(:, 3).') .^ 2) ./ speeds(end);
+            
+        % Now that we have reached the scatterer, find the path which
+        % takes the least time. Record this time, and the wall indices
+        % which describe the path taken through the geometry.
+        [ray.min_times(tx, :), find_i] = min(min_times, [], 2);
+        ray.wall_idxs(tx, :, 1:no_walls) = wall_idxs(:, find_i).';
+
+        ray_coords(tx, :, 1, :) = repmat(reshape(probe_coords(tx, :), 1, 1, 3), num_scatterers, 1, 1);
+        for wall = 1:no_walls
+            ray_coords(tx, :, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, :, wall), :);
+        end
+        ray_coords(tx, :, end, :) = scatterers;
+    
     end
+        
+%     for scat = 1 : num_scatterers
+%         for tx = 1 : probe_els
+%             % Initialise the arrays for minimum times and associated wall
+%             % indices (i.e. the index of the discrete point on the wall
+%             % which the ray is transmitted through/reflected from.
+%             min_times = zeros(wall_pixels, 1);
+%             wall_idxs = linspace(1, wall_pixels, wall_pixels);
+% 
+%             % First and last legs of the ray are simple to calculate. Treat
+%             % them differently. Start with first leg.
+%             
+%             % Calculate the time taken to travel from the probe to all
+%             % points on the first wall.
+%             min_times(:, 1) = ( ...
+%                 sqrt((path_geometry(1).coords(:, 1) - probe_coords(tx, 1)) .^ 2 + ...
+%                      (path_geometry(1).coords(:, 3) - probe_coords(tx, 3)) .^ 2) ./ speeds(1) ...
+%             );
+% 
+%             % If more than one boundary is present, then we will have
+%             % middle legs that we must consider - this is where the
+%             % efficiency improvement of Dijkstra comes in.
+%             if no_walls > 1
+%                 % Compute the times from all points on the previous wall to
+%                 % all points on the next wall, i.e. compute a total of 
+%                 % (nth_wall_points)*((n+1)th_wall_points) times. Add these
+%                 % to the corresponding previously calculated times (i.e.
+%                 % the time from the probe to the kth point on the nth wall,
+%                 % added to the time calculated from the kth point on the
+%                 % nth wall to all points on the (n+1)th wall.
+%                 for wall = 2 : no_walls
+%                     min_times_matrix = min_times + ...
+%                         sqrt((path_geometry(wall).coords(:, 1).' - path_geometry(wall-1).coords(:, 1)).^2 + ...
+%                              (path_geometry(wall).coords(:, 3).' - path_geometry(wall-1).coords(:, 3)).^2) ./ speeds(wall);
+%                     
+%                 % Find the minimum time from the probe to each point on the
+%                 % (n+1)th wall, and return these times. This min_times
+%                 % object is now equivalent to the min_times object before
+%                 % this leg, except it has now been propagated one wall
+%                 % further.
+%                     [find_i, find_j] = ind2sub(size(min_times_matrix), find(min_times_matrix == min(min_times_matrix, [], 2)));
+%                     for k = 1 : wall_pixels
+%                         min_times(k, 1) = min_times_matrix(find_i(k), find_j(k));
+%                     end
+%                     idxs = wall_idxs(:, find_i);
+%                     wall_idxs = zeros(wall, wall_pixels);
+%                     wall_idxs(1:wall-1, :) = idxs;
+%                     wall_idxs(wall, :) = linspace(1, wall_pixels, wall_pixels);
+%                 end
+%             end
+% 
+%             % Finally, compute the last leg.
+%             min_times = min_times + ...
+%                 sqrt((scatterers(scat, 1) - path_geometry(end).coords(:, 1)) .^ 2 + ...
+%                      (scatterers(scat, 3) - path_geometry(end).coords(:, 3)) .^ 2) ./ speeds(no_walls + 1);
+%             
+%             % Now that we have reached the scatterer, find the path which
+%             % takes the least time. Record this time, and the wall indices
+%             % which describe the path taken through the geometry.
+%             find_i = find(min_times == min(min_times, [], 'all'));
+%             if size(find_i, 1) > 1
+%                 find_i = find_i(1);
+%             end
+%             ray.min_times(tx, scat) = min_times(find_i);
+%             ray.wall_idxs(tx, scat, 1:no_walls) = wall_idxs(:, find_i);
+%             
+%             ray_coords(tx, scat, 1, :) = probe_coords(tx, :);
+%             for wall = 1:no_walls
+%                 ray_coords(tx, scat, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
+%             end
+%             ray_coords(tx, scat, end, :) = scatterers(scat, :);
+%                 
+%         end
+%     end
 end
 
 
