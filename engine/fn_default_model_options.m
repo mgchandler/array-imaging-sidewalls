@@ -42,6 +42,7 @@ function model_options = fn_default_model_options(varargin)
 %           - savepath : string : DEFAULT ""
 %           - wall_for_imaging : string : DEFAULT "B1"
 %           - image_range : double array : DEFAULT [geom.shape.xmin, geom.shape.xmax, geom.shape.zmin, geom.shape.zmax]
+%           - image_locs : double array : DEFAULT 0
 %       - probe : struct
 %           - angle : double : DEFAULT 0
 %           - freq : double : DEFAULT 5.0e+6
@@ -85,6 +86,7 @@ model_options.model.savename = "TFM-Sens Image Plot";
 model_options.model.savepath = "";
 model_options.model.wall_for_imaging = "B1";
 model_options.model.image_range = [model_options.mesh.geom.shape.xmin, model_options.mesh.geom.shape.xmax, model_options.mesh.geom.shape.zmin, model_options.mesh.geom.shape.zmax];
+model_options.model.image_locs = 0;
 
 model_options.probe.angle = 0;
 model_options.probe.freq = 5.0e+6;

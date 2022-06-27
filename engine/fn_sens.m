@@ -40,6 +40,14 @@ function fn_sens(model_options)
 %           - savename : string : DEFAULT "TFM-Sens Image Plot"
 %           - savepath : string : DEFAULT ""
 %           - wall_for_imaging : string : DEFAULT "B1"
+%           - image_range : double array : 
+%           - image_locs : double array : DEFAULT 0
+%               Physical locations within the sample at which sensitivity
+%               is computed. If not zero, this replaces image_block within
+%               the function. Shape if non-zero required to be (N, 3) for
+%               sensitivity computed at N points. Note that image is only
+%               plotted if equals 0, when a grid is computed. This option
+%               overrides image_range.
 %       - probe : struct
 %           - angle : double : DEFAULT 0
 %           - freq : double : DEFAULT 5.0e+6
@@ -61,10 +69,10 @@ PIXEL = model_options.model.pixel;
 
 probe_els = model_options.probe.num_els;
 % Mins and maxes used for grid, so make it slightly smaller than the geometry.
-xmin = min(cell2mat(model_options.mesh.geom.x)) + 0.1e-3;
-xmax = max(cell2mat(model_options.mesh.geom.x)) - 0.1e-5;
-zmin = min(cell2mat(model_options.mesh.geom.z)) + 0.1e-5;
-zmax = max(cell2mat(model_options.mesh.geom.z)) - 0.1e-5;
+xmin = model_options.model.image_range(1);
+xmax = model_options.model.image_range(2);
+zmin = model_options.model.image_range(3);
+zmax = model_options.model.image_range(4);
 scat_info = model_options.mesh.scat;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;
@@ -87,6 +95,7 @@ norm_to = model_options.model.norm_to;
 db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
 image_block_info = model_options.mesh.scat;
+image_locs = model_options.model.image_locs;
 
 no_walls = size(geometry, 1);
 
@@ -334,28 +343,33 @@ clear mode1_name mode2_name PITCH
 
 tic;
 
-db_range_for_output = 40;
+if image_locs == 0
+    % The total number of points where scatterers will be placed in the x- 
+    % and z- axes.
+    xpts = round(xsize / PIXEL);
+    zpts = round(zsize / PIXEL);
+    % Helper arrays for use in the meshgrid.
+    x = linspace(xmin, xmax, xpts+1);
+    z = linspace(zmin, zmax, zpts+1);
+    % Meshgrid for assembling the image block.
+    [X, Z] = meshgrid(x, z);
+    % [im_X, im_Z] = meshgrid(im_x, im_z);
 
-% The total number of points where scatterers will be placed in the x- and
-% z- axes.
-xpts = round(xsize / PIXEL);
-zpts = round(zsize / PIXEL);
-% Helper arrays for use in the meshgrid.
-x = linspace(xmin, xmax, xpts+1);
-z = linspace(zmin, zmax, zpts+1);
-% Meshgrid for assembling the image block.
-[X, Z] = meshgrid(x, z);
-% [im_X, im_Z] = meshgrid(im_x, im_z);
+    pt = 0;
+    image_block = zeros((xpts+1)*(zpts+1), 3);
 
-pt = 0;
-image_block = zeros((xpts+1)*(zpts+1), 3);
-
-for xpt = 1 : xpts+1
-    for zpt = 1 : zpts+1
-        pt = pt + 1;
-        image_block(pt, 1) = X(zpt, xpt);
-        image_block(pt, 3) = Z(zpt, xpt);
+    for xpt = 1 : xpts+1
+        for zpt = 1 : zpts+1
+            pt = pt + 1;
+            image_block(pt, 1) = X(zpt, xpt);
+            image_block(pt, 3) = Z(zpt, xpt);
+        end
     end
+else
+    assert(size(image_locs, 2) == 3, "fn_sens: image_locs must have shape (N, 3)");
+    image_block = image_locs;
+    xpts = size(image_locs, 1) - 1;
+    zpts = 0;
 end
 
 % Reuse imaging paths for 
@@ -388,7 +402,7 @@ elseif Number_of_ims == 55
     plot_x = 11;
     plot_z = 5;
 else
-    error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
+    error('fn_sens: Unexpected number of images being plotted.\n%d images being plotted.', Number_of_ims)
 end
 
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
@@ -458,60 +472,60 @@ clear grid_pt xpt_im zpt_im view FMC_time FMC_time_data
 % ---------------------------------------------------------------------- %%
 tic;
 
-if norm_to == 0
-    max_ = 0;
-    for view = 1 : Number_of_ims
-        if max(abs(Sens(view).image(:))) > max_
-            max_ = max(abs(Sens(view).image(:)));
+if image_locs == 0
+    if norm_to == 0
+        max_ = 0;
+        for view = 1 : Number_of_ims
+            if max(abs(Sens(view).image(:))) > max_
+                max_ = max(abs(Sens(view).image(:)));
+            end
         end
+    else
+        max_ = norm_to;
     end
-else
-    max_ = norm_to;
-end
 
-for view = 1 : Number_of_ims
-   Sens(view).db_image = 20 * log10(abs(Sens(view).image) ./ max_); 
-end
-
-% Plot.
-fig = figure(1);
-
-% ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
-if image_block_info.type == "crack"
-    sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
-end
-t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
-for im = 1:Number_of_ims
-    h(im) = nexttile;
-%     ax(im) = subplot(plot_z, plot_x, im);
-    imagesc(x*UC, z*UC, Sens(im).db_image);
-    hold on
-    title(Sens(im).name)
-    caxis([-db_range_for_output, 0])
-    plot(probe_coords(:, 1)*UC, probe_coords(:, 3)*UC, 'go');
-    for wall = 1:size(geometry, 1)
-        plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
+    for view = 1 : Number_of_ims
+       Sens(view).db_image = 20 * log10(abs(Sens(view).image) ./ max_); 
     end
-    
-    if mod(im, plot_x) ~= 1
-        set(gca, 'yticklabel', {[]})
+
+    % Plot.
+    fig = figure(1);
+
+    % ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
+    if image_block_info.type == "crack"
+        sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
     end
-    if im <= Number_of_ims - plot_x
-        set(gca, 'xticklabel', {[]})
+    t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
+    for im = 1:Number_of_ims
+        h(im) = nexttile;
+    %     ax(im) = subplot(plot_z, plot_x, im);
+        imagesc(x*UC, z*UC, Sens(im).db_image);
+        hold on
+        title(Sens(im).name)
+        caxis([-db_range_for_output, 0])
+        plot(probe_coords(:, 1)*UC, probe_coords(:, 3)*UC, 'go');
+        for wall = 1:size(geometry, 1)
+            plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
+        end
+
+        if mod(im, plot_x) ~= 1
+            set(gca, 'yticklabel', {[]})
+        end
+        if im <= Number_of_ims - plot_x
+            set(gca, 'xticklabel', {[]})
+        end
+
+        axis equal; axis tight;
     end
-    
-    axis equal; axis tight;
+    xlabel(t, 'x (mm)', 'Fontname', 'Serif')
+    ylabel(t, 'z (mm)', 'Fontname', 'Serif')
+
+    c = colorbar(h(1), 'AxisLocation','in');
+    c.Layout.Tile = 'north';
+    c.Label.String = 'dB';
+
+    set(findall(gcf, '-property', 'Fontname'), 'Fontname', 'Serif')
 end
-xlabel(t, 'x (mm)', 'Fontname', 'Serif')
-ylabel(t, 'z (mm)', 'Fontname', 'Serif')
-
-c = colorbar(h(1), 'AxisLocation','in');
-c.Layout.Tile = 'north';
-c.Label.String = 'dB';
-
-set(findall(gcf, '-property', 'Fontname'), 'Fontname', 'Serif')
-
-
 
 time_5 = double(toc);
 
@@ -523,9 +537,11 @@ times = [time_1, time_2, time_3, time_4, time_5];
 
 if savepath ~= ""
     cd(savepath)
-    filename_fig = sprintf('%s.fig', savename);
     filename_mat = sprintf('%s.mat', savename);
-    savefig(filename_fig)
+    if image_locs == 0
+        filename_fig = sprintf('%s.fig', savename);
+        savefig(filename_fig)
+    end
     save(filename_mat, 'times', 'Sens', 'image_block_info')
 end
 % close all

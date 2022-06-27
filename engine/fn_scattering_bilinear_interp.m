@@ -32,10 +32,10 @@ out_angle_idx = out_angle_idx + 1;
 inc_angle_idx_plus1 = inc_angle_idx_plus1 + 1;
 out_angle_idx_plus1 = out_angle_idx_plus1 + 1;
 
-sw = scat_matrix(out_angle_idx, inc_angle_idx);
-ne = scat_matrix(out_angle_idx_plus1, inc_angle_idx_plus1);
-se = scat_matrix(out_angle_idx, inc_angle_idx_plus1);
-nw = scat_matrix(out_angle_idx_plus1, inc_angle_idx);
+sw = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx, inc_angle_idx));
+ne = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx_plus1, inc_angle_idx_plus1));
+se = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx, inc_angle_idx_plus1));
+nw = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx_plus1, inc_angle_idx));
 
 f1 = sw + (se - sw) .* inc_angle_frac;
 f2 = nw + (ne - nw) .* inc_angle_frac;
