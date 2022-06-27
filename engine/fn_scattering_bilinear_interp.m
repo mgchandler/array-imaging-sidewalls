@@ -37,9 +37,9 @@ ne = scat_matrix(out_angle_idx_plus1, inc_angle_idx_plus1);
 se = scat_matrix(out_angle_idx, inc_angle_idx_plus1);
 nw = scat_matrix(out_angle_idx_plus1, inc_angle_idx);
 
-f1 = sw + (se - sw) * inc_angle_frac;
-f2 = nw + (ne - nw) * inc_angle_frac;
+f1 = sw + (se - sw) .* inc_angle_frac;
+f2 = nw + (ne - nw) .* inc_angle_frac;
 
-val = f1 + (f2 - f1) * out_angle_frac;
+val = f1 + (f2 - f1) .* out_angle_frac;
 
 end

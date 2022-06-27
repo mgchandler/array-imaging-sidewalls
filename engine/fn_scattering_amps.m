@@ -39,8 +39,9 @@ if isfield(scat_info, 'matrix')
     % and small pixel size.
     for el = 1 : probe_els^2
         inc_angles = path1.weights.inc_theta(view.probe_txrx(el, 1), :, end, 2) - scat_info.angle;
-        out_angles = path2.weights.inc_theta(view.probe_txrx(el, 2), :, 1, 2) - scat_info.angle;
-        scat_amps(el, :, :) = interp2(theta, theta, scat_matrix, inc_angles, out_angles);
+        out_angles = path2.weights.inv_out_theta(view.probe_txrx(el, 2), :, 1, 2) - scat_info.angle;
+%         scat_amps(el, :, :) = interp2(theta, theta, scat_matrix, inc_angles, out_angles);
+        scat_amps(el, :, :) = fn_scattering_bilinear_interp(scat_matrix, inc_angles, out_angles);
     end
 else
     el = 1;
