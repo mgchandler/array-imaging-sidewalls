@@ -1,4 +1,4 @@
-function ray_weights = fn_compute_ray_weights(ray, freq_array)
+function ray_weights = fn_compute_ray_weights(ray, freq_array, varargin)
 % Computes ray weights from the ray path.
 % INPUTS:
 % - ray : output from fn_compute_ray function. Contains rays for which
@@ -6,6 +6,8 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array)
 % - freq_array : array
 %       Non-zero frequencies, as output from fn_create_input_signal
 %       function.
+% - all_geometry : struct : OPTIONAL
+%       Optionally pass in to make plotting the ray possible.
 %
 % OUTPUTS:
 % - ray_weights : struct (1, 1)
@@ -13,8 +15,17 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array)
 %       coefficients along the forward and backward path for the ray.
 
 % Relevant dimensions.
+debug = false;
+
 [probe_els, num_scatterers] = size(ray.min_times);
 [num_freqs, ~] = size(freq_array);
+
+for arg = 1:nargin-2
+    argument = varargin{arg};
+    if isa(argument, 'struct')
+        all_geometry = argument;
+    end
+end
 
 % Unpack path and scatterer info.
 path_info = ray.path_info;
@@ -55,6 +66,15 @@ ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 ray_weights.c_out = zeros(probe_els,1);
 ray_weights.min_dists = zeros(probe_els, num_scatterers, no_walls+1, 4);
 
+if debug
+    close all
+    figure(3)
+    hold on
+    for ii = 1:size(all_geometry, 1)
+        plot([all_geometry(ii).point1(1), all_geometry(ii).point2(1)], -[all_geometry(ii).point1(3), all_geometry(ii).point2(3)], 'r')
+    end
+end
+
 % If we are in the direct contact case
 if ~isstruct(path_geometry)
     for scat = 1 : num_scatterers
@@ -87,6 +107,10 @@ if ~isstruct(path_geometry)
             
             cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
             
+            if debug
+                plot(single_ray_leg_coords(:, 1), -single_ray_leg_coords(:, 3), 'Color', [.5,.5,.5])
+            end
+
             for freq_idx = 1 : num_freqs
                 
                 % Note angles are not passed to beamspread functions:
@@ -155,6 +179,10 @@ else
             ray_weights.min_dists(tx, scat, :, :) = min_dists;
             
             cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
+            
+            if debug
+                plot(single_ray_leg_coords(:, 1), -single_ray_leg_coords(:, 3), 'Color', [.5,.5,.5])
+            end
             
             for freq_idx = 1 : num_freqs
                 

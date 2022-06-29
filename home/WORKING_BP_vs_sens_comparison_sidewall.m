@@ -7,12 +7,12 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = false;
+is_bp_data = true;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = false;
+is_geom = true;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...
@@ -38,7 +38,7 @@ for kk = 1:size(yaml_options.mesh.geom.z, 2)
 end
 yaml_options.model.boxsize = .5e-3;
 yaml_options.model.interp_method = 'lanczos';
-yaml_options.model.pixel = .1e-3;
+yaml_options.model.pixel = .5e-3;
 yaml_options.model.model_geom = is_geom;
 yaml_options.model.wall_for_imaging = "S1";
 yaml_options.probe.angle = 0.0;
@@ -97,20 +97,20 @@ if or(is_bp_data, is_tfm)
         );
 
         image_box = 4e-3;
-        yaml_options.model.image_range = [scat_coords(1)-image_box, scat_coords(1)+image_box, scat_coords(3)-image_box, scat_coords(3)+image_box];
-
-        xsize = yaml_options.model.image_range(2) - yaml_options.model.image_range(1);
-        zsize = yaml_options.model.image_range(4) - yaml_options.model.image_range(3);
-        xpts = round(xsize / yaml_options.model.pixel);
-        zpts = round(zsize / yaml_options.model.pixel);
-        x = linspace(yaml_options.model.image_range(1), yaml_options.model.image_range(2), xpts+1);
-        z = linspace(yaml_options.model.image_range(3), yaml_options.model.image_range(4), zpts+1);
-        [X, Z] = meshgrid(x, z);
+%         yaml_options.model.image_range = [scat_coords(1)-image_box, scat_coords(1)+image_box, scat_coords(3)-image_box, scat_coords(3)+image_box];
+% 
+%         xsize = yaml_options.model.image_range(2) - yaml_options.model.image_range(1);
+%         zsize = yaml_options.model.image_range(4) - yaml_options.model.image_range(3);
+%         xpts = round(xsize / yaml_options.model.pixel);
+%         zpts = round(zsize / yaml_options.model.pixel);
+%         x = linspace(yaml_options.model.image_range(1), yaml_options.model.image_range(2), xpts+1);
+%         z = linspace(yaml_options.model.image_range(3), yaml_options.model.image_range(4), zpts+1);
+%         [X, Z] = meshgrid(x, z);
             
         if is_bp_data
             yaml_options.data.time = squeeze(time(:, 1));
             yaml_options.data.data = data;
-            yaml_options.model.savename = strcat(filename, '_', geom_str);
+            yaml_options.model.savename = strcat(filename, '_', geom_str, '_full');
 
             filename = yaml_options.model.savename;
             yaml_options.model.max_no_reflections = 1;
@@ -118,6 +118,14 @@ if or(is_bp_data, is_tfm)
 
             fn_tfm(model_options);
 
+            xsize = model_options.model.image_range(2) - model_options.model.image_range(1);
+            zsize = model_options.model.image_range(4) - model_options.model.image_range(3);
+            xpts = round(xsize / model_options.model.pixel);
+            zpts = round(zsize / model_options.model.pixel);
+            x = linspace(model_options.model.image_range(1), model_options.model.image_range(2), xpts+1);
+            z = linspace(model_options.model.image_range(3), model_options.model.image_range(4), zpts+1);
+            [X, Z] = meshgrid(x, z);
+            
             load(strcat(filename, '.mat'))
 
             box_mask = and(and(X>scat_coords(1)-model_options.model.boxsize/2, X<scat_coords(1)+model_options.model.boxsize/2), ...
@@ -135,7 +143,7 @@ if or(is_bp_data, is_tfm)
             
             which = 1;
 
-            yaml_options.model.savename = strcat(filename, '_', geom_str);
+            yaml_options.model.savename = strcat(filename, '_', geom_str, '_full');
             yaml_options.model.npw = npw;
 
             filename = yaml_options.model.savename;
@@ -143,6 +151,14 @@ if or(is_bp_data, is_tfm)
 
             fn_tfm(model_options);
 
+            xsize = model_options.model.image_range(2) - model_options.model.image_range(1);
+            zsize = model_options.model.image_range(4) - model_options.model.image_range(3);
+            xpts = round(xsize / model_options.model.pixel);
+            zpts = round(zsize / model_options.model.pixel);
+            x = linspace(model_options.model.image_range(1), model_options.model.image_range(2), xpts+1);
+            z = linspace(model_options.model.image_range(3), model_options.model.image_range(4), zpts+1);
+            [X, Z] = meshgrid(x, z);
+            
             for which_npw = 1:size(npw, 2)
                 load(strcat(filename, '.mat'))
 

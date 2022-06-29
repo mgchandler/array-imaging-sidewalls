@@ -7,7 +7,7 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = true;
+is_bp_data = false;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
@@ -25,7 +25,7 @@ v_L = 6317.0122248907810;
 v_S = 3110.2818131859126;
 
 if is_bp_data
-    cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\FE")
+    cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\FE - I")
 else
     cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT")
 end
@@ -61,7 +61,7 @@ else
 end
 
 if is_bp_data
-    yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\FE";
+    yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\FE - I";
 else
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT";
 end

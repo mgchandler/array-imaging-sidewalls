@@ -221,14 +221,29 @@ if nargin > 2
         if isa(argument, 'double')
             freq_array = varargin{arg};
             % If frequency is provided, compute the ray weights.
-            ray.weights = fn_compute_ray_weights(ray, freq_array);
-            ray.freq_array = freq_array;
+%             ray.weights = fn_compute_ray_weights(ray, freq_array);
+%             ray.freq_array = freq_array;
         elseif isa(argument, 'struct')
             geometry = varargin{arg};
             % Determine whether the ray paths are valid.
-            ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
+%             ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
         end
     end
 end
 
+if exist('freq_array', 'var')
+    % If frequency is provided, compute the ray weights.
+    if exist('geometry', 'var')
+        ray.weights = fn_compute_ray_weights(ray, freq_array, geometry, freq_array);
+        ray.freq_array = freq_array;
+    else
+        ray.weights = fn_compute_ray_weights(ray, freq_array);
+        ray.freq_array = freq_array;
+    end
+end
+if exist('geometry', 'var')
+    % Determine whether the ray paths are valid.
+    ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
+end
+    
 end
