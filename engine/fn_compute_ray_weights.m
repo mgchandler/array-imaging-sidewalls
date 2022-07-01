@@ -14,8 +14,8 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array, varargin)
 %       Contains beamspread, directivity and transmission/reflection
 %       coefficients along the forward and backward path for the ray.
 
-% Relevant dimensions.
 debug = false;
+% Relevant dimensions.
 
 [probe_els, num_scatterers] = size(ray.min_times);
 [num_freqs, ~] = size(freq_array);

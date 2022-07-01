@@ -1,4 +1,4 @@
-function fn_tfm(model_options)
+function [Ims, Views_im, Views] = fn_tfm(model_options, varargin)
 % Computes the sensitivity maps for an array in contact with the solid
 % block being inspected. Currently works for a rectangular block with some
 % depth defined as the zmax location, and sidewall location defined as the
@@ -57,6 +57,8 @@ geometry = model_options.mesh.geom.geometry;
 
 probe_angle = model_options.probe.angle;
 probe_standoff = model_options.probe.standoff;
+no_cycles = model_options.probe.cycles;
+frequency = model_options.probe.freq;
 
 no_walls = size(geometry, 1);
 
@@ -94,12 +96,10 @@ if ~isstruct(model_options.data)
 % Load FMC data                                                           %
 % ---------------------------------------------------------------------- %%
 else
+    
     FMC_time = model_options.data.time;
     FMC_time_data = model_options.data.data;
     
-    FMC_for_plotting = abs(FMC_time_data);
-%     FMC_for_plotting(1:751, :) = 0;
-%     fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(2), Path_info_list(2), [30.0e-3, 0.0, 12.0e-3], sprintf('%s_FMC.png', savename));
 end
 
 
@@ -108,7 +108,12 @@ end
 % Imaging                                                                 %
 % ---------------------------------------------------------------------- %%
 
-fn_image_tfm(FMC_time, FMC_time_data, model_options);
+if nargin == 1
+    [Ims, Views_im, Views] = fn_image_tfm(FMC_time, FMC_time_data, model_options);
+else
+    Views_im = varargin{1};
+    [Ims, Views_im, Views] = fn_image_tfm(FMC_time, FMC_time_data, model_options, Views_im);
+end
 
 
 

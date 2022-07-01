@@ -28,6 +28,8 @@ view.probe_txrx = zeros(probe_els ^ 2, 2);
 view.valid_path = zeros(probe_els ^ 2, num_scatterers);
 view.tx_angles = zeros(probe_els, num_scatterers);
 view.rx_angles = zeros(probe_els, num_scatterers);
+view.scat_inc_angles = zeros(probe_els, num_scatterers);
+view.scat_out_angles = zeros(probe_els, num_scatterers);
 
 % Assemble view from paths.
 for ii = 1 : probe_els
@@ -40,8 +42,16 @@ for ii = 1 : probe_els
         % path will be invalid if either path is invalid, so multiply.
         view.valid_path(el, :) = path1.valid_paths(ii, :) .* path2.valid_paths(jj, :);
         
-%         view.tx_angles(ii, :) = path1.weights.out_theta(ii, :, 1, 1);
-%         view.rx_angles(jj, :) = path2.weights.out_theta(jj, :, 1, 1);
+        if isfield(path2, "weights")
+            if ii == probe_els
+                view.rx_angles(jj, :) = path2.weights.out_theta(jj, :, 1, 2);
+                view.scat_out_angles(jj, :) = path2.weights.inc_theta(jj, :, end, 2);
+            end
+        end
+    end
+    if isfield(path1, "weights")
+        view.tx_angles(ii, :) = path1.weights.out_theta(ii, :, 1, 2);
+        view.scat_inc_angles(ii, :) = path1.weights.inc_theta(ii, :, end, 2);
     end
 end
 

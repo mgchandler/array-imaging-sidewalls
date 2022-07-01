@@ -20,5 +20,8 @@ function Im = fn_create_im(name, xpts, zpts)
 
 Im.name = name;
 Im.image = zeros(zpts, xpts);
+Im.x = zeros(1, xpts);
+Im.z = zeros(zpts, 1);
+Im.plotExtras = struct;
 
 end

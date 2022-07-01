@@ -7,12 +7,16 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = true;
+is_bp_data = false;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = true;
+is_geom = false;
+% Use analytical wave velocities?
+is_book_velocity = false;
+% Image over the full geometry?
+is_full_plot = false;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...
@@ -21,6 +25,7 @@ image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [32.5e-3, 0.0, 28.125e-3]; ...
      [32.5e-3, 0.0, 39.375e-3]];
 
+% Measured speeds from FE model.
 v_L = 6317.0122248907810;
 v_S = 3110.2818131859126;
 
@@ -38,7 +43,11 @@ for kk = 1:size(yaml_options.mesh.geom.z, 2)
 end
 yaml_options.model.boxsize = .5e-3;
 yaml_options.model.interp_method = 'lanczos';
-yaml_options.model.pixel = .5e-3;
+if is_full_plot
+    yaml_options.model.pixel = .5e-3;
+else
+    yaml_options.model.pixel = .1e-3;
+end
 yaml_options.model.model_geom = is_geom;
 yaml_options.model.wall_for_imaging = "S1";
 yaml_options.probe.angle = 0.0;
@@ -48,7 +57,7 @@ npw = [15:5:60];
 npw = 45;
 yaml_options.mesh.n_per_wl = npw;
 
-Views = 0;
+Views_im = 0;
 maxes = zeros(size(npw, 2), 6, 21);
 db_maxes = zeros(size(npw, 2), 6, 21);
 
@@ -58,6 +67,12 @@ if is_geom
     geom_str = 'geom';
 else
     geom_str = 'nogeom';
+end
+
+if is_full_plot
+    full_str = '_full';
+else
+    full_str = '';
 end
 
 if is_bp_data
@@ -78,9 +93,19 @@ if or(is_bp_data, is_tfm)
                 Bl_data = data;
             end
             load(sprintf('L_45npw_%d_BP.mat', ii))
+            if ~is_book_velocity
+                v_L = fn_speed_from_fmc(time(:, 1), data, reshape(repmat(1:32, 32, 1), 1, 1024), repmat(1:32, 1, 32), 25.e-3);
+                v_S = .5 * v_L;
+            else
+                v_L = 6317.0122248907810;
+                v_S = 3110.2818131859126;
+            end
             if ~is_geom
                 data = data - Bl_data(1:size(data, 1), 1:size(data, 2));
             end
+        else
+            v_L = 6317.0122248907810;
+            v_S = 3110.2818131859126;
         end
         scat_coords = image_block(ii, :);
 
@@ -96,42 +121,51 @@ if or(is_bp_data, is_tfm)
             'ang_pts_over_2pi', 120 ...
         );
 
-        image_box = 4e-3;
-%         yaml_options.model.image_range = [scat_coords(1)-image_box, scat_coords(1)+image_box, scat_coords(3)-image_box, scat_coords(3)+image_box];
-% 
-%         xsize = yaml_options.model.image_range(2) - yaml_options.model.image_range(1);
-%         zsize = yaml_options.model.image_range(4) - yaml_options.model.image_range(3);
-%         xpts = round(xsize / yaml_options.model.pixel);
-%         zpts = round(zsize / yaml_options.model.pixel);
-%         x = linspace(yaml_options.model.image_range(1), yaml_options.model.image_range(2), xpts+1);
-%         z = linspace(yaml_options.model.image_range(3), yaml_options.model.image_range(4), zpts+1);
-%         [X, Z] = meshgrid(x, z);
+        if ~is_full_plot
+            image_box = 4e-3;
+            yaml_options.model.image_range = [scat_coords(1)-image_box, scat_coords(1)+image_box, scat_coords(3)-image_box, scat_coords(3)+image_box];
+
+            xsize = yaml_options.model.image_range(2) - yaml_options.model.image_range(1);
+            zsize = yaml_options.model.image_range(4) - yaml_options.model.image_range(3);
+            xpts = round(xsize / yaml_options.model.pixel);
+            zpts = round(zsize / yaml_options.model.pixel);
+            x = linspace(yaml_options.model.image_range(1), yaml_options.model.image_range(2), xpts+1);
+            z = linspace(yaml_options.model.image_range(3), yaml_options.model.image_range(4), zpts+1);
+            [X, Z] = meshgrid(x, z);
+        end
             
         if is_bp_data
             yaml_options.data.time = squeeze(time(:, 1));
             yaml_options.data.data = data;
-            yaml_options.model.savename = strcat(filename, '_', geom_str, '_full');
+            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str);
 
             filename = yaml_options.model.savename;
             yaml_options.model.max_no_reflections = 1;
             model_options = fn_default_model_options(yaml_options);
-
-            fn_tfm(model_options);
-
-            xsize = model_options.model.image_range(2) - model_options.model.image_range(1);
-            zsize = model_options.model.image_range(4) - model_options.model.image_range(3);
-            xpts = round(xsize / model_options.model.pixel);
-            zpts = round(zsize / model_options.model.pixel);
-            x = linspace(model_options.model.image_range(1), model_options.model.image_range(2), xpts+1);
-            z = linspace(model_options.model.image_range(3), model_options.model.image_range(4), zpts+1);
-            [X, Z] = meshgrid(x, z);
             
-            load(strcat(filename, '.mat'))
+            if and(isstruct(Views_im), is_book_velocity)
+                [Ims, Views_im, Views] = fn_tfm(model_options, Views_im);
+            else
+                [Ims, Views_im, Views] = fn_tfm(model_options);
+            end
 
-            box_mask = and(and(X>scat_coords(1)-model_options.model.boxsize/2, X<scat_coords(1)+model_options.model.boxsize/2), ...
-                           and(Z>scat_coords(3)-model_options.model.boxsize/2, Z<scat_coords(3)+model_options.model.boxsize/2));
+            if is_full_plot
+                xsize = model_options.model.image_range(2) - model_options.model.image_range(1);
+                zsize = model_options.model.image_range(4) - model_options.model.image_range(3);
+                xpts = round(xsize / model_options.model.pixel);
+                zpts = round(zsize / model_options.model.pixel);
+                x = linspace(model_options.model.image_range(1), model_options.model.image_range(2), xpts+1);
+                z = linspace(model_options.model.image_range(3), model_options.model.image_range(4), zpts+1);
+                [X, Z] = meshgrid(x, z);
+            end
 
             for im = 1:21
+                new_box_x = scat_coords(1) + sdh_rad/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
+                new_box_z = scat_coords(3) + sdh_rad/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
+
+                box_mask = and(and(X>new_box_x-model_options.model.boxsize/2, X<new_box_x+model_options.model.boxsize/2), ...
+                               and(Z>new_box_z-model_options.model.boxsize/2, Z<new_box_z+model_options.model.boxsize/2));
+
                 maxes(1, ii, im) = max(Ims(im).image(box_mask));
             end
             db_maxes(1, ii, :) = 20 * log10(abs(maxes(1, ii, :)) ./ abs(maxes(1, ii, 12))); 
@@ -143,24 +177,29 @@ if or(is_bp_data, is_tfm)
             
             which = 1;
 
-            yaml_options.model.savename = strcat(filename, '_', geom_str, '_full');
+            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str);
             yaml_options.model.npw = npw;
 
             filename = yaml_options.model.savename;
             model_options = fn_default_model_options(yaml_options);
+            
+            if and(isstruct(Views_im), is_book_velocity)
+                [Ims, Views_im] = fn_tfm(model_options, Views_im);
+            else
+                [Ims, Views_im] = fn_tfm(model_options);
+            end
 
-            fn_tfm(model_options);
-
-            xsize = model_options.model.image_range(2) - model_options.model.image_range(1);
-            zsize = model_options.model.image_range(4) - model_options.model.image_range(3);
-            xpts = round(xsize / model_options.model.pixel);
-            zpts = round(zsize / model_options.model.pixel);
-            x = linspace(model_options.model.image_range(1), model_options.model.image_range(2), xpts+1);
-            z = linspace(model_options.model.image_range(3), model_options.model.image_range(4), zpts+1);
-            [X, Z] = meshgrid(x, z);
+            if is_full_plot
+                xsize = model_options.model.image_range(2) - model_options.model.image_range(1);
+                zsize = model_options.model.image_range(4) - model_options.model.image_range(3);
+                xpts = round(xsize / model_options.model.pixel);
+                zpts = round(zsize / model_options.model.pixel);
+                x = linspace(model_options.model.image_range(1), model_options.model.image_range(2), xpts+1);
+                z = linspace(model_options.model.image_range(3), model_options.model.image_range(4), zpts+1);
+                [X, Z] = meshgrid(x, z);
+            end
             
             for which_npw = 1:size(npw, 2)
-                load(strcat(filename, '.mat'))
 
                 box_mask = and(and(X>scat_coords(1)-model_options.model.boxsize/2, X<scat_coords(1)+model_options.model.boxsize/2), ...
                                and(Z>scat_coords(3)-model_options.model.boxsize/2, Z<scat_coords(3)+model_options.model.boxsize/2));

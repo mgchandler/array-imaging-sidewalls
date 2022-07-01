@@ -1,4 +1,4 @@
-function [Ims, Views_im] = fn_image_tfm(FMC_time, FMC_time_data, model_options, varargin)
+function [Ims, Views_im, Views] = fn_image_tfm(FMC_time, FMC_time_data, model_options, varargin)
 
 tic;
 
@@ -36,6 +36,8 @@ db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
 
 no_walls = size(geometry, 1);
+no_cycles = model_options.probe.cycles;
+frequency = model_options.probe.freq;
 
 % Check whether we are in contact or immersion. If we are in contact, there
 % will be no frontwall, and probe_standoff and probe_angle must equal zero.
@@ -272,6 +274,32 @@ end
 time_1 = double(toc);
 fn_print_time('Imaging setup', time_1)
 
+FMC_for_plotting = abs(FMC_time_data);
+input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
+FMC_for_plotting(1:input_idx(1), :) = 0;
+fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(1), Path_info_list(1), [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_FMC.png', savename));
+
+%% ---------------------------------------------------------------------- %
+% Scatterer Rays for box                                                  %
+% ---------------------------------------------------------------------- %%
+
+Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
+path = 1;
+ii = 1;
+while path < num_paths
+    ii = ii + 1;
+    if length(Path_info_list(ii).speeds) > 1
+        if wall_for_imaging == Path_info_list(ii).path_geometry.name
+            path = path + 1;
+            Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+        end
+    else % Must be direct
+        path = path+1;
+        Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+    end
+end
+Views = fn_make_views(Paths, 1);
+
 %% ---------------------------------------------------------------------- %
 % Imaging Setup                                                           %
 % ---------------------------------------------------------------------- %%
@@ -360,6 +388,8 @@ end
 
 Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
+    Ims(view).x = im_x;
+    Ims(view).z = im_z;
     Ims(view).name = Views_im(view).name;
 end
 
@@ -428,10 +458,12 @@ end
 
 % im_idxs = [4, 12, 17];
 
+
 % Plot.
 fig = figure(1);
 t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
 for im = 1:Number_of_ims
+    plot_idx = 1;
 %     im = im_idxs(im1);
     h(im) = nexttile;
     imagesc(im_x*UC, im_z*UC, Ims(im).db_image);
@@ -439,13 +471,68 @@ for im = 1:Number_of_ims
     title(Ims(im).name)
     caxis([-db_range_for_output, 0])
     plot(probe_coords(:, 1)*UC, probe_coords(:, 3)*UC, 'go');
+    Ims(im).plotExtras(plot_idx).x = probe_coords(:, 1);
+    Ims(im).plotExtras(plot_idx).z = probe_coords(:, 3);
+    Ims(im).plotExtras(plot_idx).color = 'g';
+    Ims(im).plotExtras(plot_idx).marker = 'o';
+    Ims(im).plotExtras(plot_idx).lineStyle = 'none';
+    plot_idx = plot_idx + 1;
     for wall = 1:size(geometry, 1)
         plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
+        % Only get first and last to reduce the amount saved - this will
+        % need updating if we ever move away from polygonal geometry.
+        Ims(im).plotExtras(plot_idx).x = [geometry(wall).coords(1, 1), geometry(wall).coords(end, 1)];
+        Ims(im).plotExtras(plot_idx).z = [geometry(wall).coords(1, 3), geometry(wall).coords(end, 3)];
+        Ims(im).plotExtras(plot_idx).color = 'r';
+        Ims(im).plotExtras(plot_idx).marker = 'none';
+        Ims(im).plotExtras(plot_idx).lineStyle = '-';
+        plot_idx = plot_idx + 1;
     end
     if boxsize ~= 0
         for s = 1 : size(scat_info.x, 1)
-            if strcmp(scat_info.type, 'image')
+            if ~strcmp(scat_info.type, 'image')
+                new_box_x = scat_info.x(s) + scat_info.r(s)/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
+                new_box_z = scat_info.z(s) + scat_info.r(s)/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
                 rectangle('Position', [scat_info.x(s)*UC - boxsize*UC/2, scat_info.z(s)*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'r');
+                rectangle('Position', [new_box_x*UC - boxsize*UC/2, new_box_z*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'g');
+
+                Ims(im).plotExtras(plot_idx).x = [scat_info.x(s) - boxsize/2, scat_info.x(s) - boxsize/2, scat_info.x(s) + boxsize/2, scat_info.x(s) + boxsize/2, scat_info.x(s) - boxsize/2];
+                Ims(im).plotExtras(plot_idx).z = [scat_info.z(s) - boxsize/2, scat_info.z(s) + boxsize/2, scat_info.z(s) + boxsize/2, scat_info.z(s) - boxsize/2, scat_info.z(s) - boxsize/2];
+                Ims(im).plotExtras(plot_idx).color = 'r';
+                Ims(im).plotExtras(plot_idx).marker = 'none';
+                Ims(im).plotExtras(plot_idx).lineStyle = '-';
+                plot_idx = plot_idx + 1;
+                Ims(im).plotExtras(plot_idx).x = [new_box_x - boxsize/2, new_box_x - boxsize/2, new_box_x + boxsize/2, new_box_x + boxsize/2, new_box_x - boxsize/2];
+                Ims(im).plotExtras(plot_idx).z = [new_box_z - boxsize/2, new_box_z + boxsize/2, new_box_z + boxsize/2, new_box_z - boxsize/2, new_box_z - boxsize/2];
+                Ims(im).plotExtras(plot_idx).color = 'g';
+                Ims(im).plotExtras(plot_idx).marker = 'none';
+                Ims(im).plotExtras(plot_idx).lineStyle = '-';
+                plot_idx = plot_idx + 1;
+                
+                for leg = 1:size(Views(im).path_1.coords, 3)-1
+                    plot([mean(Views(im).path_1.coords(:, s, leg, 1))*UC, mean(Views(im).path_1.coords(:, s, leg+1, 1))*UC], ...
+                         [mean(Views(im).path_1.coords(:, s, leg, 3))*UC, mean(Views(im).path_1.coords(:, s, leg+1, 3))*UC], ...
+                    'Color', [.5,.5,.5])
+                
+                    Ims(im).plotExtras(plot_idx).x = [mean(Views(im).path_1.coords(:, s, leg, 1)), mean(Views(im).path_1.coords(:, s, leg+1, 1))];
+                    Ims(im).plotExtras(plot_idx).z = [mean(Views(im).path_1.coords(:, s, leg, 3)), mean(Views(im).path_1.coords(:, s, leg+1, 3))];
+                    Ims(im).plotExtras(plot_idx).color = [.5,.5,.5];
+                    Ims(im).plotExtras(plot_idx).marker = 'none';
+                    Ims(im).plotExtras(plot_idx).lineStyle = '-';
+                    plot_idx = plot_idx + 1;
+                end
+                for leg = 1:size(Views(im).path_2.coords, 3)-1
+                    plot([mean(Views(im).path_2.coords(:, s, leg, 1))*UC, mean(Views(im).path_2.coords(:, s, leg+1, 1))*UC], ...
+                         [mean(Views(im).path_2.coords(:, s, leg, 3))*UC, mean(Views(im).path_2.coords(:, s, leg+1, 3))*UC], ...
+                    'Color', [.5,.5,.5])
+                
+                    Ims(im).plotExtras(plot_idx).x = [mean(Views(im).path_2.coords(:, s, leg, 1)), mean(Views(im).path_2.coords(:, s, leg+1, 1))];
+                    Ims(im).plotExtras(plot_idx).z = [mean(Views(im).path_2.coords(:, s, leg, 3)), mean(Views(im).path_2.coords(:, s, leg+1, 3))];
+                    Ims(im).plotExtras(plot_idx).color = [.5,.5,.5];
+                    Ims(im).plotExtras(plot_idx).marker = 'none';
+                    Ims(im).plotExtras(plot_idx).lineStyle = '-';
+                    plot_idx = plot_idx + 1;
+                end
             end
         end
     end
@@ -458,6 +545,8 @@ for im = 1:Number_of_ims
     end
     
     axis equal; axis tight;
+    xlim([xmin*UC, xmax*UC])
+    ylim([zmin*UC, zmax*UC])
 end
 xlabel(t, 'x (mm)')
 ylabel(t, 'z (mm)')

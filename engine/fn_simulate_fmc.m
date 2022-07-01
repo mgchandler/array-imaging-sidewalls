@@ -468,9 +468,4 @@ if savepath ~= ""
     save(filename, "FMC_time", "FMC_time_data", "Views")
 end
 
-input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
-FMC_for_plotting = abs(FMC_time_data);
-FMC_for_plotting(1:input_idx(1), :) = 0;
-fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(1), Path_info_list(1), [scat_info.x(1), scat_info.y(1), scat_info.z(1)], sprintf('%s_FMC.png', savename));
-    
 end

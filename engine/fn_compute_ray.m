@@ -45,7 +45,7 @@ end
 % Initialise the structure.
 ray.min_times = zeros(probe_els, num_scatterers);
 ray.wall_idxs = zeros(probe_els, num_scatterers, no_walls);
-ray_coords = zeros(probe_els, num_scatterers, no_walls+2, 3);
+ray.coords = zeros(probe_els, num_scatterers, no_walls+2, 3);
 ray.path_info = path_info;
 ray.scat_info = scat_info;
 ray.valid_paths = zeros(probe_els, 1);
@@ -61,10 +61,10 @@ if ~isstruct(path_geometry)
     speeds(1);
     
     % Get ray coordinates to use with fn_valid_paths.
-    ray_coords(:, :, 1, :) = repmat( ...
+    ray.coords(:, :, 1, :) = repmat( ...
         reshape(probe_coords, probe_els, 1, 1, 3), ...
         1, num_scatterers, 1, 1);
-    ray_coords(:, :, 2, :) = repmat( ...
+    ray.coords(:, :, 2, :) = repmat( ...
         reshape(scatterers, 1, num_scatterers, 1, 3), ...
         probe_els, 1, 1, 1);
 else
@@ -130,11 +130,11 @@ else
         [ray.min_times(tx, :), find_i] = min(min_times, [], 2);
         ray.wall_idxs(tx, :, 1:no_walls) = wall_idxs(:, find_i).';
 
-        ray_coords(tx, :, 1, :) = repmat(reshape(probe_coords(tx, :), 1, 1, 3), num_scatterers, 1, 1);
+        ray.coords(tx, :, 1, :) = repmat(reshape(probe_coords(tx, :), 1, 1, 3), num_scatterers, 1, 1);
         for wall = 1:no_walls
-            ray_coords(tx, :, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, :, wall), :);
+            ray.coords(tx, :, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, :, wall), :);
         end
-        ray_coords(tx, :, end, :) = scatterers;
+        ray.coords(tx, :, end, :) = scatterers;
     
     end
         
@@ -203,11 +203,11 @@ else
 %             ray.min_times(tx, scat) = min_times(find_i);
 %             ray.wall_idxs(tx, scat, 1:no_walls) = wall_idxs(:, find_i);
 %             
-%             ray_coords(tx, scat, 1, :) = probe_coords(tx, :);
+%             ray.coords(tx, scat, 1, :) = probe_coords(tx, :);
 %             for wall = 1:no_walls
-%                 ray_coords(tx, scat, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
+%                 ray.coords(tx, scat, wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
 %             end
-%             ray_coords(tx, scat, end, :) = scatterers(scat, :);
+%             ray.coords(tx, scat, end, :) = scatterers(scat, :);
 %                 
 %         end
 %     end
@@ -226,7 +226,7 @@ if nargin > 2
         elseif isa(argument, 'struct')
             geometry = varargin{arg};
             % Determine whether the ray paths are valid.
-%             ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
+%             ray.valid_paths = fn_valid_paths(path_info, ray.coords, geometry);
         end
     end
 end
@@ -243,7 +243,7 @@ if exist('freq_array', 'var')
 end
 if exist('geometry', 'var')
     % Determine whether the ray paths are valid.
-    ray.valid_paths = fn_valid_paths(path_info, ray_coords, geometry);
+    ray.valid_paths = fn_valid_paths(path_info, ray.coords, geometry);
 end
     
 end
