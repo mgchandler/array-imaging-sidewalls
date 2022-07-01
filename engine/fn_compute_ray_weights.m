@@ -118,8 +118,8 @@ if ~isstruct(path_geometry)
                 % leg in the ray, and thus the virtual distance which is
                 % calculated in this function is equal to the real
                 % distance - no angles are required in the calculation.
-                ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4), 0, speeds, freq_array);
-                ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), 0, flip(speeds), freq_array);
+                ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4), 0, speeds, freq_array(freq_idx));
+                ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), 0, flip(speeds), freq_array(freq_idx));
                 
                 % As there are no transmissions or reflections, set the
                 % coefficient equal to one.
@@ -187,8 +187,8 @@ else
             for freq_idx = 1 : num_freqs
                 
                 % Beamspread
-                ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4), inc_out_angles(:, 1), speeds, freq_array);
-                ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), inv_inc_out_angles(:, 2), flip(speeds), freq_array);
+                ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4), inc_out_angles(:, 1), speeds, freq_array(freq_idx));
+                ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), inv_inc_out_angles(:, 2), flip(speeds), freq_array(freq_idx));
                 
                 % Trans/refl
                 inv_angles = conj(asin(sin(inc_out_angles(1:end-1, 1)) .* speeds(2:end) ./ speeds(1:end-1)));

@@ -69,8 +69,8 @@ probe_frequency = model_options.probe.freq;
 el_length = model_options.probe.width;
 couplant_speed = model_options.material.couplant_v;
 couplant_density = model_options.material.couplant_density;
-solid_long_speed = sqrt(model_options.material.modulus * (1 - model_options.material.poisson) / (model_options.material.density * (1 + model_options.material.poisson) * (1 - 2*model_options.material.poisson)));
-solid_shear_speed = sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
+solid_long_speed = model_options.material.v_L;
+solid_shear_speed = model_options.material.v_S;
 solid_density = model_options.material.density;
 max_num_reflections = model_options.model.max_no_reflections;
 model_geometry = model_options.model.model_geom;
@@ -330,31 +330,43 @@ tic;
 
 % Compute Imaging Paths
 if multi_freq
-    error("fn_simulate_fmc: multi frequency not implemented")
-%     frequency = freq(2:end);
+%     error("fn_simulate_fmc: multi frequency not implemented")
+    Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry), 1, num_paths);
+    path = 1;
+    ii = 1;
+    while path < num_paths
+        ii = ii + 1;
+        if length(Path_info_list(ii).speeds) > 1
+            if wall_for_imaging == Path_info_list(ii).path_geometry.name
+                path = path + 1;
+                Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry);
+            end
+        else % Must be direct
+            path = path+1;
+            Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry);
+        end
+    end
 else
     frequency = probe_frequency;
-end
-Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
-path = 1;
-ii = 1;
-while path < num_paths
-    ii = ii + 1;
-    if length(Path_info_list(ii).speeds) > 1
-        if wall_for_imaging == Path_info_list(ii).path_geometry.name
-            path = path + 1;
+    Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
+    path = 1;
+    ii = 1;
+    while path < num_paths
+        ii = ii + 1;
+        if length(Path_info_list(ii).speeds) > 1
+            if wall_for_imaging == Path_info_list(ii).path_geometry.name
+                path = path + 1;
+                Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+            end
+        else % Must be direct
+            path = path+1;
             Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
         end
-    else % Must be direct
-        path = path+1;
-        Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
     end
 end
 
 % Create views from these paths.
 Views = fn_make_views(Paths, 0);
-
-clear Paths
 
 
 
@@ -417,6 +429,37 @@ clear probe_standoff oversampling time_step
 
 
 %% ---------------------------------------------------------------------- %
+% Multi-frequency ray weights                                             %
+% ---------------------------------------------------------------------- %%
+
+if multi_freq
+    tic
+    frequency = freq(freq ~= 0);
+    scat_info = fn_scat_info( ...
+        model_options.mesh.scat.type, ...
+        model_options.mesh.scat.x, ...
+        model_options.mesh.scat.y, ...
+        model_options.mesh.scat.z, ...
+        model_options.mesh.scat.r, ...
+        solid_long_speed  ./ frequency, ...
+        solid_shear_speed ./ frequency, ...
+        model_options.mesh.scat.angle, ...
+        'ang_pts_over_2pi', 120 ...
+    );
+    for path = 1:num_paths
+        Paths(path).scat_info = scat_info;
+        Paths(path).weights = fn_compute_ray_weights(Paths(path), frequency, geometry);
+        Paths(path).freq_array = frequency;
+    end
+    % Create views from these paths.
+    Views = fn_make_views(Paths, 0);
+    time_2b = double(toc);
+    fn_print_time('Model coeffs computed', time_2b)
+end
+
+
+
+%% ---------------------------------------------------------------------- %
 % Simulation.                                                             %
 % ---------------------------------------------------------------------- %%
 
@@ -428,12 +471,12 @@ num_scatterers = size(scat_info.x, 1);
 
 for scatterer = 1 : num_scatterers
     for view = 1 : size(Views, 1)
-        weights = Views(view).weights(:, scatterer, 1);
-        scat_amp = Views(view).scat_amps(:, scatterer, 1);
+        weights = Views(view).weights(:, scatterer, :);
+        scat_amp = Views(view).scat_amps(:, scatterer, :);
         valid_path = Views(view).valid_path(:, scatterer);
         amp = (scat_amp .* weights .* valid_path);
         out_freq_spec = out_freq_spec + ...
-            fn_propagate_spectrum_mc(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
+            fn_propagate_spectrum(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
 
         clear weights scat_amp amp
     end
@@ -444,7 +487,7 @@ if model_geometry
     for view = 1 : num_geom_views
         bw_amp = conj(backwall_views(view).weights .* backwall_views(view).valid_path);
         out_freq_spec = out_freq_spec + ...
-            fn_propagate_spectrum_mc(freq, in_freq_spec, backwall_views(view).min_times, bw_amp, 0);
+            fn_propagate_spectrum(freq, in_freq_spec, backwall_views(view).min_times, bw_amp, 0);
     end
 end
 

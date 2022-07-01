@@ -62,6 +62,8 @@ model_options.material.couplant_v = 340.0;
 model_options.material.density = 2700.0;
 model_options.material.modulus = 70.0e+9;
 model_options.material.poisson = 0.34;
+model_options.material.v_L = sqrt(model_options.material.modulus * (1 - model_options.material.poisson) / (model_options.material.density * (1 + model_options.material.poisson) * (1 - 2*model_options.material.poisson)));
+model_options.material.v_S = sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
 
 model_options.mesh.geom.shape.xmax =  25.0e-3;
 model_options.mesh.geom.shape.xmin = -25.0e-3;
@@ -103,8 +105,8 @@ model_options.mesh.scat.x = 10.0e-3;
 model_options.mesh.scat.y =  0.0;
 model_options.mesh.scat.z = 22.0e-3;
 model_options.mesh.scat.r =  1.0e-3;
-model_options.mesh.scat.lambdaL = 6317.01/model_options.probe.freq;
-model_options.mesh.scat.lambdaT = 3110.28/model_options.probe.freq;
+model_options.mesh.scat.lambdaL = model_options.material.v_L/model_options.probe.freq;
+model_options.mesh.scat.lambdaT = model_options.material.v_S/model_options.probe.freq;
 model_options.mesh.scat.angle = 0.0;
 
 
@@ -146,8 +148,7 @@ if isfield(model_options.mesh, 'scat')
             model_options.mesh.scat.r, ...
             model_options.mesh.scat.lambdaL, ...
             model_options.mesh.scat.lambdaT, ...
-            model_options.mesh.scat.angle, ...
-            'ang_pts_over_2pi', 120 ...
+            model_options.mesh.scat.angle ...
     );
 end
 

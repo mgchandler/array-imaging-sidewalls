@@ -1,4 +1,4 @@
-function out_freq_spec = fn_propagate_spectrum_mc_2(freq, in_freq_spec, tof, varargin);
+function out_freq_spec = fn_propagate_spectrum(freq, in_freq_spec, tof, varargin)
 %USAGE
 %	out_freq_spec = fn_propagate_spectrum(freq, in_freq_spec, ph_vel, dists [, amps, use_gpu_if_present]);
 %AUTHOR
@@ -33,13 +33,19 @@ function out_freq_spec = fn_propagate_spectrum_mc_2(freq, in_freq_spec, tof, var
 %       out_freq_spec = gather(out_freq_spec)
 %--------------------------------------------------------------------------
 
-if nargin > 4
-   amps = varargin{1};
+if nargin > 3
+   inp_amps = squeeze(varargin{1});
+   if size(inp_amps, 2) ~= 1
+       amps = zeros(size(inp_amps, 1), size(inp_amps, 2)+1);
+       amps(:, 2:end) = inp_amps;
+   else
+       amps = inp_amps;
+   end
 else
-   amps = ones(size(dists));
-end;
+   amps = ones(size(tof));
+end
 
-if nargin > 5
+if nargin > 4
     use_gpu_if_present = varargin{2};
 else
     use_gpu_if_present = 1;
@@ -48,15 +54,6 @@ end
 %get wavenumber spectrum (interpolate if nesc)
 omega = 2 * pi * freq;
 %do the propagation
-
-% Reshape tof so we can multiply it by omega later.
-if (size(tof,1) ~= 1) && (size(tof, 2) ~= 1)
-    tof = reshape(tof, 1, size(tof, 1), size(tof, 2));
-    use_page = 1;
-else
-    tof = tof.';
-    use_page = 0;
-end
 
 %OLD METHOD WITH LOOP
 % out_freq_spec = zeros(length(freq),length(dists));
@@ -73,18 +70,14 @@ end
 %GPU METHOD
 if use_gpu_if_present && (exist('gpuDeviceCount') == 2) && (gpuDeviceCount > 0)
     out_freq_spec = (gpuArray(in_freq_spec(:)) * gpuArray(amps(:).')) .* exp(-1i * gpuArray(omega(:)) * gpuArray(tof(:).'));
-else%if use_page
-    m = length(omega);
-    n = length(amps);
-    spec_diags = full(spdiags(in_freq_spec(:), 0, m, m));
-    amps_diags = full(spdiags(amps(:), 0, n, n));
-    exp_mult = exp(-1i * pagemtimes(omega, tof));
-    
-    out_freq_spec = pagemtimes(pagemtimes(spec_diags, exp_mult), amps_diags);
-% else
+else
 %     m = length(omega);
 %     n = length(amps);
-%     
-%     out_freq_spec = spdiags(in_freq_spec(:), 0, m, m) * exp(-1i * omega * tof) * spdiags(amps(:), 0, n, n);
+%     FREQ = spdiags(in_freq_spec(:), 0, m, m);
+%     AMPS = spdiags(amps(:), 0, n, n);
+%     EXPW = exp(-1i * omega(:) * tof(:).');
+    out_freq_spec = in_freq_spec(:) .* exp(-1i * omega(:) .* tof(:).') .* amps.';
+%     out_freq_spec = spdiags(in_freq_spec(:), 0, m, m) * exp(-1i * omega(:) * tof(:).') * spdiags(amps(:), 0, n, n);
 end
 return;
+

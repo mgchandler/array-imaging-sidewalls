@@ -49,12 +49,13 @@ else
     yaml_options.model.pixel = .1e-3;
 end
 yaml_options.model.model_geom = is_geom;
+yaml_options.model.multi_freq = true;
 yaml_options.model.wall_for_imaging = "S1";
 yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
 
 npw = [15:5:60];
-npw = 45;
+npw = 0;
 yaml_options.mesh.n_per_wl = npw;
 
 Views_im = 0;
@@ -94,18 +95,18 @@ if or(is_bp_data, is_tfm)
             end
             load(sprintf('L_45npw_%d_BP.mat', ii))
             if ~is_book_velocity
-                v_L = fn_speed_from_fmc(time(:, 1), data, reshape(repmat(1:32, 32, 1), 1, 1024), repmat(1:32, 1, 32), 25.e-3);
-                v_S = .5 * v_L;
+                yaml_options.material.v_L = fn_speed_from_fmc(time(:, 1), data, reshape(repmat(1:32, 32, 1), 1, 1024), repmat(1:32, 1, 32), 25.e-3);
+                yaml_options.material.v_S = .5 * v_L;
             else
-                v_L = 6317.0122248907810;
-                v_S = 3110.2818131859126;
+                yaml_options.material.v_L = 6317.0122248907810;
+                yaml_options.material.v_S = 3110.2818131859126;
             end
             if ~is_geom
                 data = data - Bl_data(1:size(data, 1), 1:size(data, 2));
             end
         else
-            v_L = 6317.0122248907810;
-            v_S = 3110.2818131859126;
+            yaml_options.material.v_L = 6317.0122248907810;
+            yaml_options.material.v_S = 3110.2818131859126;
         end
         scat_coords = image_block(ii, :);
 
@@ -115,8 +116,8 @@ if or(is_bp_data, is_tfm)
             scat_coords(2), ...
             scat_coords(3), ...
             sdh_rad, ...
-            v_L/5e6, ...
-            v_S/5e6, ...
+            yaml_options.material.v_L/5e6, ...
+            yaml_options.material.v_S/5e6, ...
             deg2rad(0), ...
             'ang_pts_over_2pi', 120 ...
         );
@@ -137,7 +138,7 @@ if or(is_bp_data, is_tfm)
         if is_bp_data
             yaml_options.data.time = squeeze(time(:, 1));
             yaml_options.data.data = data;
-            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str);
+            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str, '_mf');
 
             filename = yaml_options.model.savename;
             yaml_options.model.max_no_reflections = 1;
@@ -177,7 +178,7 @@ if or(is_bp_data, is_tfm)
             
             which = 1;
 
-            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str);
+            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str, '_mf');
             yaml_options.model.npw = npw;
 
             filename = yaml_options.model.savename;
@@ -225,8 +226,8 @@ else
         0, ...
         0, ...
         sdh_rad, ...
-        v_L/5e6, ...
-        v_S/5e6, ...
+        yaml_options.material.v_L/5e6, ...
+        yaml_options.material.v_S/5e6, ...
         deg2rad(0), ...
         'ang_pts_over_2pi', 120 ...
     );

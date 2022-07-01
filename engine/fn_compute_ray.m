@@ -234,7 +234,7 @@ end
 if exist('freq_array', 'var')
     % If frequency is provided, compute the ray weights.
     if exist('geometry', 'var')
-        ray.weights = fn_compute_ray_weights(ray, freq_array, geometry, freq_array);
+        ray.weights = fn_compute_ray_weights(ray, freq_array, geometry);
         ray.freq_array = freq_array;
     else
         ray.weights = fn_compute_ray_weights(ray, freq_array);
