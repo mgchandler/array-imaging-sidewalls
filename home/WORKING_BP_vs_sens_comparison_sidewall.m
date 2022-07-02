@@ -17,6 +17,8 @@ is_geom = false;
 is_book_velocity = false;
 % Image over the full geometry?
 is_full_plot = false;
+% Multi-frequency model?
+is_multifreq = true;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...
@@ -49,7 +51,7 @@ else
     yaml_options.model.pixel = .1e-3;
 end
 yaml_options.model.model_geom = is_geom;
-yaml_options.model.multi_freq = true;
+yaml_options.model.multi_freq = is_multifreq;
 yaml_options.model.wall_for_imaging = "S1";
 yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
@@ -76,13 +78,19 @@ else
     full_str = '';
 end
 
+if is_multifreq
+    mf_str = '_mf';
+else
+    mf_str = '_sf';
+end
+
 if is_bp_data
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\FE - L";
 else
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT";
 end
 
-scats_to_run = 4:6;
+scats_to_run = 1:6;
 
 if or(is_bp_data, is_tfm)
     for ii = scats_to_run
@@ -138,7 +146,7 @@ if or(is_bp_data, is_tfm)
         if is_bp_data
             yaml_options.data.time = squeeze(time(:, 1));
             yaml_options.data.data = data;
-            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str, '_mf');
+            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str, mf_str);
 
             filename = yaml_options.model.savename;
             yaml_options.model.max_no_reflections = 1;
@@ -178,7 +186,7 @@ if or(is_bp_data, is_tfm)
             
             which = 1;
 
-            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str, '_mf');
+            yaml_options.model.savename = strcat(filename, '_', geom_str, full_str, mf_str);
             yaml_options.model.npw = npw;
 
             filename = yaml_options.model.savename;
