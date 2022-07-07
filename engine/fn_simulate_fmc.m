@@ -78,7 +78,7 @@ multi_freq = model_options.model.multi_freq;
 npw = model_options.mesh.n_per_wl;
 
 % Additional parameters not directly dependent on inputs.
-oversampling = 10;
+oversampling = 4;
 no_cycles = 5;
 
 no_walls = size(geometry, 1);

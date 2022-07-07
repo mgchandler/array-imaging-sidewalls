@@ -7,18 +7,18 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = false;
+is_bp_data = true;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = false;
+is_geom = true;
 % Use analytical wave velocities?
 is_book_velocity = false;
 % Image over the full geometry?
 is_full_plot = false;
 % Multi-frequency model?
-is_multifreq = false;
+is_multifreq = true;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...
@@ -37,13 +37,13 @@ else
     cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT")
 end
 
-yaml_options = yaml.loadFile("I_45npw.yml");
+yaml_options = yaml.loadFile("I_40npw_2mhz.yml");
 yaml_options.material.couplant_v = 340.0;
 yaml_options.material.couplant_density = 1.2;
 for kk = 1:size(yaml_options.mesh.geom.z, 2)
     yaml_options.mesh.geom.z{kk} = -yaml_options.mesh.geom.z{kk};
 end
-yaml_options.model.boxsize = .5e-3;
+yaml_options.model.boxsize = 1.e-3;
 yaml_options.model.interp_method = 'lanczos';
 if is_full_plot
     yaml_options.model.pixel = .5e-3;
@@ -57,7 +57,7 @@ yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
 
 npw = [15:5:60];
-npw = 0;
+npw = 40;
 yaml_options.mesh.n_per_wl = npw;
 
 Views_im = 0;
@@ -90,18 +90,18 @@ else
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT";
 end
 
-scats_to_run = 1:4;
+scats_to_run = 2;
 
 if or(is_bp_data, is_tfm)
     for ii = scats_to_run
-        filename = sprintf('I_%dnpw_%d', npw, ii);
+        filename = sprintf('I_%dnpw_%dmhz_%d', npw, floor(yaml_options.probe.freq*10^-6), ii);
         disp(filename)
         if is_bp_data
             if ~is_geom
-                load(sprintf('L_%d_bl_BP.mat', ii));
+                load(sprintf('I_%dnpw_%dmhz_b_BP.mat', npw, floor(yaml_options.probe.freq*10^-6)));
                 Bl_data = data;
             end
-            load(sprintf('L_%d_BP.mat', ii))
+            load(sprintf('I_%dnpw_%dmhz_%d_BP.mat', npw, floor(yaml_options.probe.freq*10^-6), ii));
             if ~is_book_velocity
                 yaml_options.material.v_L = fn_speed_from_fmc(time(:, 1), data, reshape(repmat(1:32, 32, 1), 1, 1024), repmat(1:32, 1, 32), 25.e-3);
                 yaml_options.material.v_S = .5 * v_L;
@@ -124,8 +124,8 @@ if or(is_bp_data, is_tfm)
             scat_coords(2), ...
             scat_coords(3), ...
             sdh_rad, ...
-            yaml_options.material.v_L/5e6, ...
-            yaml_options.material.v_S/5e6, ...
+            yaml_options.material.v_L/yaml_options.probe.freq, ...
+            yaml_options.material.v_S/yaml_options.probe.freq, ...
             deg2rad(0), ...
             'ang_pts_over_2pi', 120 ...
         );
@@ -153,9 +153,9 @@ if or(is_bp_data, is_tfm)
             model_options = fn_default_model_options(yaml_options);
             
             if and(isstruct(Views_im), is_book_velocity)
-                [Ims, Views_im] = fn_tfm(model_options, Views_im);
+                [Ims, Views_im, Views] = fn_tfm(model_options, Views_im);
             else
-                [Ims, Views_im] = fn_tfm(model_options);
+                [Ims, Views_im, Views] = fn_tfm(model_options);
             end
 
             if is_full_plot
@@ -169,8 +169,8 @@ if or(is_bp_data, is_tfm)
             end
 
             for im = 1:21
-                new_box_x = scat_coords(1) + sdh_rad/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
-                new_box_z = scat_coords(3) + sdh_rad/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
+                new_box_x = scat_coords(1);% + sdh_rad/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
+                new_box_z = scat_coords(3);% + sdh_rad/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
 
                 box_mask = and(and(X>new_box_x-model_options.model.boxsize/2, X<new_box_x+model_options.model.boxsize/2), ...
                                and(Z>new_box_z-model_options.model.boxsize/2, Z<new_box_z+model_options.model.boxsize/2));
@@ -193,9 +193,9 @@ if or(is_bp_data, is_tfm)
             model_options = fn_default_model_options(yaml_options);
             
             if and(isstruct(Views_im), is_book_velocity)
-                [Ims, Views_im] = fn_tfm(model_options, Views_im);
+                [Ims, Views_im, Views] = fn_tfm(model_options, Views_im);
             else
-                [Ims, Views_im] = fn_tfm(model_options);
+                [Ims, Views_im, Views] = fn_tfm(model_options);
             end
 
             if is_full_plot

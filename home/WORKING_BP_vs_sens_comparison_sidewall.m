@@ -7,18 +7,18 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = false;
+is_bp_data = true;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = false;
+is_geom = true;
 % Use analytical wave velocities?
 is_book_velocity = false;
 % Image over the full geometry?
 is_full_plot = false;
 % Multi-frequency model?
-is_multifreq = true;
+is_multifreq = false;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...
@@ -37,7 +37,7 @@ else
     cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT")
 end
 
-yaml_options = yaml.loadFile("L_45npw.yml");
+yaml_options = yaml.loadFile("L_40npw_2mhz.yml");
 yaml_options.material.couplant_v = 340.0;
 yaml_options.material.couplant_density = 1.2;
 for kk = 1:size(yaml_options.mesh.geom.z, 2)
@@ -90,18 +90,18 @@ else
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT";
 end
 
-scats_to_run = 1:6;
+scats_to_run = 5;
 
 if or(is_bp_data, is_tfm)
     for ii = scats_to_run
-        filename = sprintf('L_%dnpw_%d', npw, ii);
+        filename = sprintf('L_%dnpw_%.1fmhz_%d', npw, yaml_options.probe.freq*10^-6, ii);
         disp(filename)
         if is_bp_data
             if ~is_geom
-                load('L_45npw_b_BP.mat');
+                load('L_40npw_2mhz_b_BP.mat');
                 Bl_data = data;
             end
-            load(sprintf('L_45npw_%d_BP.mat', ii))
+            load(sprintf('L_40npw_2mhz_%d_BP.mat', ii))
             if ~is_book_velocity
                 yaml_options.material.v_L = fn_speed_from_fmc(time(:, 1), data, reshape(repmat(1:32, 32, 1), 1, 1024), repmat(1:32, 1, 32), 25.e-3);
                 yaml_options.material.v_S = .5 * v_L;
@@ -124,8 +124,8 @@ if or(is_bp_data, is_tfm)
             scat_coords(2), ...
             scat_coords(3), ...
             sdh_rad, ...
-            yaml_options.material.v_L/5e6, ...
-            yaml_options.material.v_S/5e6, ...
+            yaml_options.material.v_L/yaml_options.probe.freq, ...
+            yaml_options.material.v_S/yaml_options.probe.freq, ...
             deg2rad(0), ...
             'ang_pts_over_2pi', 120 ...
         );
