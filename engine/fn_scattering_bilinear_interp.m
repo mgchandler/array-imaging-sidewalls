@@ -15,7 +15,13 @@ function val = fn_scattering_bilinear_interp(scat_matrix, inc_angle, out_angle)
 % - val : complex
 %       The interpolated value obtained from the matrix.
 
-[num_points, ~] = size(scat_matrix);
+if length(size(scat_matrix)) == 2
+    is_mfreq = false;
+    [num_points, ~] = size(scat_matrix);
+else
+    is_mfreq = true;
+    [~, num_points, ~] = size(scat_matrix);
+end
 dtheta = 2*pi / num_points;
 
 inc_angle_idx = mod(floor((inc_angle + pi) / dtheta), num_points);
@@ -32,10 +38,17 @@ out_angle_idx = out_angle_idx + 1;
 inc_angle_idx_plus1 = inc_angle_idx_plus1 + 1;
 out_angle_idx_plus1 = out_angle_idx_plus1 + 1;
 
-sw = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx, inc_angle_idx));
-ne = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx_plus1, inc_angle_idx_plus1));
-se = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx, inc_angle_idx_plus1));
-nw = scat_matrix(sub2ind(size(scat_matrix), out_angle_idx_plus1, inc_angle_idx));
+if is_mfreq
+    sw = scat_matrix(:, sub2ind([num_points, num_points], out_angle_idx, inc_angle_idx));
+    ne = scat_matrix(:, sub2ind([num_points, num_points], out_angle_idx_plus1, inc_angle_idx_plus1));
+    se = scat_matrix(:, sub2ind([num_points, num_points], out_angle_idx, inc_angle_idx_plus1));
+    nw = scat_matrix(:, sub2ind([num_points, num_points], out_angle_idx_plus1, inc_angle_idx));
+else
+    sw = scat_matrix(sub2ind([num_points, num_points], out_angle_idx, inc_angle_idx));
+    ne = scat_matrix(sub2ind([num_points, num_points], out_angle_idx_plus1, inc_angle_idx_plus1));
+    se = scat_matrix(sub2ind([num_points, num_points], out_angle_idx, inc_angle_idx_plus1));
+    nw = scat_matrix(sub2ind([num_points, num_points], out_angle_idx_plus1, inc_angle_idx));
+end
 
 f1 = sw + (se - sw) .* inc_angle_frac;
 f2 = nw + (ne - nw) .* inc_angle_frac;

@@ -90,7 +90,8 @@ if ~isstruct(path_geometry)
                 
             inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
             inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
-            inv_inc_out_angles = flip(inc_out_angles, 1);
+            inv_inc_out_angles = flip(inc_out_angles, 1);            
+%             inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
             
             ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
             ray_weights.inc_theta(tx, scat, :, 2) = inc_out_angles(:, 3);
@@ -164,6 +165,7 @@ else
             inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
             inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
             inv_inc_out_angles = flip(inc_out_angles, 1);
+%             inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
             
             ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
             ray_weights.inc_theta(tx, scat, :, 2) = inc_out_angles(:, 3);

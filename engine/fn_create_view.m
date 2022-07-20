@@ -45,7 +45,7 @@ for ii = 1 : probe_els
         if isfield(path2, "weights")
             if ii == probe_els
                 view.rx_angles(jj, :) = path2.weights.out_theta(jj, :, 1, 2);
-                view.scat_out_angles(jj, :) = path2.weights.inc_theta(jj, :, end, 2);
+                view.scat_out_angles(jj, :) = path2.weights.inv_out_theta(jj, :, 1, 2);
             end
         end
     end
@@ -72,7 +72,7 @@ end
 
 % If scatterer info is provided, then calculate the scattering amplitudes.
 if isfield(path1, 'freq_array')
-    view.scat_amps = fn_scattering_amps(view, path1.freq_array);
+    view.scat_amps = conj(fn_scattering_amps(view, path1.freq_array));
 end
 
 end

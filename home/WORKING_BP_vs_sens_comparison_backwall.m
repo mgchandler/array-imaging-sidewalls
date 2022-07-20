@@ -7,12 +7,12 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = true;
+is_bp_data = false;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = true;
+is_geom = false;
 % Use analytical wave velocities?
 is_book_velocity = false;
 % Image over the full geometry?
@@ -37,7 +37,7 @@ else
     cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT")
 end
 
-yaml_options = yaml.loadFile("I_40npw_2mhz.yml");
+yaml_options = yaml.loadFile("I_45npw.yml");
 yaml_options.material.couplant_v = 340.0;
 yaml_options.material.couplant_density = 1.2;
 for kk = 1:size(yaml_options.mesh.geom.z, 2)
@@ -57,7 +57,7 @@ yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
 
 npw = [15:5:60];
-npw = 40;
+npw = 0;
 yaml_options.mesh.n_per_wl = npw;
 
 Views_im = 0;
@@ -90,7 +90,7 @@ else
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT";
 end
 
-scats_to_run = 2;
+scats_to_run = 1:4;
 
 if or(is_bp_data, is_tfm)
     for ii = scats_to_run
@@ -190,6 +190,7 @@ if or(is_bp_data, is_tfm)
             yaml_options.model.npw = npw;
 
             filename = yaml_options.model.savename;
+            yaml_options.model.max_no_reflections = 1;
             model_options = fn_default_model_options(yaml_options);
             
             if and(isstruct(Views_im), is_book_velocity)

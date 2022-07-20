@@ -12,11 +12,11 @@ is_bp_data = true;
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = true;
+is_geom = false;
 % Use analytical wave velocities?
 is_book_velocity = false;
 % Image over the full geometry?
-is_full_plot = false;
+is_full_plot = true;
 % Multi-frequency model?
 is_multifreq = false;
 
@@ -57,7 +57,7 @@ yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
 
 npw = [15:5:60];
-npw = 0;
+npw = 40;
 yaml_options.mesh.n_per_wl = npw;
 
 Views_im = 0;
@@ -90,11 +90,11 @@ else
     yaml_options.model.savepath = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT";
 end
 
-scats_to_run = 5;
+scats_to_run = 1:6;
 
 if or(is_bp_data, is_tfm)
     for ii = scats_to_run
-        filename = sprintf('L_%dnpw_%.1fmhz_%d', npw, yaml_options.probe.freq*10^-6, ii);
+        filename = sprintf('L_%dnpw_%dmhz_%d', npw, floor(yaml_options.probe.freq*10^-6), ii);
         disp(filename)
         if is_bp_data
             if ~is_geom
