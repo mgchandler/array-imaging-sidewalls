@@ -7,18 +7,18 @@ clc
 
 % Are we using data generated from BP, or are we running
 % array-imaging-sidewalls?
-is_bp_data = true;
+is_bp_data = false;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
 is_tfm = true;
 % Are we modelling with geometry or not?
-is_geom = false;
+is_geom = true;
 % Use analytical wave velocities?
 is_book_velocity = false;
 % Image over the full geometry?
-is_full_plot = true;
+is_full_plot = false;
 % Multi-frequency model?
-is_multifreq = false;
+is_multifreq = true;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...

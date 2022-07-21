@@ -37,7 +37,7 @@ else
     cd("C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\Abaqus\AbaqusInputFileGeneration - Output\v9\Output\FMC Data\RT")
 end
 
-yaml_options = yaml.loadFile("I_45npw.yml");
+yaml_options = yaml.loadFile("I_40npw_2mhz.yml");
 yaml_options.material.couplant_v = 340.0;
 yaml_options.material.couplant_density = 1.2;
 for kk = 1:size(yaml_options.mesh.geom.z, 2)
@@ -57,7 +57,7 @@ yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
 
 npw = [15:5:60];
-npw = 0;
+npw = 40;
 yaml_options.mesh.n_per_wl = npw;
 
 Views_im = 0;
