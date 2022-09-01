@@ -4,14 +4,14 @@ function alpha_beta = fn_inc_out_angles(dists, path_geometry)
 % function.
 
 % INPUTS:
-% - dists : array of size (no_legs, 4)
+% - dists : array of size (no_legs, dims+1, no_scats)
 %       Distances between each wall.
 % - path_geometry : struct (no_walls, 1)
 %       Set of geometry which the ray will interact with. Does not include
 %       the probe or the scatterer.
 %
 % OUTPUTS:
-% - alpha_beta : array (no_legs, 4)
+% - alpha_beta : array (no_legs, 4, no_scats)
 %       The incident and outgoing angles made for each leg. In the 2nd
 %       axis, the order of angles provided is:
 %           [conv_inc_ang, conv_out_ang, sign_inc_ang, sign_out_ang]
@@ -20,8 +20,8 @@ function alpha_beta = fn_inc_out_angles(dists, path_geometry)
 %       incident angles on each wall and the scatterer, and the outgoing
 %       angles from the probe and walls.
 
-[no_legs, ~] = size(dists);
-alpha_beta = zeros(no_legs, 4);
+[no_legs, dims_plus_one, no_scats] = size(dists);
+alpha_beta = zeros(no_legs, 4, no_scats);
 
 % Compute incident angles on walls and scatterer.
 for leg = 1:no_legs
@@ -39,61 +39,57 @@ for leg = 1:no_legs
     % can treat `current` as the origin, so simply take the -ve of the
     % ray direction.
     if leg ~= no_legs
-        dist = reshape(-dists(leg, 1:3), 3, 1);
-        cart_inc = linsolve(path_geometry(leg).basis, dist);
+        dist = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, 1, no_scats);
+        cart_inc = zeros(dims_plus_one-1, no_scats);
+        for scat = 1:no_scats
+            cart_inc(:, scat) = linsolve(path_geometry(leg).basis, dist(:, :, scat));
+        end
     else
-        cart_inc = -dists(leg, 1:3);
+        cart_inc = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, no_scats);
     end
     
-    rad_inc = dists(leg, 4);
+    rad_inc = reshape(dists(leg, dims_plus_one, :), 1, no_scats);
     % Compute angle.
-    alpha = acos(cart_inc(3) / rad_inc);
-    % Work out how to shift signed angle.
-    azimuth = atan2(cart_inc(2), cart_inc(1));
-    if (-pi/2 < azimuth) && (azimuth <= alpha)
-        sign_alpha = alpha;
-    else
-        sign_alpha = -alpha;
-    end
-    % Work out how to shift conventional ang
-    if cart_inc(3) < 0
-        conv_alpha = pi - alpha;
-    else
-        conv_alpha = alpha;
-    end
+    alpha = acos(cart_inc(3, :) ./ rad_inc);
     
-    alpha_beta(leg, 1) = conv_alpha;
-    alpha_beta(leg, 3) = sign_alpha;
+    % Work out how to shift signed angle.
+    azimuth = atan2(cart_inc(2, :), cart_inc(1, :));
+    sign_test = and(-pi/2 < azimuth, azimuth <= alpha);
+    sign_alpha = alpha .* (2*sign_test-1);
+    
+    % Work out how to shift conventional ang
+    conv_test = cart_inc(3, :) < 0;
+    conv_alpha = conv_test*pi + (-1).^conv_test .* alpha;
+    
+    alpha_beta(leg, 1, :) = conv_alpha;
+    alpha_beta(leg, 3, :) = sign_alpha;
     
     %% Outgoing angles
     
     % Get the vector representing this leg in the wall's coordinate system.
     if leg ~= 1
-        dist = reshape(-dists(leg, 1:3), 3, 1);
-        cart_out = linsolve(path_geometry(leg-1).basis, dist);
+        dist = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, 1, no_scats);
+        cart_inc = zeros(dims_plus_one-1, no_scats);
+        for scat = 1:no_scats
+            cart_inc(:, scat) = linsolve(path_geometry(leg-1).basis, dist(:, :, scat));
+        end
     else
-        cart_out = -dists(leg, 1:3);
+        cart_out = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, no_scats);
     end
     
-    rad_out = dists(leg, 4);
+    rad_out = reshape(dists(leg, dims_plus_one, :), 1, no_scats);
     % Compute angle.
-    beta = acos(cart_out(3) / rad_out);
+    beta = acos(cart_out(3, :) ./ rad_out);
     % Work out how to shift signed angle.
-    azimuth = atan2(cart_out(2), cart_out(1));
-    if (-pi/2 < azimuth) && (azimuth <= beta)
-        sign_beta = beta;
-    else
-        sign_beta = -beta;
-    end
+    azimuth = atan2(cart_out(2, :), cart_out(1, :));
+    sign_test = and(-pi/2 < azimuth, azimuth <= beta);
+    sign_beta = beta .* (2*sign_test-1);
     % Work out how to shift conventional ang
-    if cart_inc(3) < 0
-        conv_beta = pi - beta;
-    else
-        conv_beta = beta;
-    end
+    conv_test = cart_inc(3, :) < 0;
+    conv_beta = conv_test*pi + (-1).^conv_test .* beta;
     
-    alpha_beta(leg, 2) = conv_beta;
-    alpha_beta(leg, 4) = sign_beta;
+    alpha_beta(leg, 2, :) = conv_beta;
+    alpha_beta(leg, 4, :) = sign_beta;
     
 end
 

@@ -48,7 +48,7 @@ ray.wall_idxs = zeros(probe_els, num_scatterers, no_walls);
 ray.coords = zeros(probe_els, num_scatterers, no_walls+2, 3);
 ray.path_info = path_info;
 ray.scat_info = scat_info;
-ray.valid_paths = zeros(probe_els, 1);
+ray.valid_paths = logical(zeros(probe_els, 1));
 
 % Calculate the Fermat path. In direct contact, trace directly from probe to
 % to scatterer.
@@ -79,10 +79,15 @@ else
     % expected so 3D array smaller, but speedup is negligible.
     for tx = 1:probe_els
         % First and last legs are simple, so treat them differently.
-        min_times = repmat(reshape(sqrt( ...
-            (path_geometry(1).coords(:, 1).' - probe_coords(tx, 1)) .^ 2 + ...
-            (path_geometry(1).coords(:, 3).' - probe_coords(tx, 3)) .^ 2) / ...
-        speeds(1), 1, wall_pixels), num_scatterers, 1);
+        try
+            min_times = repmat(reshape(sqrt( ...
+                (path_geometry(1).coords(:, 1).' - probe_coords(tx, 1)) .^ 2 + ...
+                (path_geometry(1).coords(:, 3).' - probe_coords(tx, 3)) .^ 2) / ...
+            speeds(1), 1, wall_pixels), num_scatterers, 1);
+        catch ME
+            warning("Error raised likely from too many pixels.")
+            rethrow(ME)
+        end
     
         % If more than one wall, then we have middle legs. This is where
         % Dijkstra is more efficient than brute force. Note that we have to

@@ -225,10 +225,10 @@ if is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
-...%                         sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
-...%                         sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
-                        sprintf("%s %s", mode1_name, mode2_name), ...
-                        sprintf("%s %s", mode2_name, mode1_name), ...
+                        sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
+                        sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+...%                         sprintf("%s %s", mode1_name, mode2_name), ...
+...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [mode1, mode2], ...
                         path_geometry, ...
                         [speeds(mode1+1), speeds(mode2+1)], ...
@@ -300,10 +300,10 @@ elseif ~is_contact
                 for mode2 = 0:1 % Mode of the second leg
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
-...%                         sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
-...%                         sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
-                        sprintf("%s %s", mode1_name, mode2_name), ...
-                        sprintf("%s %s", mode2_name, mode1_name), ...
+                        sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
+                        sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
+...%                         sprintf("%s %s", mode1_name, mode2_name), ...
+...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [0, mode1, mode2], ...
                         path_geometry, ...
                         [couplant_speed, speeds(mode1+1), speeds(mode2+1)], ...
@@ -392,18 +392,6 @@ tic
 % Create views from these paths.
 Views = fn_make_views(Paths, 1);
 Number_of_ims = size(Views, 1);
-if Number_of_ims == 3
-    plot_x = 3;
-    plot_z = 1;
-elseif Number_of_ims == 21
-    plot_x = 3;
-    plot_z = 7;
-elseif Number_of_ims == 55
-    plot_x = 11;
-    plot_z = 5;
-else
-    error('fn_sens: Unexpected number of images being plotted.\n%d images being plotted.', Number_of_ims)
-end
 
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
@@ -487,44 +475,28 @@ if image_locs == 0
     for view = 1 : Number_of_ims
        Sens(view).db_image = 20 * log10(abs(Sens(view).image) ./ max_); 
     end
+    
+    for im = 1:Number_of_ims
+        Sens(im).plotExtras(plot_idx).x = probe_coords(:, 1);
+        Sens(im).plotExtras(plot_idx).z = probe_coords(:, 3);
+        Sens(im).plotExtras(plot_idx).color = 'g';
+        Sens(im).plotExtras(plot_idx).marker = 'o';
+        Sens(im).plotExtras(plot_idx).lineStyle = 'none';
+        plot_idx = plot_idx + 1;
+        for wall = 1:size(geometry, 1)
+            % Only get first and last to reduce the amount saved - this will
+            % need updating if we ever move away from polygonal geometry.
+            Sens(im).plotExtras(plot_idx).x = [geometry(wall).coords(1, 1), geometry(wall).coords(end, 1)];
+            Sens(im).plotExtras(plot_idx).z = [geometry(wall).coords(1, 3), geometry(wall).coords(end, 3)];
+            Sens(im).plotExtras(plot_idx).color = 'r';
+            Sens(im).plotExtras(plot_idx).marker = 'none';
+            Sens(im).plotExtras(plot_idx).lineStyle = '-';
+            plot_idx = plot_idx + 1;
+        end
+    end
 
     % Plot.
-    fig = figure(1);
-
-    % ax = repmat(subplot(plot_z, plot_x, 1), Number_of_ims, 1);
-    if image_block_info.type == "crack"
-        sgtitle(sprintf('Sens %.2f Crack - %.2f deg', image_block_info.crack_length, rad2deg(image_block_info.angle)))
-    end
-    t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
-    for im = 1:Number_of_ims
-        h(im) = nexttile;
-    %     ax(im) = subplot(plot_z, plot_x, im);
-        imagesc(x*UC, z*UC, Sens(im).db_image);
-        hold on
-        title(Sens(im).name)
-        caxis([-db_range_for_output, 0])
-        plot(probe_coords(:, 1)*UC, probe_coords(:, 3)*UC, 'go');
-        for wall = 1:size(geometry, 1)
-            plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
-        end
-
-        if mod(im, plot_x) ~= 1
-            set(gca, 'yticklabel', {[]})
-        end
-        if im <= Number_of_ims - plot_x
-            set(gca, 'xticklabel', {[]})
-        end
-
-        axis equal; axis tight;
-    end
-    xlabel(t, 'x (mm)', 'Fontname', 'Serif')
-    ylabel(t, 'z (mm)', 'Fontname', 'Serif')
-
-    c = colorbar(h(1), 'AxisLocation','in');
-    c.Layout.Tile = 'north';
-    c.Label.String = 'dB';
-
-    set(findall(gcf, '-property', 'Fontname'), 'Fontname', 'Serif')
+    fn_image_from_mat(Sens);
 end
 
 time_5 = double(toc);

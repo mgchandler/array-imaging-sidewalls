@@ -34,16 +34,16 @@ cos_theta = cos(theta);
 
 if ~mode % If we want the longitudinal directivity, Eq 93.
     directivity = exp(3i/4 * pi) * ( ...
-        cos_theta * (mu^2 - 2 * sin_theta^2) / F_0(sin_theta, mu) ...
+        cos_theta .* (mu^2 - 2 * sin_theta.^2) ./ F_0(sin_theta, mu) ...
     );
 else % Then we want the shear directivity, Eq 94.
     directivity = exp(5i/4 * pi) * mu^(5/2) * ( ...
-        sin(2*theta) * sqrt(mu^2 * sin_theta^2 - 1) / F_0(sin_theta*mu, mu) ...
+        sin(2*theta) .* sqrt(mu^2 * sin_theta.^2 - 1) ./ F_0(sin_theta*mu, mu) ...
     );
 end
 
 end
 
 function q = F_0(z, mu) % Helper function, Eq 74.
-q = (2 * z^2 - mu^2)^2 - 4 * z^2 * sqrt(z^2 - 1) * sqrt(z^2 - mu^2);
+q = (2 * z.^2 - mu^2).^2 - 4 * z.^2 .* sqrt(z.^2 - 1) .* sqrt(z.^2 - mu^2);
 end

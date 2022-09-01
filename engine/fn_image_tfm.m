@@ -153,11 +153,11 @@ if is_contact
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
 ...%                %%  Use these names to include the wall in the path name
-                        sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
-                        sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+...%                         sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
+...%                         sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
 ...%                %%  Use these names to exclude the wall in the path name
-...%                         sprintf("%s %s", mode1_name, mode2_name), ...
-...%                         sprintf("%s %s", mode2_name, mode1_name), ...
+                        sprintf("%s %s", mode1_name, mode2_name), ...
+                        sprintf("%s %s", mode2_name, mode1_name), ...
                         [mode1, mode2], ...
                         path_geometry, ...
                         [speeds(mode1+1), speeds(mode2+1)], ...
@@ -241,11 +241,11 @@ elseif ~is_contact
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
 ...%                %%  Use these names to include the wall in the path name
-                        sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
-                        sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
+...%                         sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
+...%                         sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
 ...%                %%  Use these names to exclude the wall in the path name
-...%                         sprintf("%s %s", mode1_name, mode2_name), ...
-...%                         sprintf("%s %s", mode2_name, mode1_name), ...
+                        sprintf("%s %s", mode1_name, mode2_name), ...
+                        sprintf("%s %s", mode2_name, mode1_name), ...
                         [0, mode1, mode2], ...
                         path_geometry, ...
                         [couplant_speed, speeds(mode1+1), speeds(mode2+1)], ...
@@ -274,10 +274,10 @@ end
 time_1 = double(toc);
 fn_print_time('Imaging setup', time_1)
 
-FMC_for_plotting = abs(FMC_time_data);
-input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
-FMC_for_plotting(1:input_idx(1), :) = 0;
-fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(1), Path_info_list(1), [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_FMC.png', savename));
+% FMC_for_plotting = abs(FMC_time_data);
+% input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
+% FMC_for_plotting(1:input_idx(1), :) = 0;
+% fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Path_info_list(1), Path_info_list(1), [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_FMC.png', savename));
 
 %% ---------------------------------------------------------------------- %
 % Scatterer Rays for box                                                  %
@@ -373,18 +373,12 @@ else
 end
 
 Number_of_ims = size(Views_im, 1);
-if Number_of_ims == 3
-    plot_x = 3;
-    plot_z = 1;
-elseif Number_of_ims == 21
-    plot_x = 3;
-    plot_z = 7;
-elseif Number_of_ims == 55
-    plot_x = 11;
-    plot_z = 5;
-else
-    error('fn_sens: Unexpected number of images being plotted.\n%d image(s) being plotted.', Number_of_ims)
-end
+% for im = 1:Number_of_ims
+%     FMC_for_plotting = abs(FMC_time_data);
+%     input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
+%     FMC_for_plotting(1:input_idx(1), :) = 0;
+%     fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Views_im(im).path_1.path_info, Views_im(im).path_2.path_info, [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_(%s)_FMC.fig', savename, strrep(Views_im(im).name, ' ', '')));
+% end
 
 Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
@@ -460,17 +454,8 @@ end
 
 
 % Plot.
-fig = figure(1);
-t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
+plot_idx = 1;
 for im = 1:Number_of_ims
-    plot_idx = 1;
-%     im = im_idxs(im1);
-    h(im) = nexttile;
-    imagesc(im_x*UC, im_z*UC, Ims(im).db_image);
-    hold on
-    title(Ims(im).name)
-    caxis([-db_range_for_output, 0])
-    plot(probe_coords(:, 1)*UC, probe_coords(:, 3)*UC, 'go');
     Ims(im).plotExtras(plot_idx).x = probe_coords(:, 1);
     Ims(im).plotExtras(plot_idx).z = probe_coords(:, 3);
     Ims(im).plotExtras(plot_idx).color = 'g';
@@ -478,7 +463,6 @@ for im = 1:Number_of_ims
     Ims(im).plotExtras(plot_idx).lineStyle = 'none';
     plot_idx = plot_idx + 1;
     for wall = 1:size(geometry, 1)
-        plot(geometry(wall).coords(:, 1)*UC, geometry(wall).coords(:, 3)*UC, 'r')
         % Only get first and last to reduce the amount saved - this will
         % need updating if we ever move away from polygonal geometry.
         Ims(im).plotExtras(plot_idx).x = [geometry(wall).coords(1, 1), geometry(wall).coords(end, 1)];
@@ -493,8 +477,6 @@ for im = 1:Number_of_ims
             if ~strcmp(scat_info.type, 'image')
                 new_box_x = scat_info.x(s) + scat_info.r(s)/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
                 new_box_z = scat_info.z(s) + scat_info.r(s)/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
-                rectangle('Position', [scat_info.x(s)*UC - boxsize*UC/2, scat_info.z(s)*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'r');
-                rectangle('Position', [new_box_x*UC - boxsize*UC/2, new_box_z*UC - boxsize*UC/2, boxsize*UC, boxsize*UC], 'EdgeColor', 'g');
 
                 Ims(im).plotExtras(plot_idx).x = [scat_info.x(s) - boxsize/2, scat_info.x(s) - boxsize/2, scat_info.x(s) + boxsize/2, scat_info.x(s) + boxsize/2, scat_info.x(s) - boxsize/2];
                 Ims(im).plotExtras(plot_idx).z = [scat_info.z(s) - boxsize/2, scat_info.z(s) + boxsize/2, scat_info.z(s) + boxsize/2, scat_info.z(s) - boxsize/2, scat_info.z(s) - boxsize/2];
@@ -509,51 +491,30 @@ for im = 1:Number_of_ims
                 Ims(im).plotExtras(plot_idx).lineStyle = '-';
                 plot_idx = plot_idx + 1;
                 
-                for leg = 1:size(Views(im).path_1.coords, 3)-1
-                    plot([mean(Views(im).path_1.coords(:, s, leg, 1))*UC, mean(Views(im).path_1.coords(:, s, leg+1, 1))*UC], ...
-                         [mean(Views(im).path_1.coords(:, s, leg, 3))*UC, mean(Views(im).path_1.coords(:, s, leg+1, 3))*UC], ...
-                    'Color', [.5,.5,.5])
-                
-                    Ims(im).plotExtras(plot_idx).x = [mean(Views(im).path_1.coords(:, s, leg, 1)), mean(Views(im).path_1.coords(:, s, leg+1, 1))];
-                    Ims(im).plotExtras(plot_idx).z = [mean(Views(im).path_1.coords(:, s, leg, 3)), mean(Views(im).path_1.coords(:, s, leg+1, 3))];
-                    Ims(im).plotExtras(plot_idx).color = [.5,.5,.5];
-                    Ims(im).plotExtras(plot_idx).marker = 'none';
-                    Ims(im).plotExtras(plot_idx).lineStyle = '-';
-                    plot_idx = plot_idx + 1;
+                if isfield(Views(im).path_1, 'coords')
+                    for leg = 1:size(Views(im).path_1.coords, 3)-1
+                        Ims(im).plotExtras(plot_idx).x = [mean(Views(im).path_1.coords(:, s, leg, 1)), mean(Views(im).path_1.coords(:, s, leg+1, 1))];
+                        Ims(im).plotExtras(plot_idx).z = [mean(Views(im).path_1.coords(:, s, leg, 3)), mean(Views(im).path_1.coords(:, s, leg+1, 3))];
+                        Ims(im).plotExtras(plot_idx).color = [.5,.5,.5];
+                        Ims(im).plotExtras(plot_idx).marker = 'none';
+                        Ims(im).plotExtras(plot_idx).lineStyle = '-';
+                        plot_idx = plot_idx + 1;
+                    end
                 end
-                for leg = 1:size(Views(im).path_2.coords, 3)-1
-                    plot([mean(Views(im).path_2.coords(:, s, leg, 1))*UC, mean(Views(im).path_2.coords(:, s, leg+1, 1))*UC], ...
-                         [mean(Views(im).path_2.coords(:, s, leg, 3))*UC, mean(Views(im).path_2.coords(:, s, leg+1, 3))*UC], ...
-                    'Color', [.5,.5,.5])
-                
-                    Ims(im).plotExtras(plot_idx).x = [mean(Views(im).path_2.coords(:, s, leg, 1)), mean(Views(im).path_2.coords(:, s, leg+1, 1))];
-                    Ims(im).plotExtras(plot_idx).z = [mean(Views(im).path_2.coords(:, s, leg, 3)), mean(Views(im).path_2.coords(:, s, leg+1, 3))];
-                    Ims(im).plotExtras(plot_idx).color = [.5,.5,.5];
-                    Ims(im).plotExtras(plot_idx).marker = 'none';
-                    Ims(im).plotExtras(plot_idx).lineStyle = '-';
-                    plot_idx = plot_idx + 1;
+                if isfield(Views(im).path_2, 'coords')
+                    for leg = 1:size(Views(im).path_2.coords, 3)-1
+                        Ims(im).plotExtras(plot_idx).x = [mean(Views(im).path_2.coords(:, s, leg, 1)), mean(Views(im).path_2.coords(:, s, leg+1, 1))];
+                        Ims(im).plotExtras(plot_idx).z = [mean(Views(im).path_2.coords(:, s, leg, 3)), mean(Views(im).path_2.coords(:, s, leg+1, 3))];
+                        Ims(im).plotExtras(plot_idx).color = [.5,.5,.5];
+                        Ims(im).plotExtras(plot_idx).marker = 'none';
+                        Ims(im).plotExtras(plot_idx).lineStyle = '-';
+                        plot_idx = plot_idx + 1;
+                    end
                 end
             end
         end
     end
-    
-    if mod(im, plot_x) ~= 1
-        set(gca, 'yticklabel', {[]})
-    end
-    if im <= Number_of_ims - plot_x
-        set(gca, 'xticklabel', {[]})
-    end
-    
-    axis equal; axis tight;
-    xlim([xmin*UC, xmax*UC])
-    ylim([zmin*UC, zmax*UC])
 end
-xlabel(t, 'x (mm)')
-ylabel(t, 'z (mm)')
-
-c = colorbar(h(1), 'AxisLocation','in');
-c.Layout.Tile = 'north';
-c.Label.String = 'dB';
 
 % % Resize image and move for colorbar
 % set(fig, 'Position', [20, 20, im_width, im_height])
@@ -572,6 +533,8 @@ c.Label.String = 'dB';
 % set(h, 'Position', [hpos(1)+10, hpos(2), hpos(3)*2, pos1(2)-hpos(2)+pos1(4)])
 % 
 % h.Label.String = 'dB';
+
+fn_image_from_mat(Ims);
 
 
 

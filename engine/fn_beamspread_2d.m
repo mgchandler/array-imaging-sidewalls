@@ -6,12 +6,12 @@ function beam_spread = fn_beamspread_2d(dists, alphas, speeds, varargin)
 % funciton if required.
 %
 % INPUTS:
-% - dists : array (no_legs, 1)
+% - dists : array (no_legs, no_scats)
 %       The Euclidean distance of each leg in the array. When calculating
 %       the forward beamspread (i.e. probe -> scatterer), the first element
 %       should be the distance of the first leg (starts at the probe), and
 %       the last element should be the last leg (ends at the scatterer).
-% - alphas : array (no_walls, 1)
+% - alphas : array (no_walls, no_scats)
 %       Incident angle that each leg of the ray makes with the following
 %       wall. Order must correspond to the order of `dists` array. Note
 %       that this array is one element shorter than `dists`: the incident
@@ -39,10 +39,10 @@ else
     last_k = 1;
 end
 
-[no_legs, ~] = size(dists);
+[no_legs, no_scats] = size(dists);
 gamma_list = zeros(no_legs-1, 1);
 
-virtual_distance = dists(1);
+virtual_distance = dists(1, :);
 
 % If there is more than one leg in the virtual distance.
 if no_legs ~= 1
@@ -55,16 +55,16 @@ if no_legs ~= 1
     end
 
     for k = 1:no_legs-1
-        r = dists(k+1);
+        r = dists(k+1, :);
         gamma = 1.0;
         for ii = 1:k
             gamma = gamma*gamma_list(ii);
         end
-        virtual_distance = virtual_distance + r/gamma;
+        virtual_distance = virtual_distance + r./gamma;
     end
 end
 
 % beam_spread = 1/sqrt(last_k * virtual_distance);
-beam_spread = 1/sqrt(virtual_distance);
+beam_spread = 1./sqrt(virtual_distance);
 
 end

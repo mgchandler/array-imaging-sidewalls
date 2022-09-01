@@ -45,16 +45,16 @@ path_geometry = path_info.path_geometry;
 
 % Initialise output array. Assume valid to start, and then change if
 % intersection is found.
-valid_paths = ones(probe_els, num_scatterers);
+valid_paths = logical(ones(probe_els, num_scatterers));
 
 % Each ray traces from a probe element to a scatterer.
 for el = 1:probe_els
-    for scat = 1:num_scatterers
+%     for scat = 1:num_scatterers
         % For each leg in the current ray.
         for leg = 1:num_legs
             % Get the start and end point of each leg.
-            leg_start = squeeze(ray_coords(el, scat, leg, :));
-            leg_end = squeeze(ray_coords(el, scat, leg+1, :));
+            leg_start = squeeze(ray_coords(el, :, leg, :));
+            leg_end = squeeze(ray_coords(el, :, leg+1, :));
             
             % Get the walls we need to check for intersections with. We may
             % need to exclude a certain number of walls depending on the
@@ -73,10 +73,7 @@ for el = 1:probe_els
                 % First check whether we pass through a corner. On the
                 % first leg, leg_start is on the probe and leg_end is on
                 % the wall.
-                if or(leg_end.' == path_geometry(leg).point1, leg_end.' == path_geometry(leg).point2)
-                    valid_paths(el, scat) = 0;
-                    break
-                end
+                valid_paths(el, :) = and(valid_paths(el, :), ~or(all(leg_start == path_geometry(leg).point1, 2), all(leg_end == path_geometry(leg).point2, 2)).');
                 
                 % If the path is unphysical, we break out of the loop over
                 % the path and never reach this point. If it is physical,
@@ -92,10 +89,7 @@ for el = 1:probe_els
                 
             elseif leg == num_legs % If we are on the last leg.
                 % Check if the path goes through a wall corner.
-                if or(leg_start.' == path_geometry(leg-1).point1, leg_end.' == path_geometry(leg-1).point2)
-                    valid_paths(el, scat) = 0;
-                    break
-                end
+                valid_paths(el, :) = and(valid_paths(el, :), ~or(all(leg_start == path_geometry(leg-1).point1, 2), all(leg_end == path_geometry(leg-1).point2, 2)).');
                 
                 % Exclude the wall we interact with.
                 geometry_for_testing = all_geometry;
@@ -152,13 +146,13 @@ for el = 1:probe_els
                     wall_start = geometry_for_testing(wall).coords(1, :);
                     wall_end = geometry_for_testing(wall).coords(end, :);
                     is_intersection = fn_is_intersection(wall_start, wall_end, leg_start, leg_end);
-                    if is_intersection
-                        valid_paths(el, scat) = 0;
-                        break
-                    end
+%                     if is_intersection
+                    valid_paths(el, :) = and(valid_paths(el, :), ~is_intersection.');
+%                         break
+%                     end
                 end
                 % Break out of the loop over this ray's legs.
-                if is_intersection
+                if all(is_intersection)
                     break
                 end
             
@@ -170,7 +164,7 @@ for el = 1:probe_els
             end
             
         end
-    end
+%     end
 end
 
 

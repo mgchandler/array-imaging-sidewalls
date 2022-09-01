@@ -38,8 +38,19 @@ if isfield(scat_info, 'matrix')
     % scatterers, but out-of-memory error arises for high element number
     % and small pixel size.
     for el = 1 : probe_els^2
-        inc_angles = path1.weights.inc_theta(view.probe_txrx(el, 1), :, end, 2) - scat_info.angle;
-        out_angles = path2.weights.inv_out_theta(view.probe_txrx(el, 2), :, 1, 2) - scat_info.angle;
+        % Extract scat angles from path coords
+        path1_ray = permute(squeeze(path1.coords(view.probe_txrx(el, 1), :, :, :)), [2,3,1]);
+        min_dists  = fn_min_dists(path1_ray);
+        inc_angles = fn_inc_out_angles(min_dists, path1.path_info.path_geometry);
+        inc_angles = reshape(inc_angles(end, 3, :), 1, num_scatterers) - scat_info.angle;
+        
+        path2_ray = permute(squeeze(path2.coords(view.probe_txrx(el, 2), :, :, :)), [2,3,1]);
+        inv_min_dists = flip(fn_min_dists(path2_ray), 1);
+        out_angles = fn_inc_out_angles(inv_min_dists, path2.path_info.path_geometry);
+        out_angles = reshape(out_angles(1, 3, :), 1, num_scatterers) - scat_info.angle;
+        
+%         inc_angles = path1.weights.inc_theta(view.probe_txrx(el, 1), :, end, 2) - scat_info.angle;
+%         out_angles = path2.weights.inv_out_theta(view.probe_txrx(el, 2), :, 1, 2) - scat_info.angle;
 %         scat_amps(el, :, :) = interp2(theta, theta, scat_matrix, inc_angles, out_angles);
         scat_amps(el, :, :) = fn_scattering_bilinear_interp(scat_matrix, inc_angles, out_angles);
     end

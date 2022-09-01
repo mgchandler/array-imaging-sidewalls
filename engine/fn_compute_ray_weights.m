@@ -15,8 +15,8 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array, varargin)
 %       coefficients along the forward and backward path for the ray.
 
 debug = false;
-% Relevant dimensions.
 
+% Relevant dimensions.
 [probe_els, num_scatterers] = size(ray.min_times);
 [num_freqs, ~] = size(freq_array);
 
@@ -59,164 +59,213 @@ ray_weights.inv_transrefl = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.weights = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_weights = zeros(probe_els, num_scatterers, num_freqs);
 % Initialise angles.
-ray_weights.inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
-ray_weights.out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
-ray_weights.inv_inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
-ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
-ray_weights.c_out = zeros(probe_els,1);
+% ray_weights.inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+% ray_weights.out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+% ray_weights.inv_inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+% ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+% ray_weights.c_out = zeros(probe_els,1);
 ray_weights.min_dists = zeros(probe_els, num_scatterers, no_walls+1, 4);
 
-if debug
-    close all
-    figure(3)
-    hold on
-    for ii = 1:size(all_geometry, 1)
-        plot([all_geometry(ii).point1(1), all_geometry(ii).point2(1)], -[all_geometry(ii).point1(3), all_geometry(ii).point2(3)], 'r')
-    end
-end
+% if debug
+%     close all
+%     figure(3)
+%     hold on
+%     for ii = 1:size(all_geometry, 1)
+%         plot([all_geometry(ii).point1(1), all_geometry(ii).point2(1)], -[all_geometry(ii).point1(3), all_geometry(ii).point2(3)], 'r')
+%     end
+% end
 
 % If we are in the direct contact case
 if ~isstruct(path_geometry)
-    for scat = 1 : num_scatterers
-        for tx = 1 : probe_els
-            
-            single_ray_leg_coords = zeros(2, 3);
-            single_ray_leg_coords(1, :) = probe_coords(tx, :);
-            single_ray_leg_coords(2, :) = scatterers(scat, :);
-            inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
+    for tx = 1 : probe_els
 
-            min_dists = fn_min_dists(single_ray_leg_coords);
-            inv_min_dists = fn_min_dists(inv_single_ray_geometry);
-                
-            inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
-            inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
-            inv_inc_out_angles = flip(inc_out_angles, 1);            
-%             inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
-            
-            ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
-            ray_weights.inc_theta(tx, scat, :, 2) = inc_out_angles(:, 3);
-            ray_weights.out_theta(tx, scat, :, 1) = inc_out_angles(:, 2);
-            ray_weights.out_theta(tx, scat, :, 2) = inc_out_angles(:, 4);
-            ray_weights.inv_inc_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 1);
-            ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
-            ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
-            ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
-            if scat==118
-                ray_weights.c_out(tx) = inc_out_angles(end, 3);
-            end
-            ray_weights.min_dists(tx, scat, :, :) = min_dists;
-            
-            cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
-            
-            if debug
-                plot(single_ray_leg_coords(:, 1), -single_ray_leg_coords(:, 3), 'Color', [.5,.5,.5])
-            end
+        single_ray_leg_coords = permute(squeeze(ray.coords(tx, :, :, :)), [2,3,1]);
+        inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
-            for freq_idx = 1 : num_freqs
-                
-                % Note angles are not passed to beamspread functions:
-                % because we are in direct contact case, there is only one
-                % leg in the ray, and thus the virtual distance which is
-                % calculated in this function is equal to the real
-                % distance - no angles are required in the calculation.
-                ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4), 0, speeds, freq_array(freq_idx));
-                ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), 0, flip(speeds), freq_array(freq_idx));
-                
-                % As there are no transmissions or reflections, set the
-                % coefficient equal to one.
-                ray_weights.transrefl(tx, scat, freq_idx) = 1;
-                ray_weights.inv_transrefl(tx, scat, freq_idx) = 1;
-                
-                % We are in direct contact path.
-                % We want the outgoing angle from the probe.
-                ray_weights.directivity(tx, scat, freq_idx) = ...
-                    fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx));
-                ray_weights.idirectivity(tx, scat, freq_idx) = ...
-                    fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...
-                    cos_sin(modes(1)+1);
+        min_dists = fn_min_dists(single_ray_leg_coords);
+        inv_min_dists = fn_min_dists(inv_single_ray_geometry);
+
+        inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
+        inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
+        inv_inc_out_angles = flip(inc_out_angles, 1);            
+%         inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
+% 
+%         ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
+%         ray_weights.inc_theta(tx, scat, :, 2) = inc_out_angles(:, 3);
+%         ray_weights.out_theta(tx, scat, :, 1) = inc_out_angles(:, 2);
+%         ray_weights.out_theta(tx, scat, :, 2) = inc_out_angles(:, 4);
+%         ray_weights.inv_inc_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 1);
+%         ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
+%         ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
+%         ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
+%         if scat==118
+%             ray_weights.c_out(tx) = inc_out_angles(end, 3);
+%         end
+        ray_weights.min_dists(tx, :, :, :) = permute(min_dists, [3, 1, 2]);
+
+%         cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
+            
+%         if debug
+%             plot(single_ray_leg_coords(:, 1), -single_ray_leg_coords(:, 3), 'Color', [.5,.5,.5])
+%         end
+        for freq_idx = 1 : num_freqs
+            % Note angles are not passed to beamspread functions:
+            % because we are in direct contact case, there is only one
+            % leg in the ray, and thus the virtual distance which is
+            % calculated in this function is equal to the real
+            % distance - no angles are required in the calculation.
+            ray_weights.beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(min_dists(:, 4, :), no_walls+1, num_scatterers), 0, speeds, freq_array(freq_idx));
+            ray_weights.inv_beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(inv_min_dists(:, 4, :), no_walls+1, num_scatterers), 0, flip(speeds), freq_array(freq_idx));
+
+            % As there are no transmissions or reflections, set the
+            % coefficient equal to one.
+            ray_weights.transrefl(tx, :, freq_idx) = 1;
+            ray_weights.inv_transrefl(tx, :, freq_idx) = 1;
+            
+            % We are in direct contact path.
+            % We want the outgoing angle from the probe.
+            ray_weights.directivity(tx, :, freq_idx) = ...
+                fn_sinc_directivity(reshape(inc_out_angles(1, 2, :), 1, num_scatterers), el_length, speeds(1)/freq_array(freq_idx));
+            ray_weights.idirectivity(tx, :, freq_idx) = ...
+                fn_sinc_directivity(reshape(inc_out_angles(1, 2, :), 1, num_scatterers), el_length, speeds(1)/freq_array(freq_idx));% * ...
+%                     cos_sin(modes(1)+1);
 %                     fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                if npw == 0
-                    ray_weights.directivity(tx, scat, freq_idx) = ray_weights.directivity(tx, scat, freq_idx) * ...
-                        fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                end
+            if npw == 0
+                ray_weights.directivity(tx, :, freq_idx) = ray_weights.directivity(tx, :, freq_idx) .* ...
+                    fn_line_directivity(reshape(inc_out_angles(1, 2, :), 1, num_scatterers), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
             end
         end
+
+
+%         for scat = 1 : num_scatterers
+%             for freq_idx = 1 : num_freqs
+%                 
+%                 % Note angles are not passed to beamspread functions:
+%                 % because we are in direct contact case, there is only one
+%                 % leg in the ray, and thus the virtual distance which is
+%                 % calculated in this function is equal to the real
+%                 % distance - no angles are required in the calculation.
+%                 ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4, scat), 0, speeds, freq_array(freq_idx));
+%                 ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4, scat), 0, flip(speeds), freq_array(freq_idx));
+%                 
+%                 % As there are no transmissions or reflections, set the
+%                 % coefficient equal to one.
+%                 ray_weights.transrefl(tx, scat, freq_idx) = 1;
+%                 ray_weights.inv_transrefl(tx, scat, freq_idx) = 1;
+%                 
+%                 % We are in direct contact path.
+%                 % We want the outgoing angle from the probe.
+%                 ray_weights.directivity(tx, scat, freq_idx) = ...
+%                     fn_sinc_directivity(inc_out_angles(1, 2, scat), el_length, speeds(1)/freq_array(freq_idx));
+%                 ray_weights.idirectivity(tx, scat, freq_idx) = ...
+%                     fn_sinc_directivity(inc_out_angles(1, 2, scat), el_length, speeds(1)/freq_array(freq_idx));% * ...
+% %                     cos_sin(modes(1)+1);
+% %                     fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+%                 if npw == 0
+%                     ray_weights.directivity(tx, scat, freq_idx) = ray_weights.directivity(tx, scat, freq_idx) * ...
+%                         fn_line_directivity(inc_out_angles(1, 2, scat), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+%                 end
+%             end
+%         end
     end
     
 % If we are in the skip contact case or immersion case, i.e. we
 % have more than one leg.
 else
-    for scat = 1 : num_scatterers
-        for tx = 1 : probe_els
-            
-            single_ray_leg_coords = zeros(no_walls+2, 3);
-            single_ray_leg_coords(1, :) = probe_coords(tx, :);
-            for wall = 1:no_walls
-                single_ray_leg_coords(wall+1, :) = path_geometry(wall).coords(ray.wall_idxs(tx, scat, wall), :);
-            end
-            single_ray_leg_coords(no_walls+2, :) = scatterers(scat, :);
-            inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
+    for tx = 1 : probe_els
+        
+        single_ray_leg_coords = permute(squeeze(ray.coords(tx, :, :, :)), [2,3,1]);
+        inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
-            % Get the minimum distances.
-            min_dists = fn_min_dists(single_ray_leg_coords);
-            inv_min_dists = fn_min_dists(inv_single_ray_geometry);
+        min_dists = fn_min_dists(single_ray_leg_coords);
+        inv_min_dists = fn_min_dists(inv_single_ray_geometry);
 
-            % Get the angles.
-            inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
-            inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
-            inv_inc_out_angles = flip(inc_out_angles, 1);
-%             inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
-            
-            ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
-            ray_weights.inc_theta(tx, scat, :, 2) = inc_out_angles(:, 3);
-            ray_weights.out_theta(tx, scat, :, 1) = inc_out_angles(:, 2);
-            ray_weights.out_theta(tx, scat, :, 2) = inc_out_angles(:, 4);
-            ray_weights.inv_inc_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 1);
-            ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
-            ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
-            ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
-            if scat==118
-                ray_weights.c_out(tx) = inc_out_angles(end, 3);
-            end
-            ray_weights.min_dists(tx, scat, :, :) = min_dists;
-            
-            cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
-            
-            if debug
-                plot(single_ray_leg_coords(:, 1), -single_ray_leg_coords(:, 3), 'Color', [.5,.5,.5])
-            end
-            
-            for freq_idx = 1 : num_freqs
-                
-                % Beamspread
-                ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4), inc_out_angles(:, 1), speeds, freq_array(freq_idx));
-                ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4), inv_inc_out_angles(:, 2), flip(speeds), freq_array(freq_idx));
-                
-                % Trans/refl
-                inv_angles = conj(asin(sin(inc_out_angles(1:end-1, 1)) .* speeds(2:end) ./ speeds(1:end-1)));
-                ray_weights.transrefl(tx, scat, freq_idx) = fn_TR_coeff(medium_ids, modes, inc_out_angles(1:end-1, 1), ...
-                                                                        mat_speeds, density);
-                ray_weights.inv_transrefl(tx, scat, freq_idx) = fn_TR_coeff(flip(medium_ids), flip(modes), ...
-                                                                            inv_angles, mat_speeds, density);
+        inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
+        inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
+        inv_inc_out_angles = flip(inc_out_angles, 1);   
+%         inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
+% 
+%         ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
+%         ray_weights.inc_theta(tx, scat, :, 2) = inc_out_angles(:, 3);
+%         ray_weights.out_theta(tx, scat, :, 1) = inc_out_angles(:, 2);
+%         ray_weights.out_theta(tx, scat, :, 2) = inc_out_angles(:, 4);
+%         ray_weights.inv_inc_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 1);
+%         ray_weights.inv_inc_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 3);
+%         ray_weights.inv_out_theta(tx, scat, :, 1) = inv_inc_out_angles(:, 2);
+%         ray_weights.inv_out_theta(tx, scat, :, 2) = inv_inc_out_angles(:, 4);
+%         if scat==118
+%             ray_weights.c_out(tx) = inc_out_angles(end, 3);
+%         end
+        ray_weights.min_dists(tx, :, :, :) = permute(min_dists, [3, 1, 2]);
 
-                % We are in skip contact or immersion case. Check which,
-                % and then compute directivity.
-                if medium_ids(1) == 1 % If solid then contact.
-                    ray_weights.directivity(tx, scat, freq_idx) = ...
-                        fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx));
-                    ray_weights.idirectivity(tx, scat, freq_idx) = ...
-                        fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(1)/freq_array(freq_idx)) * ...
-                        cos_sin(modes(1)+1);
+%         cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
+            
+%         if debug
+%             plot(single_ray_leg_coords(:, 1), -single_ray_leg_coords(:, 3), 'Color', [.5,.5,.5])
+%         end
+        for freq_idx = 1 : num_freqs
+            % Note angles are not passed to beamspread functions:
+            % because we are in direct contact case, there is only one
+            % leg in the ray, and thus the virtual distance which is
+            % calculated in this function is equal to the real
+            % distance - no angles are required in the calculation.            
+            ray_weights.beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(min_dists(:, 4, :), no_walls+1, num_scatterers), reshape(inc_out_angles(:, 1, :), no_walls+1, num_scatterers), speeds, freq_array(freq_idx));
+            ray_weights.inv_beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(inv_min_dists(:, 4, :), no_walls+1, num_scatterers), reshape(inv_inc_out_angles(:, 2, :), no_walls+1, num_scatterers), flip(speeds), freq_array(freq_idx));
+
+            % Trans/refl      
+            inv_angles = reshape(conj(asin(sin(inc_out_angles(1:end-1, 1, :)) .* speeds(2:end) ./ speeds(1:end-1))), no_walls, num_scatterers);
+            ray_weights.transrefl(tx, :, freq_idx) = fn_TR_coeff(medium_ids, modes, reshape(inc_out_angles(1:end-1, 1, :), no_walls, num_scatterers), mat_speeds, density);
+            ray_weights.inv_transrefl(tx, :, freq_idx) = fn_TR_coeff(flip(medium_ids), flip(modes), inv_angles, mat_speeds, density);
+
+            % We are in skip contact or immersion case. Check which,
+            % and then compute directivity.
+            if medium_ids(1) == 1 % If solid then contact.
+                ray_weights.directivity(tx, :, freq_idx) = ...
+                    fn_sinc_directivity(inc_out_angles(1, 2, :), el_length, speeds(1)/freq_array(freq_idx));
+                ray_weights.idirectivity(tx, :, freq_idx) = ...
+                    fn_sinc_directivity(inc_out_angles(1, 2, :), el_length, speeds(1)/freq_array(freq_idx));% * ...
+%                         cos_sin(modes(1)+1);
 %                         fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                    if npw == 0
-                        ray_weights.directivity(tx, scat, freq_idx) = ray_weights.directivity(tx, scat, freq_idx) * ...
-                            fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
-                    end
-                else % Must be liquid, so immersion.
-                    ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2), el_length, speeds(end)/freq_array(freq_idx));
+                if npw == 0
+                    ray_weights.directivity(tx, :, freq_idx) = ray_weights.directivity(tx, :, freq_idx) .* ...
+                        fn_line_directivity(reshape(inc_out_angles(1, 2, :), 1, num_scatterers), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
                 end
+                
+            else % Must be liquid, so immersion.
+                ray_weights.directivity(tx, :, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2, :), el_length, speeds(end)/freq_array(freq_idx));
             end
         end
+            
+%         for scat = 1 : num_scatterers
+%             for freq_idx = 1 : num_freqs
+%                 
+%                 % Beamspread
+%                 ray_weights.beamspread(tx, scat, freq_idx) = fn_beamspread_2d(min_dists(:, 4, scat), inc_out_angles(:, 1, scat), speeds, freq_array(freq_idx));
+%                 ray_weights.inv_beamspread(tx, scat, freq_idx) = fn_beamspread_2d(inv_min_dists(:, 4, scat), inv_inc_out_angles(:, 2, scat), flip(speeds), freq_array(freq_idx));
+%                 
+%                 % Trans/refl
+%                 inv_angles = conj(asin(sin(inc_out_angles(1:end-1, 1, scat)) .* speeds(2:end) ./ speeds(1:end-1)));
+%                 ray_weights.transrefl(tx, scat, freq_idx) = fn_TR_coeff(medium_ids, modes, inc_out_angles(1:end-1, 1, scat), mat_speeds, density);
+%                 ray_weights.inv_transrefl(tx, scat, freq_idx) = fn_TR_coeff(flip(medium_ids), flip(modes), inv_angles, mat_speeds, density);
+% 
+%                 % We are in skip contact or immersion case. Check which,
+%                 % and then compute directivity.
+%                 if medium_ids(1) == 1 % If solid then contact.
+%                     ray_weights.directivity(tx, scat, freq_idx) = ...
+%                         fn_sinc_directivity(inc_out_angles(1, 2, scat), el_length, speeds(1)/freq_array(freq_idx));
+%                     ray_weights.idirectivity(tx, scat, freq_idx) = ...
+%                         fn_sinc_directivity(inc_out_angles(1, 2, scat), el_length, speeds(1)/freq_array(freq_idx));% * ...
+% %                         cos_sin(modes(1)+1);
+% %                         fn_line_directivity(inc_out_angles(1, 2), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+%                     if npw == 0
+%                         ray_weights.directivity(tx, scat, freq_idx) = ray_weights.directivity(tx, scat, freq_idx) * ...
+%                             fn_line_directivity(inc_out_angles(1, 2, scat), mat_speeds(2)/freq_array(freq_idx), mat_speeds(3)/freq_array(freq_idx), modes(1));
+%                     end
+%                 else % Must be liquid, so immersion.
+%                     ray_weights.directivity(tx, scat, freq_idx) = fn_sinc_directivity(inc_out_angles(1, 2, scat), el_length, speeds(end)/freq_array(freq_idx));
+%                 end
+%             end
+%         end
     end
 end
 
@@ -234,6 +283,7 @@ if npw ~= 0
     ray_weights.directivity(:, :, 1) = ray_weights.directivity(:, :, 1) .* reshape(linedir, probe_els, num_scatterers);
 end
 
+
 % Calculate the total ray weights, for convenience in calculation later.
 % Note sqrt(lambda) here comes from the fact that the scattering matrix is
 % defined as the amplitude of a scattered wave that would be measured if
@@ -244,4 +294,16 @@ ray_weights.weights = ( ...
 ray_weights.inv_weights = ( ...
     ray_weights.inv_transrefl .* ray_weights.inv_beamspread .* ray_weights.directivity ...
 ) .* sqrt(speeds(end)/reshape(freq_array', 1,1,num_freqs)) .* (1i * density(medium_ids(1)+1) * speeds(1));
+
+% Turn off weight breakdown - not necessary to keep them unless debugging.
+if ~debug
+    ray_weights = rmfield(ray_weights, 'min_dists');
+    ray_weights = rmfield(ray_weights, 'beamspread');
+    ray_weights = rmfield(ray_weights, 'inv_beamspread');
+    ray_weights = rmfield(ray_weights, 'directivity');
+    ray_weights = rmfield(ray_weights, 'idirectivity');
+    ray_weights = rmfield(ray_weights, 'transrefl');
+    ray_weights = rmfield(ray_weights, 'inv_transrefl');
+end
+
 end

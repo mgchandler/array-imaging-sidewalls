@@ -10,7 +10,7 @@ clc
 is_bp_data = false;
 % If we're running a-i-s, are we using tfm or sens to get our signal
 % values? N.B. If is_bp_data = 1, then this logical is not used.
-is_tfm = true;
+is_tfm = false;
 % Are we modelling with geometry or not?
 is_geom = true;
 % Use analytical wave velocities?
@@ -18,7 +18,7 @@ is_book_velocity = false;
 % Image over the full geometry?
 is_full_plot = false;
 % Multi-frequency model?
-is_multifreq = true;
+is_multifreq = false;
 
 image_block = [[0.0e-3, 0.0, 17.5e-3]; ...
      [16.25e-3, 0.0, 17.5e-3]; ...
@@ -43,7 +43,7 @@ yaml_options.material.couplant_density = 1.2;
 for kk = 1:size(yaml_options.mesh.geom.z, 2)
     yaml_options.mesh.geom.z{kk} = -yaml_options.mesh.geom.z{kk};
 end
-yaml_options.model.boxsize = .5e-3;
+yaml_options.model.boxsize = 2.5e-3;
 yaml_options.model.interp_method = 'lanczos';
 if is_full_plot
     yaml_options.model.pixel = .5e-3;
@@ -57,7 +57,7 @@ yaml_options.probe.angle = 0.0;
 yaml_options.probe.standoff = 0.0;
 
 npw = [15:5:60];
-npw = 40;
+npw = 0;
 yaml_options.mesh.n_per_wl = npw;
 
 Views_im = 0;
@@ -227,6 +227,8 @@ else
     filename = strcat('L_sens_', sprintf('%dnpw', npw));
     
     yaml_options.model.image_locs = image_block;
+    yaml_options.material.v_L = 6317.0122248907810;
+    yaml_options.material.v_S = 3110.2818131859126;
 
     yaml_options.mesh.scat = fn_scat_info( ...
         "sdh", ...

@@ -153,6 +153,7 @@ elseif varargin{1} == "sdh"
             switch lower(varargin{ii})
                 case 'ang_pts_over_2pi'
                     ang_pts_over_2pi = varargin{ii+1};
+                    scat_info.ang_pts_over_2pi = ang_pts_over_2pi;
                     if ang_pts_over_2pi ~= 0
                         scat_info.matrix = fn_scattering_matrix(scat_info, ang_pts_over_2pi);
                     end
@@ -161,6 +162,8 @@ elseif varargin{1} == "sdh"
                     error('fn_scat_info: Invalid argument provided for sdh.')
             end
         end
+    else
+        scat_info.ang_pts_over_2pi = 0;
     end
 
 elseif varargin{1} == "crack"
