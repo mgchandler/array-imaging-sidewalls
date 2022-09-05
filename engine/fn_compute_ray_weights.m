@@ -78,8 +78,12 @@ ray_weights.min_dists = zeros(probe_els, num_scatterers, no_walls+1, 4);
 % If we are in the direct contact case
 if ~isstruct(path_geometry)
     for tx = 1 : probe_els
-
-        single_ray_leg_coords = permute(squeeze(ray.coords(tx, :, :, :)), [2,3,1]);
+        single_ray_leg_coords = squeeze(ray.coords(tx, :, :, :));
+        if length(size(single_ray_leg_coords)) == 2
+            single_ray_leg_coords = zeros(num_scatterers, no_walls+2, 3);
+            single_ray_leg_coords(:, :, :) = squeeze(ray.coords(tx, :, :, :));
+        end
+        single_ray_leg_coords = permute(single_ray_leg_coords, [2,3,1]);
         inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
         min_dists = fn_min_dists(single_ray_leg_coords);
@@ -173,8 +177,12 @@ if ~isstruct(path_geometry)
 % have more than one leg.
 else
     for tx = 1 : probe_els
-        
-        single_ray_leg_coords = permute(squeeze(ray.coords(tx, :, :, :)), [2,3,1]);
+        single_ray_leg_coords = squeeze(ray.coords(tx, :, :, :));
+        if length(size(single_ray_leg_coords)) == 2
+            single_ray_leg_coords = zeros(num_scatterers, no_walls+2, 3);
+            single_ray_leg_coords(:, :, :) = squeeze(ray.coords(tx, :, :, :));
+        end
+        single_ray_leg_coords = permute(single_ray_leg_coords, [2,3,1]);
         inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
         min_dists = fn_min_dists(single_ray_leg_coords);

@@ -454,8 +454,8 @@ end
 
 
 % Plot.
-plot_idx = 1;
 for im = 1:Number_of_ims
+    plot_idx = 1;
     Ims(im).plotExtras(plot_idx).x = probe_coords(:, 1);
     Ims(im).plotExtras(plot_idx).z = probe_coords(:, 3);
     Ims(im).plotExtras(plot_idx).color = 'g';
@@ -475,8 +475,8 @@ for im = 1:Number_of_ims
     if boxsize ~= 0
         for s = 1 : size(scat_info.x, 1)
             if ~strcmp(scat_info.type, 'image')
-                new_box_x = scat_info.x(s) + scat_info.r(s)/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
-                new_box_z = scat_info.z(s) + scat_info.r(s)/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
+%                 new_box_x = scat_info.x(s) + scat_info.r(s)/2*(sin(mean(Views(im).scat_inc_angles))+sin(mean(Views(im).scat_out_angles)));
+%                 new_box_z = scat_info.z(s) + scat_info.r(s)/2*(cos(mean(Views(im).scat_inc_angles))+cos(mean(Views(im).scat_out_angles)));
 
                 Ims(im).plotExtras(plot_idx).x = [scat_info.x(s) - boxsize/2, scat_info.x(s) - boxsize/2, scat_info.x(s) + boxsize/2, scat_info.x(s) + boxsize/2, scat_info.x(s) - boxsize/2];
                 Ims(im).plotExtras(plot_idx).z = [scat_info.z(s) - boxsize/2, scat_info.z(s) + boxsize/2, scat_info.z(s) + boxsize/2, scat_info.z(s) - boxsize/2, scat_info.z(s) - boxsize/2];
@@ -484,12 +484,12 @@ for im = 1:Number_of_ims
                 Ims(im).plotExtras(plot_idx).marker = 'none';
                 Ims(im).plotExtras(plot_idx).lineStyle = '-';
                 plot_idx = plot_idx + 1;
-                Ims(im).plotExtras(plot_idx).x = [new_box_x - boxsize/2, new_box_x - boxsize/2, new_box_x + boxsize/2, new_box_x + boxsize/2, new_box_x - boxsize/2];
-                Ims(im).plotExtras(plot_idx).z = [new_box_z - boxsize/2, new_box_z + boxsize/2, new_box_z + boxsize/2, new_box_z - boxsize/2, new_box_z - boxsize/2];
-                Ims(im).plotExtras(plot_idx).color = 'g';
-                Ims(im).plotExtras(plot_idx).marker = 'none';
-                Ims(im).plotExtras(plot_idx).lineStyle = '-';
-                plot_idx = plot_idx + 1;
+%                 Ims(im).plotExtras(plot_idx).x = [new_box_x - boxsize/2, new_box_x - boxsize/2, new_box_x + boxsize/2, new_box_x + boxsize/2, new_box_x - boxsize/2];
+%                 Ims(im).plotExtras(plot_idx).z = [new_box_z - boxsize/2, new_box_z + boxsize/2, new_box_z + boxsize/2, new_box_z - boxsize/2, new_box_z - boxsize/2];
+%                 Ims(im).plotExtras(plot_idx).color = 'g';
+%                 Ims(im).plotExtras(plot_idx).marker = 'none';
+%                 Ims(im).plotExtras(plot_idx).lineStyle = '-';
+%                 plot_idx = plot_idx + 1;
                 
                 if isfield(Views(im).path_1, 'coords')
                     for leg = 1:size(Views(im).path_1.coords, 3)-1

@@ -30,7 +30,7 @@ function is_intersect = fn_is_intersection(x1, x2, y1, y2)
 %       Logical value for whether there is an intersection between line
 %       segments x and y (i.e. 1 if there is an intersection, 0 otherwise).
 
-[no_scats, ~] = size(y1);
+[no_scats, ~] = size(y1); % one scatterer:3x1
 
 % Check bounding boxes. General line L has corners
 %   [[L1_x, L1_z];

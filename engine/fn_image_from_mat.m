@@ -44,8 +44,8 @@ for im = 1:Number_of_ims
     end
     
     axis equal; axis tight;
-    xlim([min(Ims(im).x)*UC, max(Ims(im).x)*UC])
-    ylim([min(Ims(im).z)*UC, max(Ims(im).z)*UC])
+%     xlim([min(Ims(im).x(:))*UC, max(Ims(im).x(:))*UC])
+%     ylim([min(Ims(im).z(:))*UC, max(Ims(im).z(:))*UC])
 end
 xlabel(t, 'x (mm)')
 ylabel(t, 'z (mm)')

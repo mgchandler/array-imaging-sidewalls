@@ -53,8 +53,8 @@ for el = 1:probe_els
         % For each leg in the current ray.
         for leg = 1:num_legs
             % Get the start and end point of each leg.
-            leg_start = squeeze(ray_coords(el, :, leg, :));
-            leg_end = squeeze(ray_coords(el, :, leg+1, :));
+            leg_start = reshape(ray_coords(el, :, leg, :), num_scatterers, 3);
+            leg_end = reshape(ray_coords(el, :, leg+1, :), num_scatterers, 3);
             
             % Get the walls we need to check for intersections with. We may
             % need to exclude a certain number of walls depending on the

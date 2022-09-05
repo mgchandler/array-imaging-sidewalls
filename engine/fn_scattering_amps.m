@@ -39,12 +39,25 @@ if isfield(scat_info, 'matrix')
     % and small pixel size.
     for el = 1 : probe_els^2
         % Extract scat angles from path coords
-        path1_ray = permute(squeeze(path1.coords(view.probe_txrx(el, 1), :, :, :)), [2,3,1]);
+        path1_ray = squeeze(path1.coords(view.probe_txrx(el, 1), :, end-1:end, :));
+        if length(size(path1_ray)) == 2
+            % We're only looking at the last leg, and will only trigger
+            % this if statement if there is one scatterer. Therefore
+            % enforce actual numbers.
+            path1_ray = zeros(1, 2, 3);
+            path1_ray(:, :, :) = squeeze(path1.coords(view.probe_txrx(el, 1), :, end-1:end, :));
+        end
+        path1_ray = permute(path1_ray, [2,3,1]);
         min_dists  = fn_min_dists(path1_ray);
         inc_angles = fn_inc_out_angles(min_dists, path1.path_info.path_geometry);
         inc_angles = reshape(inc_angles(end, 3, :), 1, num_scatterers) - scat_info.angle;
         
-        path2_ray = permute(squeeze(path2.coords(view.probe_txrx(el, 2), :, :, :)), [2,3,1]);
+        path2_ray = squeeze(path2.coords(view.probe_txrx(el, 2), :, 1:2, :));
+        if length(size(path2_ray)) == 2
+            path2_ray = zeros(1, 2, 3);
+            path2_ray(:, :, :) = squeeze(path2.coords(view.probe_txrx(el, 2), :, 1:2, :));
+        end
+        path2_ray = permute(path2_ray, [2,3,1]);
         inv_min_dists = flip(fn_min_dists(path2_ray), 1);
         out_angles = fn_inc_out_angles(inv_min_dists, path2.path_info.path_geometry);
         out_angles = reshape(out_angles(1, 3, :), 1, num_scatterers) - scat_info.angle;

@@ -395,6 +395,8 @@ Number_of_ims = size(Views, 1);
 
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
+    Sens(view).x = x;
+    Sens(view).z = z;
     Sens(view).name = Views(view).name;
 end
 
@@ -477,6 +479,7 @@ if image_locs == 0
     end
     
     for im = 1:Number_of_ims
+        plot_idx = 1;
         Sens(im).plotExtras(plot_idx).x = probe_coords(:, 1);
         Sens(im).plotExtras(plot_idx).z = probe_coords(:, 3);
         Sens(im).plotExtras(plot_idx).color = 'g';

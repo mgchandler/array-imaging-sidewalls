@@ -16,6 +16,9 @@ function view = fn_create_view(path1, path2)
 %       View which collects two paths into one view.
 
 [probe_els, num_scatterers] = size(path1.min_times);
+% Memory limit above which to switch to single precision to halve memory
+% requirement of min_times, ray_weights and scat_amps in view.
+mb_limit = 100;
 
 % Unpack paths.
 view.path_1 = path1;
@@ -23,7 +26,7 @@ view.path_2 = path2;
 view.name = sprintf('%s - %s', path1.path_info.name, path2.path_info.rev_name);
 
 % Initialise variables.
-if 8*probe_els^2*num_scatterers / 1024^2 > 100
+if 8*probe_els^2*num_scatterers / 1024^2 > mb_limit
     view.min_times = single(zeros(probe_els ^ 2, num_scatterers));
 else
     view.min_times = zeros(probe_els ^ 2, num_scatterers);
@@ -62,10 +65,9 @@ end
 % If weights have already been calculated, then assemble them all into one.
 if isfield(path1, "weights") && isfield(path2, "weights")
     [~, ~, num_freqs] = size(path1.weights.weights);
-    if 8*probe_els^2*num_scatterers / 1024^2 > 100
-        view.weights = single(zeros(probe_els^2, num_scatterers, num_freqs));
-    else
-        view.weights = zeros(probe_els^2, num_scatterers, num_freqs);
+    view.weights = zeros(probe_els^2, num_scatterers, num_freqs);
+    if 8*probe_els^2*num_scatterers / 1024^2 > mb_limit
+        view.weights = single(view.weights);
     end
     el = 0;
     for ii = 1 : probe_els
@@ -81,7 +83,7 @@ end
 % If scatterer info is provided, then calculate the scattering amplitudes.
 if isfield(path1, 'freq_array')
     view.scat_amps = conj(fn_scattering_amps(view, path1.freq_array));
-    if 8*probe_els^2*num_scatterers / 1024^2 > 100
+    if 8*probe_els^2*num_scatterers / 1024^2 > mb_limit
         view.scat_amps = single(view.scat_amps);
     end
 end
