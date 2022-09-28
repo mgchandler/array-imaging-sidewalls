@@ -4,7 +4,10 @@ function fn_image_from_mat(Ims)
 UC = 1e3;
 db_range_for_output = 40;
 Number_of_ims = length(Ims);
-if Number_of_ims == 3
+if Number_of_ims == 1
+    plot_x = 1;
+    plot_z = 1;
+elseif Number_of_ims == 3
     plot_x = 3;
     plot_z = 1;
 elseif Number_of_ims == 21
@@ -36,7 +39,7 @@ for im = 1:Number_of_ims
         end
     end
     
-    if mod(im, plot_x) ~= 1
+    if and(mod(im, plot_x), Number_of_ims~=1) ~= 1
         set(gca, 'yticklabel', {[]})
     end
     if im <= Number_of_ims - plot_x

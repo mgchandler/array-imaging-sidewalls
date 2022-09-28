@@ -40,7 +40,7 @@ else
 end
 
 [no_legs, no_scats] = size(dists);
-gamma_list = zeros(no_legs-1, 1);
+gamma_list = zeros(no_legs-1, no_scats);
 
 virtual_distance = dists(1, :);
 
@@ -48,19 +48,19 @@ virtual_distance = dists(1, :);
 if no_legs ~= 1
     for k = 1:no_legs-1
         nu = speeds(k) / speeds(k+1);
-        sin_alpha = sin(alphas(k));
-        cos_alpha = cos(alphas(k));
+        sin_alpha = sin(alphas(k, :));
+        cos_alpha = cos(alphas(k, :));
 
-        gamma_list(k) = (nu*nu - sin_alpha*sin_alpha) / (nu*cos_alpha*cos_alpha);
+        gamma_list(k, :) = (nu*nu - sin_alpha .* sin_alpha) ./ (nu * cos_alpha .* cos_alpha);
     end
 
     for k = 1:no_legs-1
         r = dists(k+1, :);
-        gamma = 1.0;
+        gamma = ones(1, no_scats);
         for ii = 1:k
-            gamma = gamma*gamma_list(ii);
+            gamma = gamma .* gamma_list(ii, :);
         end
-        virtual_distance = virtual_distance + r./gamma;
+        virtual_distance = virtual_distance + r ./ gamma;
     end
 end
 

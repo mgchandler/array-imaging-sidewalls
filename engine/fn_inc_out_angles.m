@@ -1,4 +1,4 @@
-function alpha_beta = fn_inc_out_angles(dists, path_geometry)
+function alpha_beta = fn_inc_out_angles(dists, path_geometry, wall_idxs)
 % Computes the incident angles (alpha) and outgoing angles (beta) on each
 % wall. Assumes that the loop for probes and scatterers is in the parent
 % function.
@@ -9,6 +9,9 @@ function alpha_beta = fn_inc_out_angles(dists, path_geometry)
 % - path_geometry : struct (no_walls, 1)
 %       Set of geometry which the ray will interact with. Does not include
 %       the probe or the scatterer.
+% - wall_idxs : array (1, no_walls)
+%       Indices of the wall point which the ray from element tx passes
+%       through. Equivalent to wall_idxs field in output of fn_compute_ray.
 %
 % OUTPUTS:
 % - alpha_beta : array (no_legs, 4, no_scats)
@@ -22,6 +25,17 @@ function alpha_beta = fn_inc_out_angles(dists, path_geometry)
 
 [no_legs, dims_plus_one, no_scats] = size(dists);
 alpha_beta = zeros(no_legs, 4, no_scats);
+for wall = 1:no_legs-1
+    % Flat walls only have one basis.
+    if size(path_geometry(wall).basis, 1) == 1
+        wall_idxs = 1;
+    % If the wall is curved, make sure that idxs are valid.
+    else
+        if wall_idxs(wall) > size(path_geometry(wall).basis, 1)
+            error("fn_inc_out_angles: idx ray passes through too large for wall.")
+        end
+    end
+end
 
 % Compute incident angles on walls and scatterer.
 for leg = 1:no_legs
@@ -42,7 +56,7 @@ for leg = 1:no_legs
         dist = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, 1, no_scats);
         cart_inc = zeros(dims_plus_one-1, no_scats);
         for scat = 1:no_scats
-            cart_inc(:, scat) = linsolve(path_geometry(leg).basis, dist(:, :, scat));
+            cart_inc(:, scat) = linsolve(squeeze(path_geometry(leg).basis(wall_idxs(leg), :, :)), dist(:, :, scat));
         end
     else
         cart_inc = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, no_scats);
@@ -71,7 +85,7 @@ for leg = 1:no_legs
         dist = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, 1, no_scats);
         cart_inc = zeros(dims_plus_one-1, no_scats);
         for scat = 1:no_scats
-            cart_inc(:, scat) = linsolve(path_geometry(leg-1).basis, dist(:, :, scat));
+            cart_inc(:, scat) = linsolve(squeeze(path_geometry(leg-1).basis(wall_idxs(leg-1), :, :)), dist(:, :, scat));
         end
     else
         cart_out = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, no_scats);

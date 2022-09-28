@@ -43,18 +43,18 @@ for t_el = 1 : probe_els
     end
 end
 
-% % Get the ray weights.
-% [~, ~, num_freqs] = size(ray.weights.weights);
-% view.weights = zeros(probe_els^2, num_freqs);
-% el = 1;
-% for ii = 1 : probe_els
-%     for jj = 1 : probe_els
-%         view.weights(el, :) = ( ...
-%             ray.weights.weights(ii, jj, :) * ray.weights.inv_directivity(jj, ii, :) ...
-%         );
-% 
-%     el = el+1;
-%     end
-% end
+% Get the ray weights.
+[~, ~, num_freqs] = size(ray.weights.weights);
+view.weights = zeros(probe_els^2, num_freqs);
+el = 1;
+for ii = 1 : probe_els
+    for jj = 1 : probe_els
+        view.weights(el, :) = ( ...
+            ray.weights.weights(ii, jj, :) * ray.weights.directivity(jj, ii, :) ...
+        );
+
+    el = el+1;
+    end
+end
 
 end

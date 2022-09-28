@@ -1,4 +1,4 @@
-function fn_sens(model_options)
+function [Sens, Views] = fn_sens(model_options)
 % Computes the sensitivity maps for an array in contact with the solid
 % block being inspected. Currently works for a rectangular block with some
 % depth defined as the zmax location, and sidewall location defined as the
@@ -85,8 +85,8 @@ probe_frequency = model_options.probe.freq;
 el_length = model_options.probe.width;
 couplant_speed = model_options.material.couplant_v;
 couplant_density = model_options.material.couplant_density;
-solid_long_speed = 6320;%sqrt(model_options.material.modulus * (1 - model_options.material.poisson) / (model_options.material.density * (1 + model_options.material.poisson) * (1 - 2*model_options.material.poisson)));
-solid_shear_speed = 3130;%sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
+solid_long_speed = model_options.material.v_L;%6320;%sqrt(model_options.material.modulus * (1 - model_options.material.poisson) / (model_options.material.density * (1 + model_options.material.poisson) * (1 - 2*model_options.material.poisson)));
+solid_shear_speed = model_options.material.v_S;%3130;%sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
 solid_density = model_options.material.density;
 max_num_reflections = model_options.model.max_no_reflections;
 model_geometry = model_options.model.model_geom;
@@ -134,7 +134,7 @@ clear is_frontwall wall
 rot_matrix = [cos(probe_angle) 0 sin(probe_angle); 0 1 0; -sin(probe_angle) 0 cos(probe_angle)];
 
 probe_coords = zeros(3, probe_els);
-probe_coords(1, :) = linspace(0, (probe_els - 1) * el_length, probe_els);
+probe_coords(1, :) = linspace(0, (probe_els - 1) * PITCH, probe_els);
 probe_coords(1, :) = probe_coords(1, :) - mean(probe_coords(1, :));
 probe_coords = probe_coords.' * rot_matrix;
 probe_coords(:, 3) = probe_coords(:, 3) - probe_standoff - 1e-5;
@@ -146,8 +146,6 @@ clear probe_angle rot_matrix
 %% ---------------------------------------------------------------------- %
 % Scatterer Simulation path info - Contact                                %
 % ---------------------------------------------------------------------- %%
-
-tic;
     
 mode_names = ["L", "T"];
 speeds = [solid_long_speed, solid_shear_speed];
@@ -489,6 +487,8 @@ if image_locs == 0
         for wall = 1:size(geometry, 1)
             % Only get first and last to reduce the amount saved - this will
             % need updating if we ever move away from polygonal geometry.
+%             Sens(im).plotExtras(plot_idx).x = geometry(wall).coords(:, 1);
+%             Sens(im).plotExtras(plot_idx).z = geometry(wall).coords(:, 3);
             Sens(im).plotExtras(plot_idx).x = [geometry(wall).coords(1, 1), geometry(wall).coords(end, 1)];
             Sens(im).plotExtras(plot_idx).z = [geometry(wall).coords(1, 3), geometry(wall).coords(end, 3)];
             Sens(im).plotExtras(plot_idx).color = 'r';

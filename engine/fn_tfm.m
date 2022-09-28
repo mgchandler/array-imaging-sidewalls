@@ -74,9 +74,9 @@ for wall = 1:no_walls
     end
 end
 if and(is_frontwall, probe_standoff ~= 0)
-    is_contact = 0;
+    is_contact = false;
 elseif and(~is_frontwall, and(probe_standoff == 0, probe_angle == 0))
-    is_contact = 1;
+    is_contact = true;
 else
     error('fn_sens: Invalid setup.')
 end

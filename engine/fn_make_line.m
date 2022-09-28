@@ -1,4 +1,4 @@
-function geometry = fn_make_wall(name, point1, point2, N, wall_id)
+function geometry = fn_make_line(name, point1, point2, N, wall_id)
 % Creates a single wall object for simulating TFMs and sensitivity maps.
 % Currently only supports planar walls in 2D, and walls are assumed to be
 % in the x-z plane (i.e. y == 0).
@@ -53,10 +53,10 @@ geometry.coords = geometry.coords(1:end-1, :);
 % For now, have 3rd basis vector (i.e. the one normal to the surface)
 % pointing in the +ve z, +ve x direction (in the standard basis), with z
 % taking priority.
-geometry.basis = zeros(3, 3);
-geometry.basis(:, 1) = (point1 - point2) / norm(point2 - point1);
-geometry.basis(:, 2) = [0, 1, 0];
-geometry.basis(:, 3) = [-geometry.basis(3, 1), geometry.basis(2, 1), geometry.basis(1, 1)];
+geometry.basis = zeros(1, 3, 3);
+geometry.basis(:, :, 1) = (point1 - point2) / norm(point2 - point1);
+geometry.basis(:, :, 2) = [0, 1, 0];
+geometry.basis(:, :, 3) = [-geometry.basis(:, 3, 1), geometry.basis(:, 2, 1), geometry.basis(:, 1, 1)];
 
 geometry.wall_id = wall_id;
 
