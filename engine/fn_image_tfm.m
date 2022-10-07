@@ -374,10 +374,10 @@ end
 
 Number_of_ims = size(Views_im, 1);
 % for im = 1:Number_of_ims
-%     FMC_for_plotting = abs(FMC_time_data);
+    FMC_for_plotting = abs(FMC_time_data);
 %     input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
 %     FMC_for_plotting(1:input_idx(1), :) = 0;
-%     fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Views_im(im).path_1.path_info, Views_im(im).path_2.path_info, [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_(%s)_FMC.fig', savename, strrep(Views_im(im).name, ' ', '')));
+    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Views_im(1).path_1.path_info, Views_im(1).path_2.path_info, [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_(%s)_FMC.fig', savename, strrep(Views_im(1).name, ' ', '')));
 % end
 
 Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
@@ -402,6 +402,9 @@ clear image_block_info scatterer_coords Paths_im
 tic;
 
 % Lookup times in FMC data.
+if isstruct(scat_info.fmc_mask)
+    FMC_time_data = FMC_time_data .* scat_info.fmc_mask.data;
+end
 
 if strcmp(model_options.model.interp_method, 'lanczos')
     for tr_pair = 1 : probe_els ^ 2
@@ -465,8 +468,8 @@ for im = 1:Number_of_ims
     for wall = 1:size(geometry, 1)
         % Only get first and last to reduce the amount saved - this will
         % need updating if we ever move away from polygonal geometry.
-        Ims(im).plotExtras(plot_idx).x = [geometry(wall).coords(1, 1), geometry(wall).coords(end, 1)];
-        Ims(im).plotExtras(plot_idx).z = [geometry(wall).coords(1, 3), geometry(wall).coords(end, 3)];
+        Ims(im).plotExtras(plot_idx).x = geometry(wall).coords(:, 1);%[geometry(wall).coords(1, 1), geometry(wall).coords(end, 1)];
+        Ims(im).plotExtras(plot_idx).z = geometry(wall).coords(:, 3);%[geometry(wall).coords(1, 3), geometry(wall).coords(end, 3)];
         Ims(im).plotExtras(plot_idx).color = 'r';
         Ims(im).plotExtras(plot_idx).marker = 'none';
         Ims(im).plotExtras(plot_idx).lineStyle = '-';

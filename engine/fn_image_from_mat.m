@@ -25,7 +25,7 @@ t = tiledlayout(plot_z, plot_x, 'TileSpacing', 'Compact');
 for im = 1:Number_of_ims
 %     im = im_idxs(im1);
     h(im) = nexttile;
-    imagesc(Ims(im).x*UC, Ims(im).z*UC, Ims(im).db_image);
+    g = imagesc(Ims(im).x*UC, Ims(im).z*UC, Ims(im).db_image);
     hold on
     title(Ims(im).name)
     caxis([-db_range_for_output, 0])
@@ -45,6 +45,8 @@ for im = 1:Number_of_ims
     if im <= Number_of_ims - plot_x
         set(gca, 'xticklabel', {[]})
     end
+    
+    set(g, 'AlphaData', ~or(isnan(Ims(im).db_image), isinf(Ims(im).db_image)))
     
     axis equal; axis tight;
 %     xlim([min(Ims(im).x(:))*UC, max(Ims(im).x(:))*UC])

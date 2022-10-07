@@ -55,6 +55,9 @@ ray_weights.directivity = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.idirectivity = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.transrefl = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_transrefl = zeros(probe_els, num_scatterers, num_freqs);
+% Additional factor for masking out geom artefacts. Let everything through
+% by default.
+ray_weights.mask = ones(probe_els, num_scatterers);
 % Total weights for each frequency.
 ray_weights.weights = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_weights = zeros(probe_els, num_scatterers, num_freqs);

@@ -6,31 +6,33 @@ function [Fused, Weighted, Ims] = fn_simple_fusion(model_options)
 % σ=1.
 
 %% Compute sensitivity maps E and TFMs I
-[Sens, Views] = fn_sens(model_options);
+% [Sens, Views] = fn_sens(model_options);
+
+% model_options.mesh.scat.fmc_mask = 1;
 
 % Reuse Views as Views(view).min_times were calculated alread
-[Ims, ~, ~]   = fn_tfm(model_options, Views);
+[Ims, ~, ~]   = fn_tfm(model_options);%, Views);
 
 number_of_views = size(Ims, 1);
-mask = model_options.model.fusion_mask;
+% mask = model_options.model.fusion_mask;
 
 
 %% Weight TFMs using E
 Weighted = Ims;
 max_ = 0;
 for view = 1:number_of_views
-    if isstruct(mask)
-        Weighted(view).image = Ims(view).image .* Sens(view).image .* mask(view).fusion_mask;
-    else
-        Weighted(view).image = Ims(view).image .* Sens(view).image .* mask;
-    end
+%     if isstruct(mask)
+%         Weighted(view).image = Ims(view).image .* Sens(view).image;% .* mask(view).fusion_mask;
+%     else
+        Weighted(view).image = Ims(view).image .* Sens(view).image;% .* mask;
+%     end
     if max(abs(Weighted(view).image(:))) > max_
         max_ = max(abs(Weighted(view).image(:)));
     end
 end
 
 for view = 1 : number_of_views
-    Weighted(view).db_image = 20 * log10(abs(Sens(view).image) ./ max_); 
+    Weighted(view).db_image = 20 * log10(abs(Weighted(view).image) ./ max_); 
 end
 
 

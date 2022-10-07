@@ -158,6 +158,10 @@ elseif varargin{1} == "sdh"
                         scat_info.matrix = fn_scattering_matrix(scat_info, ang_pts_over_2pi);
                     end
                     ii = ii+2;
+                case 'fmc_mask'
+                    fmc_mask = varargin{ii+1};
+                    scat_info.fmc_mask = fmc_mask;
+                    ii = ii+2;
                 otherwise
                     error('fn_scat_info: Invalid argument provided for sdh.')
             end

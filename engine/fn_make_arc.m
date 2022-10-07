@@ -74,6 +74,7 @@ geometry.basis = zeros(N+1, 3, 3);
 geometry.basis(:, :, 1) = [cos(phi).', zeros(N+1,1), sin(phi).'];
 geometry.basis(:, :, 2) = repmat([0,1,0], N+1, 1);
 geometry.basis(:, :, 3) = [-geometry.basis(:, 3, 1), zeros(N+1, 1), geometry.basis(:, 1, 1)];
+geometry.basis = geometry.basis(1:end-1, :, :);
 
 geometry.wall_id = wall_id;
 

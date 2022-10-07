@@ -16,6 +16,9 @@ function view = fn_create_view(path1, path2)
 %       View which collects two paths into one view.
 
 [probe_els, num_scatterers] = size(path1.min_times);
+if ~strcmp(path1.scat_info.type, "image")
+    fmc_mask = path1.scat_info.fmc_mask;
+end
 % Memory limit above which to switch to single precision to halve memory
 % requirement of min_times, ray_weights and scat_amps in view.
 mb_limit = 100;
@@ -28,11 +31,14 @@ view.name = sprintf('%s - %s', path1.path_info.name, path2.path_info.rev_name);
 % Initialise variables.
 if 8*probe_els^2*num_scatterers / 1024^2 > mb_limit
     view.min_times = single(zeros(probe_els ^ 2, num_scatterers));
+    view.mask = single(ones(probe_els ^ 2, num_scatterers));
 else
     view.min_times = zeros(probe_els ^ 2, num_scatterers);
+    view.mask = ones(probe_els ^ 2, num_scatterers);
 end
 view.probe_txrx = int8(zeros(probe_els ^ 2, 2));
 view.valid_path = logical(zeros(probe_els ^ 2, num_scatterers));
+% view.mask = ones(probe_els ^ 2, num_scatterers);
 % view.tx_angles = zeros(probe_els, num_scatterers);
 % view.rx_angles = zeros(probe_els, num_scatterers);
 % view.scat_inc_angles = zeros(probe_els, num_scatterers);
@@ -73,8 +79,11 @@ if isfield(path1, "weights") && isfield(path2, "weights")
     for ii = 1 : probe_els
         for jj = 1 : probe_els
             el = el+1;
+            if isstruct(fmc_mask)
+                view.mask(el, :) = interp1(fmc_mask.time, fmc_mask.data(:, el), view.min_times(el, :));
+            end
             view.weights(el, :, :) = ( ...
-                path1.weights.weights(ii, :, :) .* path2.weights.inv_weights(jj, :, :) ...
+                path1.weights.weights(ii, :, :) .* path2.weights.inv_weights(jj, :, :) .* view.mask(el, :) ...
             );
         end
     end

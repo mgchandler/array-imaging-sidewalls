@@ -109,6 +109,7 @@ model_options.mesh.scat.r =  1.0e-3;
 model_options.mesh.scat.lambdaL = model_options.material.v_L/model_options.probe.freq;
 model_options.mesh.scat.lambdaT = model_options.material.v_S/model_options.probe.freq;
 model_options.mesh.scat.angle = 0.0;
+model_options.mesh.scat.fmc_mask = 1;
 
 
 
@@ -146,6 +147,11 @@ if isfield(model_options.mesh, 'scat')
     else
         ang_pts_over_2pi = 120;
     end
+    if isfield(model_options.mesh.scat, 'fmc_mask')
+        fmc_mask = model_options.mesh.scat.fmc_mask;
+    else
+        fmc_mask = 1;
+    end
     model_options.mesh.scat = fn_scat_info( ...
             model_options.mesh.scat.type, ...
             model_options.mesh.scat.x, ...
@@ -155,7 +161,8 @@ if isfield(model_options.mesh, 'scat')
             model_options.mesh.scat.lambdaL, ...
             model_options.mesh.scat.lambdaT, ...
             model_options.mesh.scat.angle, ...
-            'ang_pts_over_2pi', ang_pts_over_2pi ...
+            'ang_pts_over_2pi', ang_pts_over_2pi, ...
+            'fmc_mask', fmc_mask ...
     );
 end
 
