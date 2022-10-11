@@ -72,7 +72,8 @@ couplant_density = model_options.material.couplant_density;
 solid_long_speed = model_options.material.v_L;
 solid_shear_speed = model_options.material.v_S;
 solid_density = model_options.material.density;
-max_num_reflections = model_options.model.max_no_reflections;
+max_no_reflections = model_options.model.max_no_reflections;
+max_no_reverberations = model_options.model.max_no_reverberations;
 model_geometry = model_options.model.model_geom;
 multi_freq = model_options.model.multi_freq;
 npw = model_options.mesh.n_per_wl;
@@ -130,7 +131,7 @@ mode_names = ["L", "T"];
 speeds = [solid_long_speed, solid_shear_speed];
 
 num_paths = 0;
-for num_reflections_in_path = 0:max_num_reflections
+for num_reflections_in_path = 0:max_no_reflections
     num_paths = num_paths + 2^(num_reflections_in_path + 1);
 end
 
@@ -187,7 +188,7 @@ if is_contact
 % Skip Paths                                                              %
 % ----------------------------------------------------------------------- %
 
-    if max_num_reflections > 0
+    if max_no_reflections > 0
         for wall = 1:no_walls
             path_geometry = geometry(wall);
             for mode1 = 0:1 % Mode of the first leg
@@ -270,7 +271,7 @@ elseif ~is_contact
 % Skip Paths                                                              %
 % ----------------------------------------------------------------------- %
 
-    if max_num_reflections > 0
+    if max_no_reflections > 0
         non_fw_idxs = [1:no_walls];
         non_fw_idxs = non_fw_idxs(~where_F);
         for wall2 = 1:no_walls-1
@@ -317,7 +318,7 @@ end
 time_1 = double(toc);
 fn_print_time('Simulation setup', time_1)
 
-clear max_num_reflections no_walls mode_names speeds num_reflections_in_path
+clear no_walls mode_names speeds num_reflections_in_path
 clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
 
 
@@ -380,7 +381,7 @@ if is_contact
 
         backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
             [couplant_speed solid_long_speed solid_shear_speed], ...
-            [couplant_density solid_density], probe_frequency, PITCH, el_length, 1, npw ...
+            [couplant_density solid_density], probe_frequency, PITCH, el_length, max_no_reverberations, npw ...
         );
     end
 
@@ -390,7 +391,7 @@ else
 
         backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
             [couplant_speed solid_long_speed solid_shear_speed], ...
-            [couplant_density solid_density], probe_frequency, PITCH, el_length, 1 ...
+            [couplant_density solid_density], probe_frequency, PITCH, el_length, max_no_reverberations ...
         );
     end
 end

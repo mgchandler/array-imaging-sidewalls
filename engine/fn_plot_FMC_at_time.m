@@ -34,7 +34,7 @@ num_scats = size(pixel_coords, 1);
 % Fraction of the total time domain which should be plotted in colour for
 % each pixel. Note that if multiple pixels in the TFM are desired, this
 % value should be smaller.
-perc = .002;
+perc = .0005;
 
 assert(size(FMC_data, 1) == time_pts, "fn_plot_FMC_at_time: FMC_data and FMC_time require same dimension in axis=1.")
 % assert(num_scats == 1, "fn_plot_FMC_at_time: Incorrect number of pixels provided.")
@@ -45,18 +45,6 @@ pixel_info = fn_scat_info("image", pixel_coords(:, 1), pixel_coords(:, 2), pixel
 tx_path = fn_compute_ray(pixel_info, path_info_tx);
 rx_path = fn_compute_ray(pixel_info, path_info_rx);
 view = fn_create_view(tx_path, rx_path);
-% Collapse min_times into one vector. view.min_times has shape
-% (probe_els^2, num_scats) so vector element (1) should have probe=1
-% scat=1; element (2): probe=2 scat=1; element (probe_els+1): probe=1
-% scat=2 etc.
-min_times = view.min_times(:);
-
-% Find where in FMC_time the ToF to each pixel is. Restore the original
-% shape of these indices.
-[row, col] = find(abs(min_times - FMC_time.') == min(abs(min_times - FMC_time.'), [], 2));
-[~,I] = sort(row);
-idxs = col(I);
-idxs = reshape(idxs, size(view.min_times));
 
 % Make a grayscale FMC
 lower_limit = 1/4;
@@ -65,11 +53,16 @@ grayFMC = repmat(gray_data, [1, 1, 3]);
 
 FMC_data_t = FMC_data.';
 
+t_threshold = FMC_time(2) - FMC_time(1);
+if perc*FMC_time(end) > t_threshold
+    t_threshold = perc*FMC_time(end);
+end
+
 % Assign colour to the bits of interest.
 color_FMC = zeros(size(FMC_data.'));
 for scat = 1:num_scats
-    color_FMC(abs(view.min_times(:, scat) - FMC_time.') < perc*FMC_time(end)) = ...
-        abs(FMC_data_t(abs(view.min_times(:, scat) - FMC_time.') < perc*FMC_time(end))) ./ ...
+    color_FMC(abs(view.min_times(:, scat) - FMC_time.') < t_threshold) = ...
+        abs(FMC_data_t(abs(view.min_times(:, scat) - FMC_time.') < t_threshold)) ./ ...
         max(abs(FMC_data(:)));
 end
 
@@ -82,7 +75,7 @@ imagesc(FMC_time*10^6, 1:probe_els_2, grayFMC);
 hold on
 fg = imagesc(FMC_time*10^6, 1:probe_els_2, color_FMC);
 set(fg, 'AlphaData', im2double(color_FMC~=0))
-title(sprintf("view %s", view.name))
+title(sprintf("NLoS region %s", view.name))
 xlabel('Time (us)')
 ylabel('tx-rx Index')
 if savename ~= ""

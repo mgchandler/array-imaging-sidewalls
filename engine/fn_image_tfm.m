@@ -475,6 +475,15 @@ for im = 1:Number_of_ims
         Ims(im).plotExtras(plot_idx).lineStyle = '-';
         plot_idx = plot_idx + 1;
     end
+    
+    % Plot scatterer
+    Ims(im).plotExtras(plot_idx).x = scat_info.x;
+    Ims(im).plotExtras(plot_idx).z = scat_info.z;
+    Ims(im).plotExtras(plot_idx).color = 'r';
+    Ims(im).plotExtras(plot_idx).marker = '.';
+    Ims(im).plotExtras(plot_idx).lineStyle = 'none';
+    plot_idx = plot_idx + 1;
+    
     if boxsize ~= 0
         for s = 1 : size(scat_info.x, 1)
             if ~strcmp(scat_info.type, 'image')

@@ -393,8 +393,8 @@ Number_of_ims = size(Views, 1);
 
 Sens = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
-    Sens(view).x = x;
-    Sens(view).z = z;
+    Sens(view).x = unique(image_block_info.x);%x;
+    Sens(view).z = unique(image_block_info.z);
     Sens(view).name = Views(view).name;
 end
 

@@ -79,6 +79,7 @@ model_options.model.boxsize = 0.0;
 model_options.model.db_range = 40.0;
 model_options.model.interp_method = 'lanczos';
 model_options.model.max_no_reflections = 1;
+model_options.model.max_no_reverberations = 1;
 model_options.model.model_geom = 1;
 model_options.model.multi_freq = 0;
 model_options.model.norm_to = 0;
@@ -179,6 +180,18 @@ if isfield(model_options.mesh, 'geom')
     model_options.mesh.geom.geometry = fn_make_geometry(true, model_options.mesh.geom.profile_list, 5000, ...
         geom_corners ...
     );
+    if ~isempty(model_options.model.wall_for_imaging)
+        wall_exists = false;
+        for wall = 1:length(model_options.mesh.geom.geometry)
+            if contains(model_options.mesh.geom.geometry(wall).name, model_options.model.wall_for_imaging)
+                wall_exists = true;
+                break
+            end
+        end
+        if ~wall_exists
+            error('fn_default_model_options: wall_for_imaging not in geometry')
+        end
+    end
     % If image_range not provided, then take it from geometry.
     if nargin == 1
         if isfield(new_options, 'model')

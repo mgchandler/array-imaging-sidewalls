@@ -6,7 +6,7 @@ function [Fused, Weighted, Ims] = fn_simple_fusion(model_options)
 % σ=1.
 
 %% Compute sensitivity maps E and TFMs I
-% [Sens, Views] = fn_sens(model_options);
+[Sens, Views] = fn_sens(model_options);
 
 % model_options.mesh.scat.fmc_mask = 1;
 
@@ -36,7 +36,7 @@ for view = 1 : number_of_views
 end
 
 
-%% Fuse
+%% Fused
 Fused = Ims(1);
 Fused.name = "Fused TFM";
 Fused.image = 0;

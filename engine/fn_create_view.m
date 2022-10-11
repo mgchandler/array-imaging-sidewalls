@@ -18,6 +18,8 @@ function view = fn_create_view(path1, path2)
 [probe_els, num_scatterers] = size(path1.min_times);
 if ~strcmp(path1.scat_info.type, "image")
     fmc_mask = path1.scat_info.fmc_mask;
+else
+    fmc_mask = 0;
 end
 % Memory limit above which to switch to single precision to halve memory
 % requirement of min_times, ray_weights and scat_amps in view.

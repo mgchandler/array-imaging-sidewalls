@@ -238,6 +238,7 @@ elseif varargin{1} == "image"
     else
         scat_info.z = varargin{4};
     end
+    scat_info.fmc_mask = 1;
 
 else
     error('fn_scat_info: Invalid scatterer type.')

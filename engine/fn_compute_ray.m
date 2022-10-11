@@ -70,7 +70,6 @@ if ~isstruct(path_geometry)
 else
     % Skip contact or immersion. We have more than one leg, thus use
     % Dijkstra to calculate Fermat path.
-    wall_idxs = linspace(1, wall_pixels, wall_pixels);
     
     % When imaging, likely to be fewer elements than pixels, so vectorise
     % over scatterers and loop over images. Cannot do both as the 3D array
@@ -78,6 +77,9 @@ else
     % We could vectorise over both when simulating, as fewer scatterers
     % expected so 3D array smaller, but speedup is negligible.
     for tx = 1:probe_els
+        wall_idxs = linspace(1, wall_pixels, wall_pixels); % (1 x wall_pixels x 1)
+                                                           % (tx, wall_pixels, no_walls)
+        
         % First and last legs are simple, so treat them differently.
         try
             min_times = repmat(reshape(sqrt( ...
@@ -94,7 +96,9 @@ else
         % loop over scatterers in here to reduce array size of
         % min_times_matrix, so we lose vectorisation improvements.
         if no_walls > 1
+            wall_idxs = zeros(num_scatterers, wall_pixels, no_walls);
             for scat = 1:num_scatterers
+                this_scat_wall_idxs = linspace(1, wall_pixels, wall_pixels);
                 for wall = 2:no_walls
                 % Compute the times from all points on the previous wall to
                 % all points on the next wall, i.e. compute a total of 
@@ -112,15 +116,18 @@ else
                 % object is now equivalent to the min_times object before
                 % this leg, except it has now been propagated one wall
                 % further.
-                    [find_i, find_j] = ind2sub(size(min_times_matrix), find(min_times_matrix == min(min_times_matrix, [], 2)));
+                    [find_i, find_j] = ind2sub(size(min_times_matrix), find(min_times_matrix == min(min_times_matrix, [], 1)));
                     for k = 1 : wall_pixels
                         min_times(scat, k) = min_times_matrix(find_i(k), find_j(k));
                     end
-                    idxs = wall_idxs(:, find_i);
-                    wall_idxs = zeros(wall, wall_pixels);
-                    wall_idxs(1:wall-1, :) = idxs;
-                    wall_idxs(wall, :) = linspace(1, wall_pixels, wall_pixels);
+                    % Placeholder while wall_idxs is reset
+                    idxs = this_scat_wall_idxs(:, find_i, :); % (1 x no_walls x no_walls)
+                    % Reset wall_idxs
+                    this_scat_wall_idxs = zeros(1, wall_pixels, wall);
+                    this_scat_wall_idxs(:, :, 1:wall-1) = idxs;
+                    this_scat_wall_idxs(:, :, wall) = linspace(1, wall_pixels, wall_pixels);
                 end
+                wall_idxs(scat, :, :) = this_scat_wall_idxs;
             end
         end
         
@@ -133,7 +140,13 @@ else
         % takes the least time. Record this time, and the wall indices
         % which describe the path taken through the geometry.
         [ray.min_times(tx, :), find_i] = min(min_times, [], 2);
-        ray.wall_idxs(tx, :, 1:no_walls) = wall_idxs(:, find_i).';
+        if no_walls > 1
+            for scat = 1:num_scatterers
+                ray.wall_idxs(tx, scat, 1:no_walls) = wall_idxs(scat, find_i(scat), :); % (1 x num_scatterers x no_walls)
+            end
+        else
+            ray.wall_idxs(tx, :, 1:no_walls) = wall_idxs(:, find_i);
+        end
 
         ray.coords(tx, :, 1, :) = repmat(reshape(probe_coords(tx, :), 1, 1, 3), num_scatterers, 1, 1);
         for wall = 1:no_walls

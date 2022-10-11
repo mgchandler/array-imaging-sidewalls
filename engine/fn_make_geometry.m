@@ -68,7 +68,7 @@ else
         error("fn_make_geometry: insufficient number of points")
     end
     % If not contiguous, do points come in pairs?
-    if and(~is_contiguous, ~mod(nargin-3, 2))
+    if and(~is_contiguous, mod(nargin-3, 2))
         error("fn_make_geometry: insufficient number of points")
     end
     
