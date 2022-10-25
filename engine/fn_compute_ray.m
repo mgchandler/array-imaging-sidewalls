@@ -48,7 +48,7 @@ ray.wall_idxs = zeros(probe_els, num_scatterers, no_walls);
 ray.coords = zeros(probe_els, num_scatterers, no_walls+2, 3);
 ray.path_info = path_info;
 ray.scat_info = scat_info;
-ray.valid_paths = logical(zeros(probe_els, 1));
+ray.valid_paths = false(probe_els, 1);
 
 % Calculate the Fermat path. In direct contact, trace directly from probe to
 % to scatterer.
@@ -117,6 +117,11 @@ else
                 % this leg, except it has now been propagated one wall
                 % further.
                     [find_i, find_j] = ind2sub(size(min_times_matrix), find(min_times_matrix == min(min_times_matrix, [], 1)));
+                % If multiple elements in each column are minimum, then
+                % find_i and find_j will be bigger than expected. Get the
+                % first minimum only.
+                    [find_j, I_i, ~] = unique(find_j);
+                    find_i = find_i(I_i);
                     for k = 1 : wall_pixels
                         min_times(scat, k) = min_times_matrix(find_i(k), find_j(k));
                     end

@@ -34,6 +34,7 @@ max_num_reflections = model_options.model.max_no_reflections;
 norm_to = model_options.model.norm_to;
 db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
+time_it = model_options.model.time_it;
 
 no_walls = size(geometry, 1);
 no_cycles = model_options.probe.cycles;
@@ -43,19 +44,20 @@ frequency = model_options.probe.freq;
 % will be no frontwall, and probe_standoff and probe_angle must equal zero.
 % If we are in immersion, there must be a frontwall and probe_standoff must
 % be non-zero.
-is_frontwall = 0;
+is_frontwall = false;
 for wall = 1:no_walls
     if geometry(wall).name == "F"
-        is_frontwall = 1;
+        is_frontwall = true;
         break
     end
 end
 if and(is_frontwall, probe_standoff ~= 0)
-    is_contact = 0;
+    is_contact = false;
 elseif and(~is_frontwall, and(probe_standoff == 0, probe_angle == 0))
-    is_contact = 1;
+    is_contact = true;
 else
-    error('fn_sens: Invalid setup.')
+    probe_standoff = .02e-3;
+    is_contact = true;
 end
 
 xsize = xmax - xmin;
@@ -272,7 +274,9 @@ elseif ~is_contact
 end
 
 time_1 = double(toc);
-fn_print_time('Imaging setup', time_1)
+if time_it
+    fn_print_time('Imaging setup', time_1)
+end
 
 % FMC_for_plotting = abs(FMC_time_data);
 % input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
@@ -329,7 +333,8 @@ scatterer_coords = reshape(image_block, zpts+1, xpts+1, 3);
 are_points_in_geometry = (scatterer_coords(:,:,1) >= xmin) .* ...
                          (scatterer_coords(:,:,1) <= xmax) .* ...
                          (scatterer_coords(:,:,3) >= zmin) .* ...
-                         (scatterer_coords(:,:,3) <  zmax);
+                         (scatterer_coords(:,:,3) <= zmax);
+are_points_in_geometry = ones(size(are_points_in_geometry));
                          
 % If Views_im passed in, do not recompute.
 if nargin > 3
@@ -374,11 +379,14 @@ end
 
 Number_of_ims = size(Views_im, 1);
 % for im = 1:Number_of_ims
+if isstruct(scat_info.fmc_mask)
+    FMC_for_plotting = abs(FMC_time_data) .* scat_info.fmc_mask.data;
+else
     FMC_for_plotting = abs(FMC_time_data);
-%     input_idx = find(abs(FMC_time - no_cycles/frequency) == min(abs(FMC_time - no_cycles/frequency)));
-%     FMC_for_plotting(1:input_idx(1), :) = 0;
-    fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Views_im(1).path_1.path_info, Views_im(1).path_2.path_info, [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_(%s)_FMC.fig', savename, strrep(Views_im(1).name, ' ', '')));
-% end
+end
+
+% im_for_plotting = 1;
+% fn_plot_FMC_at_time(FMC_for_plotting, FMC_time, Views_im(im_for_plotting).path_1.path_info, Views_im(im_for_plotting).path_2.path_info, [scat_info.x, scat_info.y, scat_info.z], sprintf('%s_(%s)_FMC.fig', savename, strrep(Views_im(im_for_plotting).name, ' ', '')));
 
 Ims = repmat(fn_create_im("-", xpts+1, zpts+1), Number_of_ims, 1);
 for view = 1 : Number_of_ims
@@ -388,10 +396,14 @@ for view = 1 : Number_of_ims
 end
 
 time_2 = double(toc);
-fn_print_time('Rays traced', time_2)
+if time_it
+    fn_print_time('Rays traced', time_2)
+end
 
 clear PIXEL xsize zsize num_paths Path_info_list image_block
 clear image_block_info scatterer_coords Paths_im
+
+% return
 
 
 
@@ -426,7 +438,9 @@ end
 
 time_4 = double(toc);
 
-fn_print_time('Imaged', time_4)
+if time_it
+    fn_print_time('Imaged', time_4)
+end
 
 clear FMC_time FMC_time_data xpts zpts are_points_in_geometry tr_pair view tau
 
@@ -546,21 +560,23 @@ end
 % 
 % h.Label.String = 'dB';
 
-fn_image_from_mat(Ims);
+% fn_image_from_mat(Ims);
 
 
 
 time_5 = double(toc);
 
-fn_print_time('Plotted', time_5)
+if time_it
+    fn_print_time('Plotted', time_5)
+end
 
 
 
 if savepath ~= ""
     cd(savepath)
-    filename_fig = sprintf('%s.fig', savename);
+%     filename_fig = sprintf('%s.fig', savename);
     filename_mat = sprintf('%s.mat', savename);
-    savefig(filename_fig)
+%     savefig(filename_fig)
     save(filename_mat, 'Ims')
 end
 

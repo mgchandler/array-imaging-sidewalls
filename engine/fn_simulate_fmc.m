@@ -77,6 +77,7 @@ max_no_reverberations = model_options.model.max_no_reverberations;
 model_geometry = model_options.model.model_geom;
 multi_freq = model_options.model.multi_freq;
 npw = model_options.mesh.n_per_wl;
+time_it = model_options.model.time_it;
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 4;
@@ -88,22 +89,24 @@ no_walls = size(geometry, 1);
 % will be no frontwall, and probe_standoff and probe_angle must equal zero.
 % If we are in immersion, there must be a frontwall and probe_standoff must
 % be non-zero.
-is_frontwall = 0;
+is_frontwall = false;
 for wall = 1:no_walls
     if geometry(wall).name == "F"
-        is_frontwall = 1;
+        is_frontwall = true;
         break
     end
 end
 if and(is_frontwall, probe_standoff ~= 0)
-    is_contact = 0;
+    is_contact = false;
 elseif and(~is_frontwall, and(probe_standoff == 0, probe_angle == 0))
-    is_contact = 1;
+    is_contact = true;
 else
-    error('fn_sens: Invalid setup.')
+    probe_standoff = .02e-3;
+    is_contact = true;
+%     error('fn_sens: Invalid setup.')
 end
 
-clear is_frontwall wall
+clear wall
 
 
 
@@ -316,7 +319,9 @@ elseif ~is_contact
 end
 
 time_1 = double(toc);
-fn_print_time('Simulation setup', time_1)
+if time_it
+    fn_print_time('Simulation setup', time_1)
+end
 
 clear no_walls mode_names speeds num_reflections_in_path
 clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
@@ -375,30 +380,19 @@ Views = fn_make_views(Paths, 0);
 % Geometry setup.   NEEDS WORK                                            %
 % ---------------------------------------------------------------------- %%
 
-% If we are in the contact case. There is no frontwall.
-if is_contact
-    if model_geometry
+if model_geometry
 
-        backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
-            [couplant_speed solid_long_speed solid_shear_speed], ...
-            [couplant_density solid_density], probe_frequency, PITCH, el_length, max_no_reverberations, npw ...
-        );
-    end
-
-% If we are in the immersion case. There will be a frontwall reflection.
-else
-    if model_geometry
-
-        backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
-            [couplant_speed solid_long_speed solid_shear_speed], ...
-            [couplant_density solid_density], probe_frequency, PITCH, el_length, max_no_reverberations ...
-        );
-    end
+    backwall_views = fn_make_geometry_views(probe_coords, geometry, ...
+        [couplant_speed solid_long_speed solid_shear_speed], ...
+        [couplant_density solid_density], probe_frequency, PITCH, el_length, ...
+        max_no_reverberations, npw, is_contact, is_frontwall ...
+    );
 end
 
 time_2 = double(toc);
-
-fn_print_time('Rays traced', time_2)
+if time_it
+    fn_print_time('Rays traced', time_2)
+end
 
 clear probe_angle el_length couplant_density solid_density PITCH
 
@@ -455,7 +449,9 @@ if multi_freq
     % Create views from these paths.
     Views = fn_make_views(Paths, 0);
     time_2b = double(toc);
-    fn_print_time('Model coeffs computed', time_2b)
+    if time_it
+        fn_print_time('Model coeffs computed', time_2b)
+    end
 end
 
 
@@ -475,7 +471,7 @@ for scatterer = 1 : num_scatterers
         weights = Views(view).weights(:, scatterer, :);
         scat_amp = Views(view).scat_amps(:, scatterer, :);
         valid_path = Views(view).valid_path(:, scatterer);
-        amp = (scat_amp .* weights .* valid_path);
+        amp = (scat_amp .* weights);% .* valid_path);
         out_freq_spec = out_freq_spec + ...
             fn_propagate_spectrum(freq, in_freq_spec, Views(view).min_times(:, scatterer), amp, 0);
 
@@ -486,7 +482,7 @@ end
 if model_geometry
     [num_geom_views, ~] = size(backwall_views);
     for view = 1 : num_geom_views
-        bw_amp = conj(backwall_views(view).weights .* backwall_views(view).valid_path);
+        bw_amp = conj(backwall_views(view).weights);% .* backwall_views(view).valid_path);
         out_freq_spec = out_freq_spec + ...
             fn_propagate_spectrum(freq, in_freq_spec, backwall_views(view).min_times, bw_amp, 0);
     end
@@ -504,7 +500,9 @@ FMC_time_data = ifft(diagonals * fft(FMC_time_data));
 %     fn_plot_FMC_at_time(FMC_time_data, FMC_time, Path_info_list(3), Path_info_list(5), [[0, 0, 12.5e-3]], sprintf('%s_FMC.png', savename));
 
 time_3 = double(toc);
-fn_print_time('Simulated', time_3)
+if time_it
+    fn_print_time('Simulated', time_3)
+end
 
 if savepath ~= ""
     cd(savepath)

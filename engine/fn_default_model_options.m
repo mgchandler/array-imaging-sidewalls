@@ -69,7 +69,8 @@ model_options.mesh.geom.shape.xmax =  25.0e-3;
 model_options.mesh.geom.shape.xmin = -25.0e-3;
 model_options.mesh.geom.shape.zmax =  40.0e-3;
 model_options.mesh.geom.shape.zmin =   0.0e-3;
-model_options.mesh.geom.geometry = fn_make_geometry(true, 0, 1000, ...
+model_options.mesh.geom.n_pts      = 5000;
+model_options.mesh.geom.geometry = fn_make_geometry(true, 0, model_options.mesh.geom.n_pts, ...
         [model_options.mesh.geom.shape.xmin, 0.0, model_options.mesh.geom.shape.zmax], ...
         [model_options.mesh.geom.shape.xmax, 0.0, model_options.mesh.geom.shape.zmax], ...
         [model_options.mesh.geom.shape.xmax, 0.0, model_options.mesh.geom.shape.zmin] ...
@@ -80,7 +81,7 @@ model_options.model.db_range = 40.0;
 model_options.model.interp_method = 'lanczos';
 model_options.model.max_no_reflections = 1;
 model_options.model.max_no_reverberations = 1;
-model_options.model.model_geom = 1;
+model_options.model.model_geom = true;
 model_options.model.multi_freq = 0;
 model_options.model.norm_to = 0;
 model_options.model.npw = 0;
@@ -91,6 +92,7 @@ model_options.model.wall_for_imaging = "B1";
 model_options.model.image_range = [model_options.mesh.geom.shape.xmin, model_options.mesh.geom.shape.xmax, model_options.mesh.geom.shape.zmin, model_options.mesh.geom.shape.zmax];
 model_options.model.image_locs = 0;
 model_options.model.fusion_mask = 1;
+model_options.model.time_it = true;
 
 model_options.probe.angle = 0;
 model_options.probe.freq = 5.0e+6;
@@ -177,7 +179,7 @@ if isfield(model_options.mesh, 'geom')
             model_options.mesh.geom.z = num2cell(geom_corners(:, 3));
         end
     end
-    model_options.mesh.geom.geometry = fn_make_geometry(true, model_options.mesh.geom.profile_list, 5000, ...
+    model_options.mesh.geom.geometry = fn_make_geometry(true, model_options.mesh.geom.profile_list, model_options.mesh.geom.n_pts, ...
         geom_corners ...
     );
     if ~isempty(model_options.model.wall_for_imaging)

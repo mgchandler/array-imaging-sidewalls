@@ -9,7 +9,7 @@ function alpha_beta = fn_inc_out_angles(dists, path_geometry, wall_idxs)
 % - path_geometry : struct (no_walls, 1)
 %       Set of geometry which the ray will interact with. Does not include
 %       the probe or the scatterer.
-% - wall_idxs : array (1, no_walls)
+% - wall_idxs : array (1, no_scats, no_walls)
 %       Indices of the wall point which the ray from element tx passes
 %       through. Equivalent to wall_idxs field in output of fn_compute_ray.
 %
@@ -28,7 +28,7 @@ alpha_beta = zeros(no_legs, 4, no_scats);
 for wall = 1:no_legs-1
     % Flat walls only have one basis.
     if size(path_geometry(wall).basis, 1) == 1
-        wall_idxs = 1;
+        wall_idxs(:, :, wall) = 1;
     % If the wall is curved, make sure that idxs are valid.
     else
         if wall_idxs(wall) > size(path_geometry(wall).basis, 1)
@@ -56,7 +56,7 @@ for leg = 1:no_legs
         dist = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, 1, no_scats);
         cart_inc = zeros(dims_plus_one-1, no_scats);
         for scat = 1:no_scats
-            cart_inc(:, scat) = linsolve(squeeze(path_geometry(leg).basis(wall_idxs(leg), :, :)), dist(:, :, scat));
+            cart_inc(:, scat) = linsolve(squeeze(path_geometry(leg).basis(wall_idxs(:, scat, leg), :, :)), dist(:, :, scat));
         end
     else
         cart_inc = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, no_scats);
@@ -85,7 +85,7 @@ for leg = 1:no_legs
         dist = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, 1, no_scats);
         cart_inc = zeros(dims_plus_one-1, no_scats);
         for scat = 1:no_scats
-            cart_inc(:, scat) = linsolve(squeeze(path_geometry(leg-1).basis(wall_idxs(leg-1), :, :)), dist(:, :, scat));
+            cart_inc(:, scat) = linsolve(squeeze(path_geometry(leg-1).basis(wall_idxs(:, scat, leg-1), :, :)), dist(:, :, scat));
         end
     else
         cart_out = reshape(-dists(leg, 1:dims_plus_one-1, :), dims_plus_one-1, no_scats);

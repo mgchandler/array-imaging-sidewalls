@@ -1,3 +1,6 @@
+dirname = "C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Experimental Data\2022\L-shape FMCs with 1mm SDHs\22.09.12 - test + ind sample\FE";
+chdir(dirname)
+
 yaml_name = "a_0mm_d_1.yml";
 
 fmc_name  = "a_0mm_d_1_1_BP.mat";
@@ -151,11 +154,14 @@ z_range = 26e-3:PIXEL:45e-3;
 [x_range, z_range] = meshgrid(x_range, z_range);
 image_coords = [x_range(:), zeros(length(x_range(:)), 1), z_range(:)];
 
-for tx = 3:6
-    for rx = 3:6
-        tx_path = Path_info_list(tx);
-        rx_path = Path_info_list(rx);
-        savename = strcat("NLoS region ", tx_path.name, " - ", rx_path.rev_name, ".fig");
-        fn_plot_FMC_at_time(data, time(:, 1), tx_path, rx_path, image_coords, savename);
-    end
-end
+savename = "NLoS region all full skip views"; % strcat("NLoS region ", tx_path.name, " - ", rx_path.rev_name, ".fig");
+fn_plot_FMC_at_time(data, time(:, 1), Path_info_list(3:6), Path_info_list(3:6), image_coords, savename);
+
+% for tx = 3:6
+%     for rx = 3:6
+%         tx_path = Path_info_list(tx);
+%         rx_path = Path_info_list(rx);
+%         savename = ""; % strcat("NLoS region ", tx_path.name, " - ", rx_path.rev_name, ".fig");
+%         fn_plot_FMC_at_time(data, time(:, 1), tx_path, rx_path, image_coords, savename);
+%     end
+% end

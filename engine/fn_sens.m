@@ -96,6 +96,7 @@ db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
 image_block_info = model_options.mesh.scat;
 image_locs = model_options.model.image_locs;
+time_it = model_options.model.time_it;
 
 no_walls = size(geometry, 1);
 
@@ -326,7 +327,9 @@ end
 
 time_1 = double(toc);
 
-fn_print_time('Setup', time_1)
+if time_it
+    fn_print_time('Setup', time_1)
+end
 
 clear el_length couplant_speed couplant_density solid_long_speed solid_shear_speed solid_density
 clear max_num_reflections no_walls is_contact mode_names speeds mode mode_name wall mode1 mode2
@@ -383,7 +386,9 @@ end
 clear probe_frequency num_paths path Path_info_list boxpix X Z pt xpt zpt path
 
 time_2 = double(toc);
-fn_print_time('Rays traced', time_2)
+if time_it
+    fn_print_time('Rays traced', time_2)
+end
 
 tic
 
@@ -400,7 +405,9 @@ end
 
 time_3 = double(toc);
 
-fn_print_time('Views created', time_3)
+if time_it
+    fn_print_time('Views created', time_3)
+end
 
 clear Paths
 
@@ -447,7 +454,9 @@ end
 
 time_4 = double(toc);
 
-fn_print_time('Finished Sensitivity Loop', time_4)
+if time_it
+    fn_print_time('Finished Sensitivity Loop', time_4)
+end
 
 clear PIXEL probe_els boxsize xsize zsize time_pts freq in_freq_spec fft_pts
 clear xpts zpts are_points_in_geometry sens_i_min sens_i_max sens_k_min sens_k_max
@@ -504,7 +513,9 @@ end
 
 time_5 = double(toc);
 
-fn_print_time('Plotted', time_5)
+if time_it
+    fn_print_time('Plotted', time_5)
+end
 
 times = [time_1, time_2, time_3, time_4, time_5];
 

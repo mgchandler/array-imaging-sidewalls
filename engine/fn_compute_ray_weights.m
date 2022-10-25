@@ -14,7 +14,7 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array, varargin)
 %       Contains beamspread, directivity and transmission/reflection
 %       coefficients along the forward and backward path for the ray.
 
-debug = true;
+debug = false;
 
 % Relevant dimensions.
 [probe_els, num_scatterers] = size(ray.min_times);
@@ -193,7 +193,7 @@ else
         min_dists = fn_min_dists(single_ray_leg_coords);
         inv_min_dists = fn_min_dists(inv_single_ray_geometry);
 
-        inc_out_angles = fn_inc_out_angles(min_dists, path_geometry, ray.wall_idxs(tx, :));
+        inc_out_angles = fn_inc_out_angles(min_dists, path_geometry, ray.wall_idxs(tx, :, :));
         inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
         inv_inc_out_angles = flip(inc_out_angles, 1);   
 %         inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
@@ -228,7 +228,7 @@ else
             ray_weights.inv_beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(inv_min_dists(:, 4, :), no_walls+1, num_scatterers), reshape(inv_inc_out_angles(:, 2, :), no_walls+1, num_scatterers), flip(speeds), freq_array(freq_idx));
 
             % Trans/refl      
-            inv_angles = reshape(conj(asin(sin(inc_out_angles(1:end-1, 1, :)) .* speeds(2:end) ./ speeds(1:end-1))), no_walls, num_scatterers);
+            inv_angles = reshape(conj(asin(sin(inc_out_angles(1:end-1, 1, :)) .* speeds(2:end).' ./ speeds(1:end-1).')), no_walls, num_scatterers);
             ray_weights.transrefl(tx, :, freq_idx) = fn_TR_coeff(medium_ids, modes, reshape(inc_out_angles(1:end-1, 1, :), no_walls, num_scatterers), mat_speeds, density);
             ray_weights.inv_transrefl(tx, :, freq_idx) = fn_TR_coeff(flip(medium_ids), flip(modes), inv_angles, mat_speeds, density);
 

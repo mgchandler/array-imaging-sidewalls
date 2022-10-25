@@ -1,4 +1,4 @@
-function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds, densities, probe_freq, probe_pitch, el_length, max_no_refl, npw)
+function Views = fn_make_geometry_views(probe_coords, all_geometries, mat_speeds, densities, probe_freq, probe_pitch, el_length, max_no_refl, npw, is_contact, is_frontwall)
 % Computes signals which come from reflections of the wall geometry
 % (including frontwall reflections).
 %
@@ -58,8 +58,8 @@ end
 
 names = ["L", "T"];
 
-if ~ismember("F", wall_names)
-%% If we are in contact.
+if ~is_frontwall
+%% If there isn't a frontwall
     tot_num_views = 0;
     for refl = 1:max_no_refl
         tot_num_views = tot_num_views + ...
@@ -80,7 +80,13 @@ if ~ismember("F", wall_names)
         medium_ids = ones(refl+1, 1);
         
         % Generate wall indices
-        wall_idxs = dec2base([0:num_walls^refl-1], num_walls);
+        if num_walls ~= 1
+            wall_idxs = dec2base([0:num_walls^refl-1], num_walls);
+        else
+            % If there is only one wall, then dec2base does not work, but
+            % only one wall so prescribe it as 0.
+            wall_idxs = '0';
+        end
         wall_idxs1 = zeros(size(wall_idxs));
         for col = 1:size(wall_idxs, 2)
             wall_idxs1(:, col) = str2num(wall_idxs(:, col)) + 1;
@@ -143,101 +149,194 @@ if ~ismember("F", wall_names)
     end
     
 else
-%% If we are in immersion.
+%% If we there is a front wall
     
     where_F = logical(wall_names=="F");
+    idx_F = find(where_F);
     
-    assert(max_no_refl <= 2, "fn_make_geometry_views: for immersion, max number of geometry reflections must be <= 2.")
-    
-    num_walls = num_walls - 1;
-    tot_num_views = ( ...
-        (1 <= max_no_refl) * 2^2 * num_walls + ...
-        (2 <= max_no_refl) * 2^3 * num_walls*(num_walls - 1) ...
-    );
-    
-    view_el = 1;
     for refl = 1:max_no_refl
-        
         % Generate mode indices
-        char_modes = dec2bin([0:2^(refl+1)-1]);
+        char_modes = dec2bin(0:2^(refl+1)-1);
         view_modes = zeros(size(char_modes));
         for col = 1:size(char_modes, 2)
             view_modes(:, col) = str2num(char_modes(:, col)); %#ok<*ST2NM>
         end
-        view_speeds1 = mat_speeds(view_modes+2);
-        view_speeds = couplant_spd * ones(size(view_speeds1, 1), size(view_speeds1, 2)+2);
-        view_speeds(:, 2:end-1) = view_speeds1;
-
-        walls = 2*ones(refl, 1);
-        medium_ids = ones(refl+1, 1);
         
-        % Generate wall indices
-        wall_idxs1 = dec2base([0:num_walls^refl-1], num_walls);
+        wall_idxs1 = dec2base(0:num_walls^refl-1, num_walls);
         wall_idxs = zeros(size(wall_idxs1));
         for col = 1:size(wall_idxs1, 2)
             wall_idxs(:, col) = str2num(wall_idxs1(:, col)) + 1;
         end
         
-        % Get the valid ones.
-        wall_idxs1 = zeros(size(wall_idxs1));
-        this_row = 1;
-        for row = 1:size(wall_idxs1, 1)
-            is_adjacent = 0;
-            for col = 1:size(wall_idxs1, 2)-1
-                if wall_idxs(row, col) == wall_idxs(row, col+1)
-                    is_adjacent = 1;
-                    break
-                end
-            end
-            if ~is_adjacent
-                wall_idxs1(this_row, :) = wall_idxs(row, :);
-                this_row = this_row+1;
-            end
+        % If immersion, we'll add the front wall to the beginning and end
+        % later. Rays cannot join a wall to itself (i.e. a wall cannot be
+        % adjacent to itself within a path), so remove all paths which
+        % start or end with the front wall.
+        wall_idxs = wall_idxs(and(wall_idxs(:, 1) ~= idx_F, wall_idxs(:, end) ~= idx_F), :);
+        
+        % Check for self-adjacency of all walls within paths.
+        for row = 1:size(wall_idxs, 2)-1
+            wall_idxs = wall_idxs(wall_idxs(:, row) ~= wall_idxs(:, row+1), :);
         end
-        wall_idxs1(wall_idxs1(:, 1) == 0, :) = [];
-        fw_location_in_all_geom = find(where_F);
-        wall_idxs1(wall_idxs1 >= fw_location_in_all_geom) = wall_idxs1(wall_idxs1 >= fw_location_in_all_geom)+1;
-        wall_idxs = find(where_F) * ones(size(wall_idxs, 1), size(wall_idxs, 2)+2);
-        wall_idxs(:, 2:end-1) = wall_idxs1;
-
-        view_geometries = all_geometries(wall_idxs);
         
+        num_views_in_refl = size(wall_idxs, 1) * size(view_modes, 1);
         
-
+        % If contact, do not need to add any walls to start or end.
+        if is_contact
+            view_speeds = mat_speeds(view_modes+2);
+            view_geometries = all_geometries(wall_idxs);
+            medium_ids = ones(refl+1, 1);
+        % If immersion, add front wall to start and end.
+        else
+            view_speeds = cat(2, mat_speeds(1)*ones(size(view_modes, 1), 1), mat_speeds(view_modes+2), mat_speeds(1)*ones(size(view_modes, 1), 1));
+            wall_idxs = cat(2, idx_F*ones(size(wall_idxs, 1), 1), wall_idxs, idx_F*ones(size(wall_idxs, 1), 1));
+            view_geometries = all_geometries(wall_idxs);
+            medium_ids = ones(refl+3, 1);
+            medium_ids(1) = 0;
+            medium_ids(end) = 0;
+        end
+        
+        view_el = 1;
         for wall = 1:size(view_geometries, 1)
             for view = 1:size(view_modes, 1)
-                % Get the name of this path.
-                name = sprintf("%s", names(view_modes(view, 1)+1));
-                rev_name = sprintf("%s", names(view_modes(view, end)+1));
-                for mode = 2:size(view_modes, 2)
-                    name = sprintf("%s %s %s", name, view_geometries(wall, mode).name, names(view_modes(view, mode)+1));
-                    rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+1-mode).name, names(view_modes(view, end+1-mode)+1));
+                name = sprintf('%s', names(view_modes(view, 1)+1));
+                rev_name = sprintf('%s', names(view_modes(view, end)+1));
+                for leg = 2:size(view_modes, 2)
+                    name = sprintf('%s %s %s', name, wall_names(wall_idxs(wall, leg-1)), names(view_modes(view, leg)+1));
+                    rev_name = sprintf('%s %s %s', rev_name, wall_names(wall_idxs(wall, end+2-leg)), names(view_modes(view, end+1-leg)+1));
                 end
                 
                 path_info = fn_path_info( ...
                     name, ...
                     rev_name, ...
                     view_modes(view, :), ...
-                    view_geometries(wall, :).', ...
+                    view_geometries(:, wall), ...
                     view_speeds(view, :), ...
                     mat_speeds, ...
-                    walls, ...
                     medium_ids, ...
                     densities, ...
                     probe_freq, ...
                     probe_pitch, ...
-                    probe_coords ...
+                    el_length, ...
+                    probe_coords, ...
+                    npw ...
                 );
                 
-                if exist("Views", "var")==0
-                    Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer), tot_num_views, 1);
+                if exist("refl_Views", "var")==0
+                    refl_Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer), num_views_in_refl, 1);
                 else
-                    Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer);
+                    refl_Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer);
                 end
                 view_el = view_el + 1;
             end
         end
+        if exist("Views", "var")==0
+            Views = refl_Views;
+        % Difficult to work out how big Views should be ahead of time due
+        % to self-adjacency of walls for generalised number of reflections.
+        % As such, precompute for each reflection and then expand Views
+        % each time.
+        else
+            try
+                Views = [Views, refl_Views];
+            % If refl_Views empty because there are no valid views for this
+            % number of reflections, then refl_Views will still be cleared
+            % from last loop. This is okay so catch it and move on. If any
+            % other error arises, rethrow it for the user to deal with.
+            catch ME
+                if ~strcmp(ME.identifier, 'MATLAB:refClearedVar')
+                    rethrow(ME)
+                end
+            end
+        end
+        clear refl_Views
     end
+    
+%     assert(max_no_refl <= 2, "fn_make_geometry_views: for immersion, max number of geometry reflections must be <= 2.")
+%     
+%     view_el = 1;
+%     for refl = 1:max_no_refl
+%         
+%         % Generate mode indices
+%         char_modes = dec2bin([0:2^(refl+1)-1]);
+%         view_modes = zeros(size(char_modes));
+%         for col = 1:size(char_modes, 2)
+%             view_modes(:, col) = str2num(char_modes(:, col)); %#ok<*ST2NM>
+%         end
+%         view_speeds1 = mat_speeds(view_modes+2);
+%         view_speeds = couplant_spd * ones(size(view_speeds1, 1), size(view_speeds1, 2)+2);
+%         view_speeds(:, 2:end-1) = view_speeds1;
+% 
+%         walls = 2*ones(refl, 1);
+%         medium_ids = ones(refl+1, 1);
+%         
+%         % Generate wall indices
+%         wall_idxs1 = dec2base([0:num_walls^refl-1], num_walls);
+%         wall_idxs = zeros(size(wall_idxs1));
+%         for col = 1:size(wall_idxs1, 2)
+%             wall_idxs(:, col) = str2num(wall_idxs1(:, col)) + 1;
+%         end
+%         
+%         % Get the valid ones.
+%         wall_idxs1 = zeros(size(wall_idxs1));
+%         this_row = 1;
+%         for row = 1:size(wall_idxs1, 1)
+%             is_adjacent = 0;
+%             for col = 1:size(wall_idxs1, 2)-1
+%                 if wall_idxs(row, col) == wall_idxs(row, col+1)
+%                     is_adjacent = 1;
+%                     break
+%                 end
+%             end
+%             if ~is_adjacent
+%                 wall_idxs1(this_row, :) = wall_idxs(row, :);
+%                 this_row = this_row+1;
+%             end
+%         end
+%         wall_idxs1(wall_idxs1(:, 1) == 0, :) = [];
+%         fw_location_in_all_geom = find(where_F);
+%         wall_idxs1(wall_idxs1 >= fw_location_in_all_geom) = wall_idxs1(wall_idxs1 >= fw_location_in_all_geom)+1;
+%         wall_idxs = find(where_F) * ones(size(wall_idxs, 1), size(wall_idxs, 2)+2);
+%         wall_idxs(:, 2:end-1) = wall_idxs1;
+% 
+%         view_geometries = all_geometries(wall_idxs);
+%         
+%         
+% 
+%         for wall = 1:size(view_geometries, 1)
+%             for view = 1:size(view_modes, 1)
+%                 % Get the name of this path.
+%                 name = sprintf("%s", names(view_modes(view, 1)+1));
+%                 rev_name = sprintf("%s", names(view_modes(view, end)+1));
+%                 for mode = 2:size(view_modes, 2)
+%                     name = sprintf("%s %s %s", name, view_geometries(wall, mode).name, names(view_modes(view, mode)+1));
+%                     rev_name = sprintf("%s %s %s", rev_name, view_geometries(wall, end+1-mode).name, names(view_modes(view, end+1-mode)+1));
+%                 end
+%                 
+%                 path_info = fn_path_info( ...
+%                     name, ...
+%                     rev_name, ...
+%                     view_modes(view, :), ...
+%                     view_geometries(wall, :).', ...
+%                     view_speeds(view, :), ...
+%                     mat_speeds, ...
+%                     walls, ...
+%                     medium_ids, ...
+%                     densities, ...
+%                     probe_freq, ...
+%                     probe_pitch, ...
+%                     probe_coords ...
+%                 );
+%                 
+%                 if exist("Views", "var")==0
+%                     Views = repmat(fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer), tot_num_views, 1);
+%                 else
+%                     Views(view_el) = fn_create_geometry_view(path_info, all_geometries, probe_as_scatterer);
+%                 end
+%                 view_el = view_el + 1;
+%             end
+%         end
+%     end
     
 end
 
@@ -275,7 +374,7 @@ for view = 1:size(Views, 1)
     for ii = 1 : probe_els
         for jj = 1 : probe_els
             Views(view).weights(el, :) = ( ...
-                ray.weights.weights(ii, jj, :) * ray.weights.directivity(jj, ii, :)... .* (1i * densities(medium_ids(end)+1) * view_speeds(view, end))...
+                ray.weights.weights(ii, jj, :) * ray.weights.directivity(jj, ii, :) .* (1i * densities(medium_ids(end)+1) * view_speeds(view, end))...
             );
 
         el = el+1;

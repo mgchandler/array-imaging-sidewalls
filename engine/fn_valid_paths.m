@@ -32,6 +32,13 @@ function valid_paths = fn_valid_paths(path_info, ray_coords, all_geometry)
 %       (described by wall_idxs) is valid or not, i.e. other than the walls
 %       which are reflected from / transmitted through, does the ray
 %       intersect any other walls?
+%
+% NOTES:
+%   - When leg=1 or leg=end, geometry_for_testing = all_geometry(~where_F)
+%     i.e. front wall is excluded as implementation guarantees collision.
+%     This may lead to weird behaviour if specifically weird geometry is
+%     used (e.g. NLoS region is not below the array but above it, for
+%     example).
 
 % Get useful dimensions.
 [probe_els, num_scatterers, num_points, ~] = size(ray_coords);
@@ -45,7 +52,15 @@ path_geometry = path_info.path_geometry;
 
 % Initialise output array. Assume valid to start, and then change if
 % intersection is found.
-valid_paths = logical(ones(probe_els, num_scatterers));
+valid_paths = true(probe_els, num_scatterers);
+
+% Find out where the front wall is (if one exists)
+where_F = false(size(all_geometry));
+for wall = 1:size(all_geometry, 1)
+    if strcmp(all_geometry(wall).name, "F")
+        where_F(wall) = true;
+    end
+end
 
 % Each ray traces from a probe element to a scatterer.
 for el = 1:probe_els
@@ -64,7 +79,7 @@ for el = 1:probe_els
             % any geometry, thus we test for intersections with all
             % geometry.
             if num_legs == 1
-                geometry_for_testing = all_geometry;
+                geometry_for_testing = all_geometry(~where_F);
                 
             % If we are not (i.e. more than 1 leg in total) then check if
             % we are on the first or the last leg. If we are, there is only
@@ -78,7 +93,7 @@ for el = 1:probe_els
                 % If the path is unphysical, we break out of the loop over
                 % the path and never reach this point. If it is physical,
                 % then carry on and check for intersections.
-                geometry_for_testing = all_geometry;
+                geometry_for_testing = all_geometry(~where_F);
                 exclude_name = path_geometry(leg).name;
                 for wall = 1:size(all_geometry, 1)
                     if geometry_for_testing(wall).name == exclude_name
@@ -92,7 +107,7 @@ for el = 1:probe_els
                 valid_paths(el, :) = and(valid_paths(el, :), ~or(all(leg_start == path_geometry(leg-1).point1, 2), all(leg_end == path_geometry(leg-1).point2, 2)).');
                 
                 % Exclude the wall we interact with.
-                geometry_for_testing = all_geometry;
+                geometry_for_testing = all_geometry(~where_F);
                 exclude_name = path_geometry(leg-1).name;
                 for wall = 1:size(all_geometry, 1)
                     if geometry_for_testing(wall).name == exclude_name
