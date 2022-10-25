@@ -39,28 +39,28 @@ if isfield(scat_info, 'matrix')
     % and small pixel size.
     for el = 1 : probe_els^2
         % Extract scat angles from path coords
-        path1_ray = squeeze(path1.coords(view.probe_txrx(el, 1), :, end-1:end, :));
-        if length(size(path1_ray)) == 2
-            % We're only looking at the last leg, and will only trigger
-            % this if statement if there is one scatterer. Therefore
-            % enforce actual numbers.
-            path1_ray = zeros(1, 2, 3);
-            path1_ray(:, :, :) = squeeze(path1.coords(view.probe_txrx(el, 1), :, end-1:end, :));
-        end
-        path1_ray = permute(path1_ray, [2,3,1]);
-        min_dists  = fn_min_dists(path1_ray);
-        inc_angles = fn_inc_out_angles(min_dists, path1.path_info.path_geometry);
-        inc_angles = reshape(inc_angles(end, 3, :), 1, num_scatterers) - scat_info.angle;
+%         path1_ray = squeeze(path1.coords(view.probe_txrx(el, 1), :, end-1:end, :));
+%         if length(size(path1_ray)) == 2
+%             % We're only looking at the last leg, and will only trigger
+%             % this if statement if there is one scatterer. Therefore
+%             % enforce actual numbers.
+%             path1_ray = zeros(1, 2, 3);
+%             path1_ray(:, :, :) = squeeze(path1.coords(view.probe_txrx(el, 1), :, end-1:end, :));
+%         end
+%         path1_ray = permute(path1_ray, [2,3,1]);
+%         min_dists  = fn_min_dists(path1_ray);
+%         inc_angles = fn_inc_out_angles(min_dists, path1.path_info.path_geometry);
+        inc_angles = reshape(path1.weights.scat_inc_angles(view.probe_txrx(el, 1), :), 1, num_scatterers) - scat_info.angle;
         
-        path2_ray = squeeze(path2.coords(view.probe_txrx(el, 2), :, 1:2, :));
-        if length(size(path2_ray)) == 2
-            path2_ray = zeros(1, 2, 3);
-            path2_ray(:, :, :) = squeeze(path2.coords(view.probe_txrx(el, 2), :, 1:2, :));
-        end
-        path2_ray = permute(path2_ray, [2,3,1]);
-        inv_min_dists = flip(fn_min_dists(path2_ray), 1);
-        out_angles = fn_inc_out_angles(inv_min_dists, path2.path_info.path_geometry);
-        out_angles = reshape(out_angles(1, 3, :), 1, num_scatterers) - scat_info.angle;
+%         path2_ray = squeeze(path2.coords(view.probe_txrx(el, 2), :, 1:2, :));
+%         if length(size(path2_ray)) == 2
+%             path2_ray = zeros(1, 2, 3);
+%             path2_ray(:, :, :) = squeeze(path2.coords(view.probe_txrx(el, 2), :, 1:2, :));
+%         end
+%         path2_ray = permute(path2_ray, [2,3,1]);
+%         inv_min_dists = flip(fn_min_dists(path2_ray), 1);
+%         out_angles = fn_inc_out_angles(inv_min_dists, path2.path_info.path_geometry);
+        out_angles = reshape(path2.weights.scat_out_angles(view.probe_txrx(el, 2), :), 1, num_scatterers) - scat_info.angle;
         
 %         inc_angles = path1.weights.inc_theta(view.probe_txrx(el, 1), :, end, 2) - scat_info.angle;
 %         out_angles = path2.weights.inv_out_theta(view.probe_txrx(el, 2), :, 1, 2) - scat_info.angle;
@@ -87,8 +87,8 @@ else
 
 
                     elseif scat_info.type == "sdh"
-                        inc_angle_on_scat = path1.weights.inc_theta(tx, scat, end, 2) - scat_info.angle;
-                        out_angle_on_scat = path2.weights.inv_out_theta(rx, scat, 1, 2) - scat_info.angle;
+                        inc_angle_on_scat = path1.weights.scat_inc_angles(tx, scat);
+                        out_angle_on_scat = path2.weights.scat_out_angles(rx, scat);
 
                         inc_mode = path1_info.modes(end);
                         out_mode = path2_info.modes(end);

@@ -61,9 +61,9 @@ ray_weights.mask = ones(probe_els, num_scatterers);
 % Total weights for each frequency.
 ray_weights.weights = zeros(probe_els, num_scatterers, num_freqs);
 ray_weights.inv_weights = zeros(probe_els, num_scatterers, num_freqs);
-% Initialise angles.
-% ray_weights.inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
-ray_weights.out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
+% Initialise angles 
+ray_weights.scat_inc_theta = zeros(probe_els, num_scatterers);
+ray_weights.scat_out_theta = zeros(probe_els, num_scatterers);
 % ray_weights.inv_inc_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 % ray_weights.inv_out_theta = zeros(probe_els, num_scatterers, no_walls+1, 2);
 % ray_weights.c_out = zeros(probe_els,1);
@@ -94,7 +94,14 @@ if ~isstruct(path_geometry)
 
         inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
         inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
-        inv_inc_out_angles = flip(inc_out_angles, 1);            
+        inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);%flip(inc_out_angles, 1);  
+        
+        ray_weights.scat_inc_angles(tx, :) = inc_out_angles(end, 3, :);
+        ray_weights.scat_out_angles(tx, :) = inv_inc_out_angles(1, 3, :);
+        if isfield(scat_info, 'angle')
+            ray_weights.scat_inc_angles(tx, :) = ray_weights.scat_inc_angles(tx, :) - scat_info.angle;
+            ray_weights.scat_out_angles(tx, :) = ray_weights.scat_out_angles(tx, :) - scat_info.angle;
+        end
 %         inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
 % 
 %         ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
@@ -109,8 +116,8 @@ if ~isstruct(path_geometry)
 %             ray_weights.c_out(tx) = inc_out_angles(end, 3);
 %         end
         ray_weights.min_dists(tx, :, :, :) = permute(min_dists, [3, 1, 2]);
-        ray_weights.out_theta(tx, :, :, 1) = permute(inc_out_angles(:, 2, :), [3, 1, 2]);
-        ray_weights.out_theta(tx, :, :, 2) = permute(inc_out_angles(:, 4, :), [3, 1, 2]);
+%         ray_weights.out_theta(tx, :, :, 1) = permute(inc_out_angles(:, 2, :), [3, 1, 2]);
+%         ray_weights.out_theta(tx, :, :, 2) = permute(inc_out_angles(:, 4, :), [3, 1, 2]);
 
 %         cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
             
@@ -195,7 +202,15 @@ else
 
         inc_out_angles = fn_inc_out_angles(min_dists, path_geometry, ray.wall_idxs(tx, :, :));
         inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);
-        inv_inc_out_angles = flip(inc_out_angles, 1);   
+%         inv_inc_out_angles = flip(inc_out_angles, 1);   
+        inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry, ray.wall_idxs(tx, :, :));  
+        
+        ray_weights.scat_inc_angles(tx, :) = inc_out_angles(end, 3, :);
+        ray_weights.scat_out_angles(tx, :) = inv_inc_out_angles(1, 3, :);
+        if isfield(scat_info, 'angle')
+            ray_weights.scat_inc_angles(tx, :) = ray_weights.scat_inc_angles(tx, :) - scat_info.angle;
+            ray_weights.scat_out_angles(tx, :) = ray_weights.scat_out_angles(tx, :) - scat_info.angle;
+        end
 %         inv_inc_out_angles = fn_inc_out_angles(inv_min_dists, path_geometry);
 % 
 %         ray_weights.inc_theta(tx, scat, :, 1) = inc_out_angles(:, 1);
@@ -210,8 +225,8 @@ else
 %             ray_weights.c_out(tx) = inc_out_angles(end, 3);
 %         end
         ray_weights.min_dists(tx, :, :, :) = permute(min_dists, [3, 1, 2]);
-        ray_weights.out_theta(tx, :, :, 1) = permute(inc_out_angles(:, 2, :), [3, 1, 2]);
-        ray_weights.out_theta(tx, :, :, 2) = permute(inc_out_angles(:, 4, :), [3, 1, 2]);
+%         ray_weights.out_theta(tx, :, :, 1) = permute(inc_out_angles(:, 2, :), [3, 1, 2]);
+%         ray_weights.out_theta(tx, :, :, 2) = permute(inc_out_angles(:, 4, :), [3, 1, 2]);
 
 %         cos_sin = [cos(inc_out_angles(1, 2)), sin(inc_out_angles(1, 2))];
             
@@ -313,7 +328,7 @@ ray_weights.inv_weights = ( ...
 % Turn off weight breakdown - not necessary to keep them unless debugging.
 if ~debug
     ray_weights = rmfield(ray_weights, 'min_dists');
-    ray_weights = rmfield(ray_weights, 'out_theta');
+%     ray_weights = rmfield(ray_weights, 'out_theta');
     ray_weights = rmfield(ray_weights, 'beamspread');
     ray_weights = rmfield(ray_weights, 'inv_beamspread');
 %     ray_weights = rmfield(ray_weights, 'directivity');

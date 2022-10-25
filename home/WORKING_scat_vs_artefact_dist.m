@@ -66,12 +66,14 @@ geom_only = Ims(1).image;
 %% Both sdh and geometry: perturb back wall location wrt sdh.
 rng('default')
 pd = makedist('Uniform', 'Lower', -.5e-3, 'Upper', 3e-3);
-perturb = random(pd, N, 1);
-% perturb = [perturb, 1e-3:.1e-3:2e-3];
-% perturb = [perturb, 2e-3:.2e-3:3e-3];
+perturb = random(pd, 1, N);
+perturb = -.5e-3:.05e-3:1e-3;
+perturb = [perturb, 1e-3:.1e-3:2e-3];
+perturb = [perturb, 2e-3:.2e-3:3e-3];
 perturb = unique(perturb);
 vals = zeros(size(perturb));
 
+t1 = tic;
 for ii = 1:length(perturb)
     p = perturb(ii);
     model_options = yaml_options;
@@ -80,12 +82,14 @@ for ii = 1:length(perturb)
     end
 %     model_options.model.savename = sprintf("Perturbation %.2fmm", p*1e3);
 %     disp(model_options.model.savename)
-    fprintf("itn %4d : %.3f\n", ii, p*1e3)
+%     t = double(toc(t1));
 %     model_options.model.image_range = [min(cell2mat(model_options.mesh.geom.x)), max(cell2mat(model_options.mesh.geom.x)), 0, max(cell2mat(model_options.mesh.geom.z))];
     model_options = fn_default_model_options(model_options);
     
     [Ims, ~, ~] = fn_tfm(model_options, Views_im);
     vals(ii) = Ims(1).image;
+    
+    fprintf("itn %4d : %5.3fmm : ETA %.5fs\n", ii, p*1e3, double(toc(t1))*(N/ii-1))
 end
 
 xlims = [min([real(vals), real(geom_only), real(sdh_only)])-.02, max([real(vals), real(geom_only), real(sdh_only)])+.02];

@@ -465,6 +465,7 @@ end
 
 for view = 1 : Number_of_ims
    Ims(view).db_image = 20 * log10(abs(Ims(view).image) ./ max_); 
+   Ims(view).phase_image = angle(Ims(view).image);
 end
 
 % im_idxs = [4, 12, 17];
