@@ -67,12 +67,26 @@ geom_only = Ims(1).image;
 rng('default')
 pd = makedist('Uniform', 'Lower', -.5e-3, 'Upper', 3e-3);
 perturb = random(pd, 1, N);
-perturb = -.5e-3:.05e-3:1e-3;
-perturb = [perturb, 1e-3:.1e-3:2e-3];
-perturb = [perturb, 2e-3:.2e-3:3e-3];
+% perturb = -.5e-3:.05e-3:1e-3;
+% perturb = [perturb, 1e-3:.1e-3:2e-3];
+% perturb = [perturb, 2e-3:.2e-3:3e-3];
 perturb = unique(perturb);
 vals = zeros(size(perturb));
 
+%% Unique only
+model_options = yaml_options;
+model_options.model.model_geom = true;
+model_options.mesh.scat.type = "image";
+model_options.model.savename = "Perturbation no sdh";
+for kk = 1:size(model_options.mesh.geom.z, 2)
+    model_options.mesh.geom.z{kk} = model_options.mesh.scat.z;
+end
+model_options.model.image_locs = [model_options.mesh.scat.x * ones(size(perturb)); zeros(size(perturb)); model_options.mesh.scat.z+perturb].';
+model_options = fn_default_model_options(model_options);
+[Ims, ~, ~] = fn_tfm(model_options);
+bw_only_perturb = Ims(1).image;
+
+%%
 t1 = tic;
 for ii = 1:length(perturb)
     p = perturb(ii);

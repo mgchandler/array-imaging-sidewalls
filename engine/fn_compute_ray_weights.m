@@ -90,7 +90,7 @@ if ~isstruct(path_geometry)
         inv_single_ray_geometry = flip(single_ray_leg_coords, 1);
 
         min_dists = fn_min_dists(single_ray_leg_coords);
-        inv_min_dists = fn_min_dists(inv_single_ray_geometry);
+        inv_min_dists = flip(min_dists, 1);%fn_min_dists(inv_single_ray_geometry);
 
         inc_out_angles = fn_inc_out_angles(min_dists, path_geometry);
         inc_out_angles(1, 2) = fn_angle_from_probe_normal(single_ray_leg_coords(1:2, :), probe_coords);

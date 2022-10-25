@@ -14,6 +14,7 @@ xmin = model_options.model.image_range(1);
 xmax = model_options.model.image_range(2);
 zmin = model_options.model.image_range(3);
 zmax = model_options.model.image_range(4);
+image_locs = model_options.model.image_locs;
 scat_info = model_options.mesh.scat;
 savepath = model_options.model.savepath;
 savename = model_options.model.savename;
@@ -310,6 +311,8 @@ Views = fn_make_views(Paths, 1);
 
 tic;
 
+if image_locs == 0
+
 xpts = round(xsize / PIXEL);
 zpts = round(zsize / PIXEL);
 im_x = linspace(xmin, xmax, xpts+1);
@@ -326,6 +329,14 @@ for xpt = 1 : xpts+1
         image_block(pt, 3) = Z(zpt, xpt);
         pt = pt + 1;
     end
+end
+
+else
+    image_block = image_locs;
+    im_x = unique(image_block(:, 1));
+    im_z = unique(image_block(:, 3));
+    xpts = size(im_x, 1)-1;
+    zpts = size(im_z, 1)-1;
 end
 
 image_block_info = fn_scat_info("image", image_block(:, 1), image_block(:, 2), image_block(:, 3));
