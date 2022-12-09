@@ -36,6 +36,7 @@ norm_to = model_options.model.norm_to;
 db_range_for_output = model_options.model.db_range;
 npw = model_options.mesh.n_per_wl;
 time_it = model_options.model.time_it;
+plot_it = model_options.model.plot_it;
 
 no_walls = size(geometry, 1);
 no_cycles = model_options.probe.cycles;
@@ -572,7 +573,9 @@ end
 % 
 % h.Label.String = 'dB';
 
-% fn_image_from_mat(Ims);
+if plot_it
+    fn_image_from_mat(Ims);
+end
 
 
 
@@ -585,10 +588,12 @@ end
 
 
 if savepath ~= ""
-    cd(savepath)
-%     filename_fig = sprintf('%s.fig', savename);
-    filename_mat = sprintf('%s.mat', savename);
-%     savefig(filename_fig)
+%     cd(savepath)
+    filename_fig = fullfile(savepath, sprintf('%s.fig', savename));
+    filename_mat = fullfile(ssavepath, printf('%s.mat', savename));
+    if plot_it
+        savefig(filename_fig)
+    end
     save(filename_mat, 'Ims')
 end
 

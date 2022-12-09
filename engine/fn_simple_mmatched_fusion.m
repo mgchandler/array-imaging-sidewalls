@@ -1,4 +1,4 @@
-function [Fused, Weighted, Ims] = fn_simple_fusion(model_options)
+function [Fused, Weighted, Ims] = fn_simple_mmatched_fusion(model_options)
 % Performs a simple matched filter fusion. Computes the sensitivity maps
 % for multiple views for a sample and TFMs from an FMC, multiplying one by
 % the other pixel-by-pixel, before summing over all views to achieve a

@@ -114,29 +114,29 @@ model_options = fn_default_model_options(yaml_options);
 %     fn_tfm(model_options, Views_im);
 % end
 
-%% Make the RT mask
-
-% Diffraction
-diffraction_options = model_options;
-diffraction_options.model.image_locs = [diffraction_options.mesh.geom.x{4} + .01e-3, 0.0, diffraction_options.mesh.geom.z{4} - .01e-3];
-diffraction_options.mesh.scat.x = diffraction_options.mesh.geom.x{4} + .01e-3;
-diffraction_options.mesh.scat.z = diffraction_options.mesh.geom.z{4} - .01e-3;
-diffraction_options.model.max_no_reflections = 0;
-diffraction_options.model.model_geom = 0;
-% [~, diffraction_Views] = fn_sens(diffraction_options);
-% [diff_FMC_time, diff_FMC_data] = fn_simulate_fmc(diffraction_options);
-
-% Geometry
-geom_options = model_options;
-geom_options.mesh.scat = fn_scat_info("image", geom_options.mesh.scat.x, geom_options.mesh.scat.y, geom_options.mesh.scat.z);
-geom_options.model.model_geom = 2;
-geom_options.model.max_no_reverberations = 4;
-geom_options.model.wall_for_imaging = 'B1';
-geom_options.mesh.geom.geometry = fn_make_geometry(0, 0, 1000, [-16e-3, 0, 20e-3], [16e-3, 0, 20e-3], [-16e-3, 0, -.01e-3], [16e-3, 0, -.01e-3]);
-[geom_FMC_time, geom_FMC_data] = fn_simulate_fmc(geom_options);
-
-fn_image_tfm(geom_FMC_time, geom_FMC_data, geom_options);
-imagesc(geom_FMC_time, 1:4096, abs(geom_FMC_data.'))
+% %% Make the RT mask
+% 
+% % Diffraction
+% diffraction_options = model_options;
+% diffraction_options.model.image_locs = [diffraction_options.mesh.geom.x{4} + .01e-3, 0.0, diffraction_options.mesh.geom.z{4} - .01e-3];
+% diffraction_options.mesh.scat.x = diffraction_options.mesh.geom.x{4} + .01e-3;
+% diffraction_options.mesh.scat.z = diffraction_options.mesh.geom.z{4} - .01e-3;
+% diffraction_options.model.max_no_reflections = 0;
+% diffraction_options.model.model_geom = 0;
+% % [~, diffraction_Views] = fn_sens(diffraction_options);
+% % [diff_FMC_time, diff_FMC_data] = fn_simulate_fmc(diffraction_options);
+% 
+% % Geometry
+% geom_options = model_options;
+% geom_options.mesh.scat = fn_scat_info("image", geom_options.mesh.scat.x, geom_options.mesh.scat.y, geom_options.mesh.scat.z);
+% geom_options.model.model_geom = 2;
+% geom_options.model.max_no_reverberations = 4;
+% geom_options.model.wall_for_imaging = 'B1';
+% geom_options.mesh.geom.geometry = fn_make_geometry(0, 0, 1000, [-16e-3, 0, 20e-3], [16e-3, 0, 20e-3], [-16e-3, 0, -.01e-3], [16e-3, 0, -.01e-3]);
+% [geom_FMC_time, geom_FMC_data] = fn_simulate_fmc(geom_options);
+% 
+% fn_image_tfm(geom_FMC_time, geom_FMC_data, geom_options);
+% imagesc(geom_FMC_time, 1:4096, abs(geom_FMC_data.'))
 
 %% Fusion
 [Fused_Defect, Weighted_Defect, Ims_Defect] = fn_simple_fusion(model_options);

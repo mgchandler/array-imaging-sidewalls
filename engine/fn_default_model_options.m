@@ -65,6 +65,8 @@ model_options.material.poisson = 0.34;
 model_options.material.v_L = sqrt(model_options.material.modulus * (1 - model_options.material.poisson) / (model_options.material.density * (1 + model_options.material.poisson) * (1 - 2*model_options.material.poisson)));
 model_options.material.v_S = sqrt(model_options.material.modulus / (2 * model_options.material.density * (1 + model_options.material.poisson)));
 
+model_options.mesh.n_per_wl = 0;
+
 model_options.mesh.geom.shape.xmax =  25.0e-3;
 model_options.mesh.geom.shape.xmin = -25.0e-3;
 model_options.mesh.geom.shape.zmax =  40.0e-3;
@@ -75,6 +77,9 @@ model_options.mesh.geom.geometry = fn_make_geometry(true, 0, model_options.mesh.
         [model_options.mesh.geom.shape.xmax, 0.0, model_options.mesh.geom.shape.zmax], ...
         [model_options.mesh.geom.shape.xmax, 0.0, model_options.mesh.geom.shape.zmin] ...
 );
+model_options.mesh.geom.profile_list = 0;
+model_options.mesh.geom.x = {model_options.mesh.geom.shape.xmin, model_options.mesh.geom.shape.xmax, model_options.mesh.geom.shape.xmax};
+model_options.mesh.geom.z = {model_options.mesh.geom.shape.zmax, model_options.mesh.geom.shape.zmax, model_options.mesh.geom.shape.zmin};
 
 model_options.model.boxsize = 0.0;
 model_options.model.db_range = 40.0;
@@ -92,7 +97,8 @@ model_options.model.wall_for_imaging = "B1";
 model_options.model.image_range = [model_options.mesh.geom.shape.xmin, model_options.mesh.geom.shape.xmax, model_options.mesh.geom.shape.zmin, model_options.mesh.geom.shape.zmax];
 model_options.model.image_locs = 0;
 model_options.model.fusion_mask = 1;
-model_options.model.time_it = true;
+model_options.model.time_it = false;
+model_options.model.plot_it = true;
 
 model_options.probe.angle = 0;
 model_options.probe.freq = 5.0e+6;
@@ -100,6 +106,7 @@ model_options.probe.num_els = 32;
 model_options.probe.standoff = 0;
 model_options.probe.separation = 0.05e-3;
 model_options.probe.width = 0.45e-3;
+model_options.probe.cycles = 5;
 
 % Construct contents of fn_scat_info() outside of the function so that it
 % can be rewritten if required from external options, and then call the
@@ -161,8 +168,8 @@ if isfield(model_options.mesh, 'scat')
             model_options.mesh.scat.y, ...
             model_options.mesh.scat.z, ...
             model_options.mesh.scat.r, ...
-            model_options.mesh.scat.lambdaL, ...
-            model_options.mesh.scat.lambdaT, ...
+            model_options.material.v_L/model_options.probe.freq, ...
+            model_options.material.v_S/model_options.probe.freq, ...
             model_options.mesh.scat.angle, ...
             'ang_pts_over_2pi', ang_pts_over_2pi, ...
             'fmc_mask', fmc_mask ...
