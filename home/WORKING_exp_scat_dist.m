@@ -12,6 +12,9 @@ yaml_name = "exp_scat_dist.yml";
 yaml_options = yaml.loadFile(yaml_name);
 
 b_or_s = "big";
+load_in_data = true;
+plot_everything = false;
+
 N = 1000;
 
 % % Analytical
@@ -64,25 +67,28 @@ for ii = 1:length(folders)
         yaml_options.model.savepath = thisdir;
         for jj = 0:99
             try
-    %             cd(thisdir)
-%                 matname = sprintf("%02d", jj);
-%                 load(fullfile(thisdir, matname))
+                if load_in_data
+                    cd(thisdir)
+                    matname = sprintf("%02d", jj);
+                    load(fullfile(thisdir, matname))
+                else
+                %% Do the imaging
+                    freq = [0:length(exp_data.time)-1] / exp_data.time(end);
+                    yaml_options.data.time = exp_data.time - 5e-7;
+                    yaml_options.data.data = ifft(2 * fn_hanning(length(exp_data.time), yaml_options.probe.freq/max(freq), yaml_options.probe.freq/max(freq)) .* fft(exp_data.time_data));
+                    yaml_options.model.savename = sprintf("%s %s", matname, b_or_s);
+                    geom = fn_size_geometry_from_fmc(exp_data, yaml_options.mesh.geom.z{4}, yaml_options.mesh.geom.x{1}, true, fullfile(thisdir, 'TFMs', sprintf('%s sizing.mat', yaml_options.model.savename)));
+                    if strcmp(b_or_s, "sml")
+                        yaml_options.model.image_range = [geom(1).point1(1) - 18e-3, geom(1).point1(1) - 12e-3, geom(4).point1(3) + 7e-3, geom(4).point1(3) + 13e-3];
+                    end
+                    model_options = fn_default_model_options(yaml_options);
+                    model_options.mesh.geom.geometry = geom;
+                    disp(model_options.model.savepath)
+                    disp(model_options.model.savename)
+                    [Ims, ~, ~] = fn_tfm(model_options);
+                end
 
-%                 freq = [0:length(exp_data.time)-1] / exp_data.time(end);
-%                 yaml_options.data.time = exp_data.time - 5e-7;
-%                 yaml_options.data.data = ifft(2 * fn_hanning(length(exp_data.time), yaml_options.probe.freq/max(freq), yaml_options.probe.freq/max(freq)) .* fft(exp_data.time_data));
-%                 yaml_options.model.savename = sprintf("%s %s", matname, b_or_s);
-%                 geom = fn_size_geometry_from_fmc(exp_data, yaml_options.mesh.geom.z{4}, yaml_options.mesh.geom.x{1}, true, fullfile(thisdir, 'TFMs', sprintf('%s sizing.mat', yaml_options.model.savename)));
-%                 if strcmp(b_or_s, "sml")
-%                     yaml_options.model.image_range = [geom(1).point1(1) - 18e-3, geom(1).point1(1) - 12e-3, geom(4).point1(3) + 7e-3, geom(4).point1(3) + 13e-3];
-%                 end
-%                 model_options = fn_default_model_options(yaml_options);
-%                 model_options.mesh.geom.geometry = geom;
-%                 disp(model_options.model.savepath)
-%                 disp(model_options.model.savename)
-%                 [Ims, ~, ~] = fn_tfm(model_options);
-
-
+                %% Store the data
                 if any(strcmp(folders(ii).name, stat_folders))
                     load(fullfile(thisdir, sprintf("%02d %s.mat", jj, b_or_s)))
                     for im = 1:21
@@ -103,6 +109,7 @@ for ii = 1:length(folders)
     end
 end
 
+% Unpack data
 de = zeros(2*size(data, 2), size(data, 3), size(data, 4));
 nd = zeros(2*size(data, 2), size(data, 3), size(data, 4));
 de(1:size(data, 2), :, :)                 = data(1, :, :, :);
@@ -110,221 +117,125 @@ de(size(data, 2)+1:2*size(data, 2), :, :) = data(2, :, :, :);
 nd(1:size(data, 2), :, :)                 = data(3, :, :, :);
 nd(size(data, 2)+1:2*size(data, 2), :, :) = data(4, :, :, :);
 
+
+%% Fit to the distributions
+% Initialise distribution storage + goodness of fit storage
 ksp = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
 ksv = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
 chi2p = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
 chi2v = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
-
-N_bins = 15;
-edges = linspace(min(abs([de(:); nd(:)])), max(abs([de(:); nd(:)])), N_bins+1);
-% Need to loop as histcounts treats the ndarray A as a vector A(:)
-de_counts = zeros(N_bins, size(data, 3), size(data, 4));
-nd_counts = zeros(N_bins, size(data, 3), size(data, 4));
 nd_rician = zeros(2, size(data, 3), size(data, 4));
-nd_rician2 = zeros(2, size(data, 3), size(data, 4));
-% idx = 1;
-% warning('off', 'stats:mlecov:NonPosDefHessian')
-% figure(1)
-% hold on
-% t1 = tic;
-% for pt = 1:size(de, 3)
-%     if ~mod(pt, round(size(de, 3)/10))
-%         scatter(idx, double(toc(t1)), 'r.')
-%         idx = idx + 1;
-%     end
-%     for im = 1:size(de, 2)
-% %         de_counts(:, im, pt) = histcounts(abs(de(:, im, pt)), edges, 'Normalization', 'pdf');
-% %         nd_counts(:, im, pt) = histcounts(abs(nd(:, im, pt)), edges, 'Normalization', 'pdf');
-% %         if im==21
-% %             a=1;
-% %         end
-%         try 
-% %             nu = abs(mean(nd(:, im, pt)));
-% %             sig = abs(std(nd(:, im, pt))) / sqrt(2);
-%             fitted = fitdist(abs(nd(:, im, pt)), 'Rician');
-% %             fitted = makedist("Rician", "s", nu, "sigma", sig);
-%             
-% %             [~, p, s] = kstest(abs(nd(:, im, pt)), 'CDF', fitted);
-% %             ksp(im, pt) = p;
-% %             ksv(im, pt) = s;
-% %             [~, p, s] = chi2gof(abs(nd(:, im, pt)), 'CDF', fitted);
-% %             chi2p(im, pt) = p;
-% %             chi2v(im, pt) = s.chi2stat;
-%         catch ME
-%             disp(ME.message)
-%             clear fitted
-%             fitted.s = nan;
-%             fitted.sigma = nan;
-% %             ksp(im, pt) = nan;
-% %             ksv(im, pt) = nan;
-% %             chi2p(im, pt) = nan;
-% %             chi2v(im, pt) = nan;
-%         end
-%         nd_rician(:, im, pt) = [fitted.s, fitted.sigma];
-% %         nd_rician(:, im, pt) = [nu, sig];
-%         
-% %         figure
-% %         bar((edges(1:end-1)+edges(2:end))/2, nd_counts(:, im, pt))
-% %         hold on
-% %         y = linspace(min(abs([de(:); nd(:)])), max(abs([de(:); nd(:)])), 1000);
-% %         plot(y, rice(y, fitted.s, fitted.sigma))
-%     end
-% end
-% disp(double(toc(t1)))
+if load_in_data
+    load(sprintf("%s rician params.mat", b_or_s))
+else
+    for pt = 1:size(de, 3)
+        for im = 1:size(de, 2)
+            try
+                %% Do the fitting
+                fitted = fitdist(abs(nd(:, im, pt)), 'Rician');
+                
+                % Evaluate the goodness of fit
+                [~, p, s] = kstest(abs(nd(:, im, pt)), 'CDF', fitted);
+                ksp(im, pt) = p;
+                ksv(im, pt) = s;
+                [~, p, s] = chi2gof(abs(nd(:, im, pt)), 'CDF', fitted);
+                chi2p(im, pt) = p;
+                chi2v(im, pt) = s.chi2stat;
+            catch ME
+                %% If fit can't be found, store as nan
+                disp(ME.message)
+                clear fitted
+                fitted.s = nan;
+                fitted.sigma = nan;
+                ksp(im, pt) = nan;
+                ksv(im, pt) = nan;
+                chi2p(im, pt) = nan;
+                chi2v(im, pt) = nan;
+            end
+            nd_rician(:, im, pt) = [fitted.s, fitted.sigma];
+        end
+    end
+end
 
-load("big rician params.mat")
+%% Plot fit parameters
+if plot_everything
+    Sigma = Ims;
+    Nu = Ims;
+    for im = 1:21
+        Nu(im).db_image = reshape(nd_rician(1, im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
+        Sigma(im).db_image = reshape(nd_rician(2, im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
+    end
+    fn_image_from_mat(Nu)
+    grp = get(get(gcf, 'Children'), 'Children');
+    grp(1).Label.String = "\nu";
+    grp = get(get(gcf, 'Children'), 'Children');
+    for im = 2:22
+        grp(im).CLim = [0, 15];%[0, max(Nu(23-im).db_image(:))];%
+        grp(im).XLim = [Nu(im-1).x(1)*1e3, Nu(im-1).x(end)*1e3];
+        grp(im).YLim = [Nu(im-1).z(1)*1e3, Nu(im-1).z(end)*1e3];
+    end
+    grp(1).Label.String = "\nu";
+    savefig(fullfile(dirname, sprintf("Nu %s Non-Defective Relative Coords.fig", b_or_s)))
+    fn_image_from_mat(Sigma)
+    grp = get(get(gcf, 'Children'), 'Children');
+    for im = 2:22
+        grp(im).CLim = [0, 3];%[0, max(Sigma(23-im).db_image(:))];%
+        grp(im).XLim = [Sigma(im-1).x(1)*1e3, Sigma(im-1).x(end)*1e3];
+        grp(im).YLim = [Sigma(im-1).z(1)*1e3, Sigma(im-1).z(end)*1e3];
+    end
+    grp(1).Label.String = "\sigma";
+    savefig(fullfile(dirname, sprintf("Sigma %s Non-Defective Relative Coords.fig", b_or_s)))
 
-% Sigma = Ims;
-% Nu = Ims;
-% for im = 1:21
-%     Nu(im).db_image = reshape(nd_rician(1, im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
-%     Sigma(im).db_image = reshape(nd_rician(2, im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
-% end
-% % Nu.db_image = reshape(nd_rician(1, 1, :), 31, 31);
-% % Sigma.db_image = reshape(nd_rician(2, 1, :), 31, 31);
-% fn_image_from_mat(Nu)
-% % con = contour(Ims(1).x*1e3, Ims(1).z*1e3, Ims(1).db_image);
-% grp = get(get(gcf, 'Children'), 'Children');
-% % grp(2).CLim = [0, max(Nu.db_image(:))];%[0, 12.7];
-% % grp(2).XLim = [Nu.x(1)*1e3, Nu.x(end)*1e3];
-% % grp(2).YLim = [Nu.z(1)*1e3, Nu.z(end)*1e3];
-% grp(1).Label.String = "\nu";
-% % grp(1).Label.String = "\sigma";
-% grp = get(get(gcf, 'Children'), 'Children');
-% for im = 2:22
-%     grp(im).CLim = [0, 15];%[0, max(Nu(23-im).db_image(:))];%
-%     grp(im).XLim = [Nu(im-1).x(1)*1e3, Nu(im-1).x(end)*1e3];
-%     grp(im).YLim = [Nu(im-1).z(1)*1e3, Nu(im-1).z(end)*1e3];
-% end
-% grp(1).Label.String = "\nu";
-% savefig(fullfile(dirname, sprintf("Nu %s Non-Defective Relative Coords mean.fig", b_or_s)))
-% fn_image_from_mat(Sigma)
-% grp = get(get(gcf, 'Children'), 'Children');
-% for im = 2:22
-%     grp(im).CLim = [0, 3];%[0, max(Sigma(23-im).db_image(:))];%
-%     grp(im).XLim = [Sigma(im-1).x(1)*1e3, Sigma(im-1).x(end)*1e3];
-%     grp(im).YLim = [Sigma(im-1).z(1)*1e3, Sigma(im-1).z(end)*1e3];
-% end
-% grp(1).Label.String = "\sigma";
-% savefig(fullfile(dirname, sprintf("Sigma %s Non-Defective Relative Coords std.fig", b_or_s)))
-
-% figure
-% Nu = Ims(1);
-% Nu.db_image = reshape(nd_rician(1, 1, :), 31, 31);
-% ax1 = axes;
-% imagesc(ax1, Nu.x*1e3, Nu.z*1e3, Nu.db_image)
-% ax1.CLim = [0, .33];
-% xlabel('x (mm)')
-% ylabel('z (mm)')
-% colormap(ax1,'hot')
-% hold all; axis square
-% ax2 = axes;
-% contour(ax2, Ims(1).x*1e3, Ims(1).z*1e3, abs(Ims(1).image), 10)
-% ax2.CLim = [0, .33];
-% hold off; axis square
-% set(ax2,'ydir','reverse')
-% linkaxes([ax1,ax2])
-% ax2.Visible = 'off'; 
-% ax2.XTick = []; 
-% ax2.YTick = []; 
-% colormap(ax2,'cool')
-% set([ax1, ax2], 'Position', [.11 .11 .65 .815]);
-% sgtitle('L-L')
-% cb1 = colorbar(ax1, 'eastoutside', 'Position', [.785 .11 .04 .815]);
-% cb2 = colorbar(ax2, 'eastoutside', 'Position', [.9 .11 .04 .815]);
-% set(cb1.XLabel, {'String','Rotation','Position'},{'\nu',0,[0.5 .35]})
-% set(cb2.XLabel, {'String','Rotation','Position'},{'TFM sig',0,[0.5 .35]})
-% cb2.Position = [.925, cb1.Position(2), cb1.Position(3), cb1.Position(4)];
+%% Plot goodness of fit parameters
+    KS = Ims;
+    Chi = Ims;
+    KSv = Ims;
+    Chiv = Ims;
+    for im = 1:21
+        KS(im).db_image = reshape(ksp(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
+        Chi(im).db_image = reshape(chi2p(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
+        KSv(im).db_image = reshape(ksv(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
+        Chiv(im).db_image = reshape(chi2v(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
+    end
+    fn_image_from_mat(KS)
+    grp = get(get(gcf, 'Children'), 'Children');
+    for im = 2:22
+        grp(im).CLim = [0, .05];%[0, max(Sigma(23-im).db_image(:))];%
+        grp(im).XLim = [KS(im-1).x(1)*1e3, KS(im-1).x(end)*1e3];
+        grp(im).YLim = [KS(im-1).z(1)*1e3, KS(im-1).z(end)*1e3];
+    end
+    grp(1).Label.String = "p-val from KS Statistic";
+    savefig(fullfile(dirname, sprintf("KS p-val %s.fig", b_or_s)))
+    fn_image_from_mat(Chi)
+    grp = get(get(gcf, 'Children'), 'Children');
+    for im = 2:22
+        grp(im).CLim = [0, .05];%[0, max(Sigma(23-im).db_image(:))];%
+        grp(im).XLim = [Chi(im-1).x(1)*1e3, Chi(im-1).x(end)*1e3];
+        grp(im).YLim = [Chi(im-1).z(1)*1e3, Chi(im-1).z(end)*1e3];
+    end
+    grp(1).Label.String = "p-val from \chi^2 test";
+    savefig(fullfile(dirname, sprintf("Chi2 p-val %s.fig", b_or_s)))
+    fn_image_from_mat(KSv)
+    grp = get(get(gcf, 'Children'), 'Children');
+    for im = 2:22
+        grp(im).CLim = [0, .3];%[0, max(Sigma(23-im).db_image(:))];%
+        grp(im).XLim = [KSv(im-1).x(1)*1e3, KSv(im-1).x(end)*1e3];
+        grp(im).YLim = [KSv(im-1).z(1)*1e3, KSv(im-1).z(end)*1e3];
+    end
+    grp(1).Label.String = "KS Statistic";
+    savefig(fullfile(dirname, sprintf("KS Statistic %s.fig", b_or_s)))
+    fn_image_from_mat(Chiv)
+    grp = get(get(gcf, 'Children'), 'Children');
+    for im = 2:22
+        grp(im).CLim = [0, 85];%[0, max(Sigma(23-im).db_image(:))];%
+        grp(im).XLim = [Chiv(im-1).x(1)*1e3, Chiv(im-1).x(end)*1e3];
+        grp(im).YLim = [Chiv(im-1).z(1)*1e3, Chiv(im-1).z(end)*1e3];
+    end
+    grp(1).Label.String = "\chi^2";
+    savefig(fullfile(dirname, sprintf("Chi2 statistic %s.fig", b_or_s)))
+end
 
 
-
-% ksp = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
-% ksv = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
-% chi2p = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
-% chi2v = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
-% 
-% for im = 1:21
-%     pt = 1;
-%     for xpt = 1:size(Ims(im).x, 2)
-%         for zpt = 1:size(Ims(im).z, 2)
-%             try
-%                 pd = fitdist(abs(nd(:, im, pt)), 'Rician');
-%                 [~, p, s] = kstest(abs(nd(:, im, pt)), 'CDF', pd);
-%                 ksp(im, pt) = p;
-%                 ksv(im, pt) = s;
-%                 [~, p, s] = chi2gof(abs(nd(:, im, pt)), 'CDF', pd);
-%                 chi2p(im, pt) = p;
-%                 chi2v(im, pt) = s.chi2stat;
-%             catch ME
-%                 clear pd
-%             end
-%             figure
-%             hold on
-%             histogram(abs(nd(:, im, pt)), N_bins, 'Normalization', 'pdf')
-%             nu = nd_rician(1, im, pt);
-%             sig = nd_rician(2, im, pt);
-%             x = linspace(0, (nu+sig)*10, 250);
-%             plot(x, rice(x, nu, sig), '--r', 'LineWidth', 2)
-%             xlabel('val')
-%             ylabel('pdf')
-%             title(sprintf("View %s; x=%.1fmm z=%.1fmm", strrep(Ims(im).name, ' ', ''), Ims(im).x(xpt)*1e3, Ims(im).z(zpt)*1e3))
-%             saveas(gcf, sprintf("View %s x=%.1fmm z=%.1fmm.png", strrep(Ims(im).name, ' ', ''), Ims(im).x(xpt)*1e3, Ims(im).z(zpt)*1e3))
-%             close all
-%             pt = pt + 1;
-%         end
-%     end
-% end
-
-% KS = Ims;
-% Chi = Ims;
-% KSv = Ims;
-% Chiv = Ims;
-% for im = 1:21
-%     KS(im).db_image = reshape(ksp(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
-%     Chi(im).db_image = reshape(chi2p(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
-%     KSv(im).db_image = reshape(ksv(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
-%     Chiv(im).db_image = reshape(chi2v(im, :), size(Ims(1).image, 1), size(Ims(1).image, 2));
-% end
-% fn_image_from_mat(KS)
-% grp = get(get(gcf, 'Children'), 'Children');
-% for im = 2:22
-%     grp(im).CLim = [0, .05];%[0, max(Sigma(23-im).db_image(:))];%
-%     grp(im).XLim = [KS(im-1).x(1)*1e3, KS(im-1).x(end)*1e3];
-%     grp(im).YLim = [KS(im-1).z(1)*1e3, KS(im-1).z(end)*1e3];
-% end
-% grp(1).Label.String = "p-val from KS Statistic";
-% savefig(fullfile(dirname, sprintf("KS p-val %s meanstd.fig", b_or_s)))
-% fn_image_from_mat(Chi)
-% grp = get(get(gcf, 'Children'), 'Children');
-% for im = 2:22
-%     grp(im).CLim = [0, .05];%[0, max(Sigma(23-im).db_image(:))];%
-%     grp(im).XLim = [Chi(im-1).x(1)*1e3, Chi(im-1).x(end)*1e3];
-%     grp(im).YLim = [Chi(im-1).z(1)*1e3, Chi(im-1).z(end)*1e3];
-% end
-% grp(1).Label.String = "p-val from \chi^2 test";
-% savefig(fullfile(dirname, sprintf("Chi2 p-val %s meanstd.fig", b_or_s)))
-% fn_image_from_mat(KSv)
-% grp = get(get(gcf, 'Children'), 'Children');
-% for im = 2:22
-%     grp(im).CLim = [0, .3];%[0, max(Sigma(23-im).db_image(:))];%
-%     grp(im).XLim = [KSv(im-1).x(1)*1e3, KSv(im-1).x(end)*1e3];
-%     grp(im).YLim = [KSv(im-1).z(1)*1e3, KSv(im-1).z(end)*1e3];
-% end
-% grp(1).Label.String = "KS Statistic";
-% savefig(fullfile(dirname, sprintf("KS Statistic %s meanstd.fig", b_or_s)))
-% fn_image_from_mat(Chiv)
-% grp = get(get(gcf, 'Children'), 'Children');
-% for im = 2:22
-%     grp(im).CLim = [0, 85];%[0, max(Sigma(23-im).db_image(:))];%
-%     grp(im).XLim = [Chiv(im-1).x(1)*1e3, Chiv(im-1).x(end)*1e3];
-%     grp(im).YLim = [Chiv(im-1).z(1)*1e3, Chiv(im-1).z(end)*1e3];
-% end
-% grp(1).Label.String = "\chi^2";
-% savefig(fullfile(dirname, sprintf("Chi2 statistic %s meanstd.fig", b_or_s)))
-
-
-
-% load("big workspace")
 
 %% Fisher fusion method
 p_threshold = 1;
@@ -343,15 +254,11 @@ for ii = 1:length(folders)
                     data(im, :, :) = abs(Ims(im).image);
                 end
                 probs = zeros(size(data));
-                chinum = zeros(size(data));
                 for im = 1:21
                     pt = 1;
                     for zpt = 1:size(data, 3)
                         for xpt = 1:size(data, 2)
-                            if ksp(im, pt) > 0.05
-                                probs(im, xpt, zpt) = 1 - cdf('Rician', data(im, xpt, zpt), nd_rician(1, im, pt), nd_rician(2, im, pt));
-                                chinum(im, xpt, zpt) = 1;
-                            end
+                            probs(im, xpt, zpt) = 1 - cdf('Rician', data(im, xpt, zpt), nd_rician(1, im, pt), nd_rician(2, im, pt));
                             pt = pt + 1;
                         end
                     end
@@ -359,11 +266,9 @@ for ii = 1:length(folders)
                 Probs = repmat(struct('image', zeros(size(probs, 2), size(probs, 3))), size(probs, 1), 1);
                 for im = 1:21
                     Probs(im).db_image = squeeze(probs(im, :, :));
-                    Probs(im).image = squeeze(chinum(im, :, :));
                     Probs(im).x = Ims(1).x;
                     Probs(im).z = Ims(1).z;
                     Probs(im).name = Ims(im).name;
-                    Probs(im).plotExtras = Ims(im).plotExtras;
                 end
                 fn_image_from_mat(Probs)
                 grp = get(get(gcf, 'Children'), 'Children');
@@ -371,13 +276,13 @@ for ii = 1:length(folders)
                     grp(im).CLim = [0, p_threshold];
                 end
                 grp(1).Label.String = "p";
-%                 savefig(fullfile(thisdir, sprintf("%s View-wise Probability.fig", matname)))
+                savefig(fullfile(thisdir, sprintf("%s View-wise Probability.fig", matname)))
                 yaml_options.model.savename = sprintf("%s Fisher fusion", matname);
                 fn_fisher_fusion(yaml_options, Probs);
                 close all
             catch ME
                 continue
-            end
+            end 
         end
     end
 end
@@ -402,7 +307,6 @@ for ii = 1:length(folders)
                 T_stat.x = Ims(1).x;
                 T_stat.z = Ims(1).z;
                 T_stat.name = "Linear Signal Likelihood";
-                T_stat.plotExtras = Ims(1).plotExtras;
                 likelihood = zeros(size(Ims, 1), size(data, 2), size(data, 3));
                 for im = 1:21
                     pt = 1;
@@ -422,7 +326,6 @@ for ii = 1:length(folders)
                     Likelihood(im).x = Ims(1).x;
                     Likelihood(im).z = Ims(1).z;
                     Likelihood(im).name = Ims(im).name;
-                    Likelihood(im).plotExtras = Ims(im).plotExtras;
                 end
                 fn_image_from_mat(Likelihood)
                 grp = get(get(gcf, 'Children'), 'Children');
@@ -436,7 +339,7 @@ for ii = 1:length(folders)
                     grp(im).CLim = [0, max_];
                 end
                 grp(1).Label.String = "Likelihood";
-%                 savefig(fullfile(thisdir, sprintf("%s View-wise Likelihood.fig", matname)))
+                savefig(fullfile(thisdir, sprintf("%s View-wise Likelihood.fig", matname)))
                 
                 T_stat.db_image = T_stat.image;
                 fn_image_from_mat(T_stat)
@@ -457,7 +360,6 @@ end
 
 
 %% Support fns
-
 function y = rice(x, s, sigma)
 y = besseli(0, x*s/sigma^2) .* x ./ sigma^2 .* exp(-((x.^2 + s^2) ./ (2*sigma^2)));
 end
