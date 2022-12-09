@@ -11,9 +11,9 @@ yaml_name = "exp_scat_dist.yml";
 % yaml_name = "artefact_only.yml";
 yaml_options = yaml.loadFile(yaml_name);
 
-b_or_s = "big";
+b_or_s = "sml";
 load_ims = true;
-load_in_data = true;
+load_in_data = false;
 plot_everything = true;
 
 N = 1000;
@@ -138,21 +138,45 @@ else
         for im = 1:size(de, 2)
             try
                 %% Do the fitting
-                fitted = fitdist(abs(nd(:, im, pt)), 'Rician');
+%                 fitted = fitdist(abs(nd(:, im, pt)), 'Rician');
+                
+                nu_temp = mean(nd(:, im, pt));
+                temp_nd = real(nd(:, im, pt).*exp(-1j*angle(nu_temp)));
+                sigma   = std(temp_nd) / sqrt(2);
+                nu = mean(abs(nd(:, im, pt)));
+                
+%                 figure
+%                 hold on; axis equal
+%                 scatter(real(nd(:, im, pt)), imag(nd(:, im, pt)), '.', 'MarkerEdgeColor', "#0072BD", 'MarkerFaceColor', "#0072BD")
+%                 scatter(real(nd(:, im, pt).*exp(-1j*angle(nu_temp))), imag(nd(:, im, pt).*exp(-1j*angle(nu_temp))), '.', 'MarkerEdgeColor', "#77AC30", 'MarkerFaceColor', "#0072BD")
+%                 scatter(real(nu_temp), imag(nu_temp), 'o', 'filled', 'MarkerEdgeColor', "#D95319", 'MarkerFaceColor', "#D95319")
+%                 scatter(nu, 0, 'ro', 'filled')
+%                 plot([0, 0], get(gca, 'YLim'), 'Color', [.5, .5, .5], 'LineStyle', '--')
+%                 plot(get(gca, 'XLim'), [0, 0], 'Color', [.5, .5, .5], 'LineStyle', '--')
+%                 xlabel("Real(x)")
+%                 ylabel("Imag(x)")
+%                 figure
+%                 hold on
+%                 histogram(abs(nd(:, im, pt)), 'Normalization', 'pdf')
+%                 x = [0:0.01:12];
+%                 plot(x, rice(x, fitted.s, fitted.sigma), 'LineWidth', 2)
+%                 plot(x, rice(x, abs(mean(nd(:, im, pt))), std(nd(:, im, pt))/sqrt(2)), 'LineWidth', 2)
+%                 plot(x, rice(x, nu, sigma), 'LineWidth', 2)
+%                 legend('LL-LL Middle of region', 'fitdist', 'mean, std', 'e^{-i\theta} mean, std')
                 
                 % Evaluate the goodness of fit
-                [~, p, s] = kstest(abs(nd(:, im, pt)), 'CDF', fitted);
+                [~, p, s] = kstest(abs(nd(:, im, pt)), 'CDF', makedist("Rician", "s", nu, "sigma", sigma));
                 ksp(im, pt) = p;
                 ksv(im, pt) = s;
-                [~, p, s] = chi2gof(abs(nd(:, im, pt)), 'CDF', fitted);
+                [~, p, s] = chi2gof(abs(nd(:, im, pt)), 'CDF', makedist("Rician", "s", nu, "sigma", sigma));
                 chi2p(im, pt) = p;
                 chi2v(im, pt) = s.chi2stat;
             catch ME
                 %% If fit can't be found, store as nan
                 disp(ME.message)
-                clear fitted
-                fitted.s = nan;
-                fitted.sigma = nan;
+%                 clear fitted
+%                 fitted.s = nan;
+%                 fitted.sigma = nan;
                 nu = nan;
                 sigma = nan;
                 ksp(im, pt) = nan;
@@ -160,7 +184,7 @@ else
                 chi2p(im, pt) = nan;
                 chi2v(im, pt) = nan;
             end
-            nd_rician(:, im, pt) = [fitted.s, fitted.sigma];
+            nd_rician(:, im, pt) = [nu, sigma];
         end
     end
 %     save(fullfile(dirname, sprintf("%s rician params.mat", b_or_s)), "nd_rician", "ksp", "ksv", "chi2p", "chi2v")
@@ -184,7 +208,7 @@ if plot_everything
         grp(im).YLim = [Nu(im-1).z(1)*1e3, Nu(im-1).z(end)*1e3];
     end
     grp(1).Label.String = "\nu";
-    savefig(fullfile(dirname, sprintf("Nu %s Non-Defective Relative Coords.fig", b_or_s)))
+    savefig(fullfile(dirname, sprintf("Nu %s Non-Defective Relative Coords estimated.fig", b_or_s)))
     fn_image_from_mat(Sigma)
     grp = get(get(gcf, 'Children'), 'Children');
     for im = 2:22
@@ -193,7 +217,7 @@ if plot_everything
         grp(im).YLim = [Sigma(im-1).z(1)*1e3, Sigma(im-1).z(end)*1e3];
     end
     grp(1).Label.String = "\sigma";
-    savefig(fullfile(dirname, sprintf("Sigma %s Non-Defective Relative Coords.fig", b_or_s)))
+    savefig(fullfile(dirname, sprintf("Sigma %s Non-Defective Relative Coords estimated.fig", b_or_s)))
 
 %% Plot goodness of fit parameters
     KS = Ims;
@@ -214,7 +238,7 @@ if plot_everything
         grp(im).YLim = [KS(im-1).z(1)*1e3, KS(im-1).z(end)*1e3];
     end
     grp(1).Label.String = "p-val from KS Statistic";
-    savefig(fullfile(dirname, sprintf("KS p-val %s.fig", b_or_s)))
+    savefig(fullfile(dirname, sprintf("KS p-val %s estimated.fig", b_or_s)))
     fn_image_from_mat(Chi)
     grp = get(get(gcf, 'Children'), 'Children');
     for im = 2:22
@@ -223,7 +247,7 @@ if plot_everything
         grp(im).YLim = [Chi(im-1).z(1)*1e3, Chi(im-1).z(end)*1e3];
     end
     grp(1).Label.String = "p-val from \chi^2 test";
-    savefig(fullfile(dirname, sprintf("Chi2 p-val %s.fig", b_or_s)))
+    savefig(fullfile(dirname, sprintf("Chi2 p-val %s estimated.fig", b_or_s)))
     fn_image_from_mat(KSv)
     grp = get(get(gcf, 'Children'), 'Children');
     for im = 2:22
@@ -232,7 +256,7 @@ if plot_everything
         grp(im).YLim = [KSv(im-1).z(1)*1e3, KSv(im-1).z(end)*1e3];
     end
     grp(1).Label.String = "KS Statistic";
-    savefig(fullfile(dirname, sprintf("KS Statistic %s.fig", b_or_s)))
+    savefig(fullfile(dirname, sprintf("KS Statistic %s estimated.fig", b_or_s)))
     fn_image_from_mat(Chiv)
     grp = get(get(gcf, 'Children'), 'Children');
     for im = 2:22
@@ -241,7 +265,7 @@ if plot_everything
         grp(im).YLim = [Chiv(im-1).z(1)*1e3, Chiv(im-1).z(end)*1e3];
     end
     grp(1).Label.String = "\chi^2";
-    savefig(fullfile(dirname, sprintf("Chi2 statistic %s.fig", b_or_s)))
+    savefig(fullfile(dirname, sprintf("Chi2 statistic %s estimated.fig", b_or_s)))
 end
 
 
