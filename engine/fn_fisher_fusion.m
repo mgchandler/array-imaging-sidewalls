@@ -25,13 +25,14 @@ end
 Fused.p = 1 - chi2cdf(Fused.q, 2*dof);
 
 Fused.db_image = Fused.p;
+Fused.plotExtras = Views(1).plotExtras;
 
 % for im = 1:number_of_ims
 %     Fused.image = Fused.image - 2*log(Views(im).db_image);
 % end
 % Fused.db_image = chi2cdf(Fused.image, 2*size(Views, 1));
 
-p_threshold = 1;
+p_threshold = .005;
 fn_image_from_mat(Fused)
 grp = get(get(gcf, 'Children'), 'Children');
 grp(2).CLim = [0, p_threshold];
