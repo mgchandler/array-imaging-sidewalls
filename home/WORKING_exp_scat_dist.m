@@ -12,8 +12,9 @@ yaml_name = "exp_scat_dist.yml";
 yaml_options = yaml.loadFile(yaml_name);
 
 b_or_s = "big";
-load_in_data = true;
-plot_everything = false;
+load_ims = true;
+load_in_data = false;
+plot_everything = true;
 
 N = 1000;
 
@@ -56,10 +57,16 @@ folders = dir(dirname);
 ff = 1;
 dd = 1;
 if strcmp(b_or_s, "big")
-    data = zeros(4, 100, 21, 101*141);%47*68);
+    xsize = 70e-3;
+    zsize = 50e-3;
+    pixel = .5e-3;
 else
-    data = zeros(4, 100, 21, 31^2);
+    xsize = 3e-3;
+    zsize = 3e-3;
+    pixel = .1e-3;
 end
+data = zeros(4, 100, 21, (xsize/pixel+1)*(zsize/pixel+1));
+
 stat_folders = ["defective - jig at corner - 0mm offset", "defective - jig at corner - 1mm offset", "non-defective - jig at corner - 0mm offset", "non-defective - jig at corner - 1mm offset"];
 for ii = 1:length(folders)
     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..')))
@@ -67,12 +74,11 @@ for ii = 1:length(folders)
         yaml_options.model.savepath = thisdir;
         for jj = 0:99
             try
-                if load_in_data
+                if ~load_ims
+                %% Do the imaging
                     cd(thisdir)
                     matname = sprintf("%02d", jj);
                     load(fullfile(thisdir, matname))
-                else
-                %% Do the imaging
                     freq = [0:length(exp_data.time)-1] / exp_data.time(end);
                     yaml_options.data.time = exp_data.time - 5e-7;
                     yaml_options.data.data = ifft(2 * fn_hanning(length(exp_data.time), yaml_options.probe.freq/max(freq), yaml_options.probe.freq/max(freq)) .* fft(exp_data.time_data));
@@ -90,7 +96,9 @@ for ii = 1:length(folders)
 
                 %% Store the data
                 if any(strcmp(folders(ii).name, stat_folders))
-                    load(fullfile(thisdir, sprintf("%02d %s.mat", jj, b_or_s)))
+                    if load_ims
+                        load(fullfile(thisdir, sprintf("%02d %s.mat", jj, b_or_s)))
+                    end
                     for im = 1:21
     %                 data(ff, jj+1, im, :) = reshape(Ims(im).image(37-4:37+4, 53-4:53+4), [], 1);
                         data(dd, jj+1, im, :) = reshape(Ims(im).image(:), [], 1);
@@ -100,8 +108,6 @@ for ii = 1:length(folders)
                 continue
             end
         end
-        % Histogram it
-%         hist(abs(squeeze(data(:, 12, 480))))
         ff = ff + 1;
         if any(strcmp(folders(ii).name, stat_folders))
             dd = dd + 1;
@@ -155,6 +161,7 @@ else
             nd_rician(:, im, pt) = [fitted.s, fitted.sigma];
         end
     end
+    save(fullfile(dirname, sprintf("%s rician params.mat", b_or_s)), "nd_rician", "ksp", "ksv", "chi2p", "chi2v")
 end
 
 %% Plot fit parameters
@@ -287,7 +294,7 @@ for ii = 1:length(folders)
     end
 end
 
-%% Likelihood ratio method
+%% Linear Likelihood ratio method
 for ii = 1:length(folders)
 %     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), and(~strcmp(folders(ii).name, '..'), any(strcmp(folders(ii).name, stat_folders)))))
     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..')))
@@ -303,11 +310,12 @@ for ii = 1:length(folders)
                     data(im, :, :) = abs(Ims(im).image);
                 end
                 T_stat = repmat(struct('image', zeros(size(data, 2), size(data, 3))), 1, 1);
-                Likelihood = repmat(struct('image', zeros(size(data, 2), size(data, 3))), size(Ims, 1), 1);
+                Lin_Likelihood = repmat(struct('image', zeros(size(data, 2), size(data, 3))), size(Ims, 1), 1);
                 T_stat.x = Ims(1).x;
                 T_stat.z = Ims(1).z;
                 T_stat.name = "Linear Signal Likelihood";
-                likelihood = zeros(size(Ims, 1), size(data, 2), size(data, 3));
+                T_stat.plotExras = Ims(1).plotExtras;
+                lin_likelihood = zeros(size(Ims, 1), size(data, 2), size(data, 3));
                 for im = 1:21
                     pt = 1;
                     for zpt = 1:size(data, 3)
@@ -315,24 +323,25 @@ for ii = 1:length(folders)
                             xi = abs(data(im, xpt, zpt));
                             s = nd_rician(1, im, pt);
                             sigma = nd_rician(2, im, pt);
-                            likelihood(im, xpt, zpt) = (xi/sigma)^2 - 2*log(besseli(0, xi*s/sigma^2));
+                            lin_likelihood(im, xpt, zpt) = (xi/sigma)^2 - 2*(sqrt(4 + (xi*s/sigma^2)^2) - 2);%log(besseli(0, xi*s/sigma^2));
                             T_stat.image(xpt, zpt) = T_stat.image(xpt, zpt) + (xi/sigma)^2 - 2*log(besseli(0, xi*s/sigma^2));
                             pt = pt + 1;
                         end
                     end
                 end
                 for im = 1:size(Ims, 1)
-                    Likelihood(im).db_image = squeeze(likelihood(im, :, :));
-                    Likelihood(im).x = Ims(1).x;
-                    Likelihood(im).z = Ims(1).z;
-                    Likelihood(im).name = Ims(im).name;
+                    Lin_Likelihood(im).db_image = squeeze(lin_likelihood(im, :, :));
+                    Lin_Likelihood(im).x = Ims(1).x;
+                    Lin_Likelihood(im).z = Ims(1).z;
+                    Lin_Likelihood(im).name = Ims(im).name;
+                    Lin_Likelihood(im).plotExtras = Im(im).plotExtras;
                 end
-                fn_image_from_mat(Likelihood)
+                fn_image_from_mat(Lin_Likelihood)
                 grp = get(get(gcf, 'Children'), 'Children');
                 max_ = 0;
                 for im = 1:21
-                    if max(Likelihood(im).db_image(:)) > max_
-                        max_ = max(Likelihood(im).db_image(:));
+                    if max(Lin_Likelihood(im).db_image(:)) > max_
+                        max_ = max(Lin_Likelihood(im).db_image(:));
                     end
                 end
                 for im = 2:22
