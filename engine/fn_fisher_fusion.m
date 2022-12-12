@@ -2,7 +2,18 @@ function Fused = fn_fisher_fusion(model_options, Views)
 % Performs fusion using Fisher's method for Views which have previously
 % been obtained, containing probabilities that the intensity at a pixel
 % location comes from an artefact (H0: intensity is from an artefact). Note
-%  that grain noise is assumed non-existent thus σ=1.
+% that grain noise is assumed non-existent thus σ=1.
+%
+% INPUTS:
+% - model_options : struct
+%       Output of fn_default_model_options(); presently only used for save
+%       location and save name.
+% - Views : Nx1 struct
+%       Modified version of Views from fn_make_views(). Assumes that
+%       db_image field contains probabilities, and image field logicals
+%       expressing whether to include the pixel in the fusion process
+%       (should either be 1 or ndarray of logicals of equal size to
+%       db_image).
 
 %% Fuse
 number_of_ims = size(Views, 1);
