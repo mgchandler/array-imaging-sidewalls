@@ -145,7 +145,8 @@ end
 % Names are now sorted. We can now make the views in the right order.
 no_views = size(tx_rx_idxs, 1);
 Views = repmat(fn_create_view(Paths(1), Paths(1)), no_views, 1);
-for view = 1:no_views
+Views(1).name = sprintf("%s - %s", tx_rx_names(1, 1), tx_rx_names(1, 2));
+for view = 2:no_views
     Views(view) = fn_create_view(Paths(tx_rx_idxs(view,1)), Paths(tx_rx_idxs(view,2)));
     Views(view).name = sprintf("%s - %s", tx_rx_names(view, 1), tx_rx_names(view, 2));
 end

@@ -1,4 +1,4 @@
-function Fused = fn_fisher_fusion(model_options, Ims, Nu, Sigma, varargin)
+function Fused = fn_fisher_teststat(model_options, Ims, Sigma)
 % Performs Fisher's fusion method for otherwise unprocessed TFMs. Assumes
 % that pixel-wise amplitudes are well described by Rician distributions
 % which have already been obtained for this TFM's focal law. Note that this
@@ -42,72 +42,36 @@ function Fused = fn_fisher_fusion(model_options, Ims, Nu, Sigma, varargin)
 %       well described and might be defective.
 
 number_of_ims = size(Ims, 1);
-if or(size(Nu, 1) ~= number_of_ims, size(Sigma, 1) ~= number_of_ims)
+if size(Sigma, 1) ~= number_of_ims
     error("fn_fisher_fusion: Nu and Sigma must have the same number of views as TFMs supplied")
 end
 
-alpha = 0.005;
-GoF = Ims;
-for im = 1:number_of_ims
-    GoF(im).db_image = ones(size(Ims(im).db_image));
-end
-if nargin > 4
-    for idx = 1:nargin-4
-        arg = varargin{idx};
-        if isstruct(arg)
-            GoF = arg;
-        elseif isdouble(arg)
-            alpha = arg;
-        end
-    end
-end
-
-Probs = Ims;
-Probs = rmfield(Probs, ["db_image", "image"]);
+db_range = 40;
 
 Fused = Ims(1);
-Fused.name = "Fisher Fusion";
+Fused.name = "Fisher Fusion Test Statistic";
 Fused.db_image = 0;
 Fused.image = 0;
-dof = zeros(size(Ims(1).db_image));
 
-%% Compute probabilities
+%% Compute test parameter
 for im = 1:number_of_ims
-%     GoF(im).db_image(Ims(im).db_image < -40) = 0; % Neglect small amplitudes
-    % From RicianDistribution.cdffunc: ncx2cdf((x./sigma).^2, 2, (s./sigma).^2)
-    Probs(im).db_image = 1 - ncx2cdf((abs(Ims(im).image)./Sigma(im).db_image).^2, 2, (Nu(im).db_image./Sigma(im).db_image).^2);
-    Probs(im).chi = GoF(im).db_image > 0.05;
-    %% Fuse
-    q = 2*log(Probs(im).db_image);
-    q(~Probs(im).chi) = 0;
-    Fused.image = Fused.image - q;
-    dof = dof + Probs(im).chi;
+    Fused.image = Fused.image + (Ims(im).image ./ Sigma(im).db_image).^2;
 end
-Fused.db_image = 1 - chi2cdf(Fused.image, 2*dof);
+Fused.image = sqrt(Fused.image);
+max_ = max(abs(Fused.image(:)));
+Fused.db_image = 20 * log10(abs(Fused.image) ./ max_); 
 
-%% Save View-wise probabilities and Fused image
-fn_image_from_mat(Probs)
-grp = get(get(gcf, 'Children'), 'Children');
-for im = 2:22
-    grp(im).CLim = [0, alpha];
-    grp(im).XLim = [Ims(1).x(1)*1e3, Ims(1).x(end)*1e3];
-    grp(im).YLim = [Ims(1).z(1)*1e3, Ims(1).z(end)*1e3];
-end
-grp(1).Label.String = "p";
-if ~strcmp(model_options.model.savepath, "")
-    savefig(fullfile(model_options.model.savepath, sprintf("%s View-wise probabilities", model_options.model.savename)))
-end
-                
+%% Save Fused image             
 fn_image_from_mat(Fused)
 grp = get(get(gcf, 'Children'), 'Children');
-grp(2).CLim = [0, alpha];
+grp(2).CLim = [-db_range, 0];
 grp(2).XLim = [Ims(1).x(1)*1e3, Ims(1).x(end)*1e3];
 grp(2).YLim = [Ims(1).z(1)*1e3, Ims(1).z(end)*1e3];
-grp(1).Label.String = "p";
+grp(1).Label.String = "dB";
 if ~strcmp(model_options.model.savepath, "")
-    savefig(fullfile(model_options.model.savepath, sprintf("%s Fisher fusion", model_options.model.savename)))
-    saveas(gcf, fullfile(model_options.model.savepath, sprintf("%s Fisher fusion.png", model_options.model.savename)))
-    save(fullfile(model_options.model.savepath, sprintf("%s Fisher fusion.mat", model_options.model.savename)), "Probs", "Fused")
+    savefig(fullfile(model_options.model.savepath, sprintf("%s Fisher fusion Test Statistic", model_options.model.savename)))
+    saveas(gcf, fullfile(model_options.model.savepath, sprintf("%s Fisher fusion Test Statistic.png", model_options.model.savename)))
+    save(fullfile(model_options.model.savepath, sprintf("%s Fisher fusion Test Statistic.mat", model_options.model.savename)), "Fused")
 end
 
 end

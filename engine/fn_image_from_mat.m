@@ -39,7 +39,7 @@ for im = 1:Number_of_ims
         end
     end
     
-    if and(mod(im, plot_x), Number_of_ims~=1) ~= 1
+    if and(mod(im+1, plot_x)~=0, Number_of_ims~=1)
         set(gca, 'yticklabel', {[]})
     end
     if im <= Number_of_ims - plot_x
@@ -52,13 +52,15 @@ for im = 1:Number_of_ims
 %     xlim([min(Ims(im).x(:))*UC, max(Ims(im).x(:))*UC])
 %     ylim([min(Ims(im).z(:))*UC, max(Ims(im).z(:))*UC])
 end
-xlabel(t, 'x (mm)')
-ylabel(t, 'z (mm)')
+% xlabel(t, '$x$ (mm)');
+% ylabel(t, '$z$ (mm)');
 
 c = colorbar(h(1), 'AxisLocation','in');
 c.Layout.Tile = 'north';
 c.Label.String = 'dB';
 
 set(findall(gcf, '-property', 'Fontname'), 'Fontname', 'Serif')
+% t.XLabel.Interpreter = 'latex';
+% t.YLabel.Interpreter = 'latex';
 
 end

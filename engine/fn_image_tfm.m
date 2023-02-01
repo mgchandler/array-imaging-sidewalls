@@ -157,11 +157,11 @@ if is_contact
                     mode2_name = mode_names(mode2+1);
                     Skip_path_info = fn_path_info( ...
 ...%                %%  Use these names to include the wall in the path name
-...%                         sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
-...%                         sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
+                        sprintf("%s _{%s} %s", mode1_name, path_geometry.name(1), mode2_name), ...
+                        sprintf("%s _{%s} %s", mode2_name, path_geometry.name(1), mode1_name), ...
 ...%                %%  Use these names to exclude the wall in the path name
-                        sprintf("%s %s", mode1_name, mode2_name), ...
-                        sprintf("%s %s", mode2_name, mode1_name), ...
+...%                         sprintf("%s %s", mode1_name, mode2_name), ...
+...%                         sprintf("%s %s", mode2_name, mode1_name), ...
                         [mode1, mode2], ...
                         path_geometry, ...
                         [speeds(mode1+1), speeds(mode2+1)], ...
@@ -362,7 +362,7 @@ else
 
 
     Paths_im = repmat(fn_compute_ray(image_block_info, Path_info_list(1)), 1, num_paths);
-    thispath = 1;
+    thispath = 2;
     for path = 2:size(Path_info_list, 1)
         % Only get the paths we want to image. This will always include direct
         % paths (when path_geometry field == 0), and may include some extra
@@ -477,7 +477,7 @@ end
 
 for view = 1 : Number_of_ims
    Ims(view).db_image = 20 * log10(abs(Ims(view).image) ./ max_); 
-   Ims(view).phase_image = angle(Ims(view).image);
+%    Ims(view).phase_image = angle(Ims(view).image);
 end
 
 % im_idxs = [4, 12, 17];
@@ -573,7 +573,7 @@ end
 % 
 % h.Label.String = 'dB';
 
-if plot_it
+ if plot_it
     fn_image_from_mat(Ims);
 end
 
