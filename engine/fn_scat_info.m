@@ -116,6 +116,7 @@ if varargin{1} == "point"
     end
     scat_info.vL = varargin{5};
     scat_info.vT = varargin{6};
+    scat_info.fmc_mask = 1;
 
 elseif varargin{1} == "sdh"
     nreqargs = 8;

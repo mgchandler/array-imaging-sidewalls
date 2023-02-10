@@ -48,8 +48,6 @@ function [FMC_time, FMC_time_data] = fn_simulate_fmc(model_options)
 %           - separation : double : DEFAULT 0.05e-3
 %           - width : double : DEFAULT 0.45e-3
 
-tic;
-
 %% ---------------------------------------------------------------------- %
 % Unpack model_config and model_options                                   %
 % ---------------------------------------------------------------------- %%
@@ -78,6 +76,10 @@ model_geometry = model_options.model.model_geom;
 multi_freq = model_options.model.multi_freq;
 npw = model_options.mesh.n_per_wl;
 time_it = model_options.model.time_it;
+
+if time_it
+    tic
+end
 
 % Additional parameters not directly dependent on inputs.
 oversampling = 4;
@@ -127,252 +129,77 @@ clear rot_matrix
 
 
 %% ---------------------------------------------------------------------- %
-% Scatterer Simulation path info - Contact                                %
+% Compute all path info                                                   %
 % ---------------------------------------------------------------------- %%
 
-mode_names = ["L", "T"];
-speeds = [solid_long_speed, solid_shear_speed];
-
-num_paths = 0;
-for num_reflections_in_path = 0:max_no_reflections
-    num_paths = num_paths + 2^(num_reflections_in_path + 1);
-end
-
-Path_info_list = repmat(fn_path_info( ...
-    "", ...
-    "", ...
-    [0], ...
-    0, ...
-    0, ...
-    [couplant_speed, solid_long_speed, solid_shear_speed], ...
-    [1], ...
-    [couplant_density, solid_density], ...
-    0, ...
-    0, ...
-    0, ...
-    probe_coords, ...
-    npw), ...
-    num_paths, 1);
-
-% If we are in the contact case
-path = 1;
-if is_contact
-    path_geometry = 0;
-
-% ----------------------------------------------------------------------- %
-% Direct Paths                                                            %
-% ----------------------------------------------------------------------- %
-
-    for mode = 0:1
-        mode_name = mode_names(mode+1);
-        Direct_path_info = fn_path_info( ...
-            mode_name, ...
-            mode_name, ...
-            [mode], ...
-            path_geometry, ...
-            speeds(mode+1), ...
-            [couplant_speed, solid_long_speed, solid_shear_speed], ...
-            [1], ... % index for material identity
-            [couplant_density, solid_density], ...
-            probe_frequency, ...
-            PITCH, ...
-            el_length, ...
-            probe_coords, ...
-            npw ...
-        );
-        Path_info_list(path) = Direct_path_info;
-        path = path + 1;
-        clear Direct_path_info
+if ~isstruct(model_options.model.model_views)
+    num_paths = 0;
+    for num_reflections_in_path = 0:max_no_reflections
+        num_paths = num_paths + 2^(num_reflections_in_path + 1);
     end
-
-    clear path_geometry
-
-% ----------------------------------------------------------------------- %
-% Skip Paths                                                              %
-% ----------------------------------------------------------------------- %
-
+    
+    Path_info_list = fn_direct_path_info(is_contact, probe_coords, model_options);
     if max_no_reflections > 0
-        for wall = 1:no_walls
-            path_geometry = geometry(wall);
-            for mode1 = 0:1 % Mode of the first leg
-                mode1_name = mode_names(mode1+1);
-                for mode2 = 0:1 % Mode of the second leg
-                    mode2_name = mode_names(mode2+1);
-                    Skip_path_info = fn_path_info( ...
-...%                %%  Use these names to include the wall in the path name
-                        sprintf("%s %s %s", mode1_name, path_geometry.name, mode2_name), ...
-                        sprintf("%s %s %s", mode2_name, path_geometry.name, mode1_name), ...
-...%                %%  Use these names to exclude the wall in the path name
-...%                         sprintf("%s %s", mode1_name, mode2_name), ...
-...%                         sprintf("%s %s", mode2_name, mode1_name), ...
-                        [mode1, mode2], ...
-                        path_geometry, ...
-                        [speeds(mode1+1), speeds(mode2+1)], ...
-                        [couplant_speed, solid_long_speed, solid_shear_speed], ...
-                        [1, 1], ...
-                        [couplant_density, solid_density], ...
-                        probe_frequency, ...
-                        PITCH, ...
-                        el_length, ...
-                        probe_coords, ...
-                        npw ...
-                    );
-                    Path_info_list(path) = Skip_path_info;
+        Path_info_list = [Path_info_list; fn_skip_path_info(is_contact, probe_coords, model_options)];
+    end
+
+
+
+    %% ---------------------------------------------------------------------- %
+    % Create simulation views                                                 %
+    % ---------------------------------------------------------------------- %%
+    % Precompute views for all scatterers, as well as imaging views.
+    if time_it
+        tic;
+    end
+    
+    % Compute Imaging Paths
+    if multi_freq
+    %     error("fn_simulate_fmc: multi frequency not implemented")
+        Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry), 1, num_paths);
+        path = 1;
+        ii = 1;
+        while path < num_paths
+            ii = ii + 1;
+            if length(Path_info_list(ii).speeds) > 1
+                if wall_for_imaging == Path_info_list(ii).path_geometry.name
                     path = path + 1;
-                    clear Skip_path_info
+                    Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry);
                 end
-            end
-
-            clear path_geometry
-
-        end
-    end
-
-%% ---------------------------------------------------------------------- %
-% Scatterer Simulation path info - Immersion                              %
-% ---------------------------------------------------------------------- %%
-
-% If we are in the immersion case.
-elseif ~is_contact
-
-    wall_names = repmat("", size(geometry, 1), 1);
-    for wall = 1:size(geometry, 1)
-        wall_names(wall) = geometry(wall).name;
-    end
-    where_F = logical(count(wall_names, "F"));
-    path_geometry = geometry(where_F);
-
-% ----------------------------------------------------------------------- %
-% Direct Paths                                                            %
-% ----------------------------------------------------------------------- %
-
-    for mode = 0:1
-        mode_name = mode_names(mode+1);
-        Direct_path_info = fn_path_info( ...
-            mode_name, ...
-            mode_name, ...
-            [0, mode], ...
-            path_geometry, ...
-            [couplant_speed, speeds(mode+1)], ...
-            [couplant_speed, solid_long_speed, solid_shear_speed], ...
-            [0, 1], ...
-            [couplant_density, solid_density], ...
-            probe_frequency, ...
-            PITCH, ...
-            el_length, ...
-            probe_coords, ...
-            npw ...
-        );
-        Path_info_list(path) = Direct_path_info;
-        path = path + 1;
-        clear Direct_path_info
-    end
-
-    clear path_geometry wall_names
-
-% ----------------------------------------------------------------------- %
-% Skip Paths                                                              %
-% ----------------------------------------------------------------------- %
-
-    if max_no_reflections > 0
-        non_fw_idxs = [1:no_walls];
-        non_fw_idxs = non_fw_idxs(~where_F);
-        for wall2 = 1:no_walls-1
-            wall = non_fw_idxs(wall2);
-
-            path_geometry = repmat(geometry(where_F), 2, 1);
-            path_geometry(2) = geometry(wall);
-            for mode1 = 0:1 % Mode of the first leg
-                mode1_name = mode_names(mode1+1);
-                for mode2 = 0:1 % Mode of the second leg
-                    mode2_name = mode_names(mode2+1);
-                    Skip_path_info = fn_path_info( ...
-...%                %%  Use these names to include the wall in the path name
-                        sprintf("%s %s %s", mode1_name, path_geometry(2).name, mode2_name), ...
-                        sprintf("%s %s %s", mode2_name, path_geometry(2).name, mode1_name), ...
-...%                %%  Use these names to exclude the wall in the path name
-...%                         sprintf("%s %s", mode1_name, mode2_name), ...
-...%                         sprintf("%s %s", mode2_name, mode1_name), ...
-                        [0, mode1, mode2], ...
-                        path_geometry, ...
-                        [couplant_speed, speeds(mode1+1), speeds(mode2+1)], ...
-                        [couplant_speed, solid_long_speed, solid_shear_speed], ...
-                        [0, 1, 1], ...
-                        [couplant_density, solid_density], ...
-                        probe_frequency, ...
-                        PITCH, ...
-                        el_length, ...
-                        probe_coords, ...
-                        npw ...
-                    );
-                    Path_info_list(path) = Skip_path_info;
-                    path = path + 1;
-                    clear Skip_path_info
-                end
-            end
-
-            clear path_geometry
-
-        end
-    end
-
-end
-
-time_1 = double(toc);
-if time_it
-    fn_print_time('Simulation setup', time_1)
-end
-
-clear no_walls mode_names speeds num_reflections_in_path
-clear path mode_name wall mode1 mode1_name mode2 mode2_name wall2
-
-
-%% ---------------------------------------------------------------------- %
-% Create simulation views                                                 %
-% ---------------------------------------------------------------------- %%
-% Precompute views for all scatterers, as well as imaging views.
-
-tic;
-
-% Compute Imaging Paths
-if multi_freq
-%     error("fn_simulate_fmc: multi frequency not implemented")
-    Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry), 1, num_paths);
-    path = 1;
-    ii = 1;
-    while path < num_paths
-        ii = ii + 1;
-        if length(Path_info_list(ii).speeds) > 1
-            if wall_for_imaging == Path_info_list(ii).path_geometry.name
-                path = path + 1;
+            else % Must be direct
+                path = path+1;
                 Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry);
             end
-        else % Must be direct
-            path = path+1;
-            Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry);
         end
-    end
-else
-    frequency = probe_frequency;
-    Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
-    path = 1;
-    ii = 1;
-    while path < num_paths
-        ii = ii + 1;
-        if length(Path_info_list(ii).speeds) > 1
-            if wall_for_imaging == Path_info_list(ii).path_geometry.name
-                path = path + 1;
+    else
+        frequency = probe_frequency;
+        Paths = repmat(fn_compute_ray(scat_info, Path_info_list(1), geometry, frequency), 1, num_paths);
+        path = 1;
+        ii = 1;
+        while path < num_paths
+            ii = ii + 1;
+            if length(Path_info_list(ii).speeds) > 1
+                if wall_for_imaging == Path_info_list(ii).path_geometry.name
+                    path = path + 1;
+                    Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
+                end
+            else % Must be direct
+                path = path+1;
                 Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
             end
-        else % Must be direct
-            path = path+1;
-            Paths(path) = fn_compute_ray(scat_info, Path_info_list(ii), geometry, frequency);
         end
     end
+    
+    % Create views from these paths.
+    Views = fn_make_views(Paths, 0);
+else
+    Views = model_options.model.model_views;
 end
 
-% Create views from these paths.
-Views = fn_make_views(Paths, 0);
+if time_it
+    time_1 = double(toc);
+    fn_print_time('Simulation setup', time_1)
+end
 
 
 
@@ -389,8 +216,8 @@ if model_geometry
     );
 end
 
-time_2 = double(toc);
 if time_it
+    time_2 = double(toc);
     fn_print_time('Rays traced', time_2)
 end
 
@@ -428,7 +255,9 @@ clear probe_standoff oversampling time_step
 % ---------------------------------------------------------------------- %%
 
 if multi_freq
-    tic
+    if time_it
+        tic
+    end
     frequency = freq(freq ~= 0);
     scat_info = fn_scat_info( ...
         model_options.mesh.scat.type, ...
@@ -448,8 +277,8 @@ if multi_freq
     end
     % Create views from these paths.
     Views = fn_make_views(Paths, 0);
-    time_2b = double(toc);
     if time_it
+        time_2b = double(toc);
         fn_print_time('Model coeffs computed', time_2b)
     end
 end
@@ -459,8 +288,9 @@ end
 %% ---------------------------------------------------------------------- %
 % Simulation.                                                             %
 % ---------------------------------------------------------------------- %%
-
-tic
+if time_it
+    tic
+end
 
 % Scatterer simulation.
 out_freq_spec = 0;
@@ -499,8 +329,8 @@ FMC_time_data = ifft(diagonals * fft(FMC_time_data));
 %     figure(3)
 %     fn_plot_FMC_at_time(FMC_time_data, FMC_time, Path_info_list(3), Path_info_list(5), [[0, 0, 12.5e-3]], sprintf('%s_FMC.png', savename));
 
-time_3 = double(toc);
 if time_it
+    time_3 = double(toc);
     fn_print_time('Simulated', time_3)
 end
 

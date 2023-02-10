@@ -99,6 +99,7 @@ model_options.model.image_locs = 0;
 model_options.model.fusion_mask = 1;
 model_options.model.time_it = false;
 model_options.model.plot_it = true;
+model_options.model.model_views = 1;
 
 model_options.probe.angle = 0;
 model_options.probe.freq = 5.0e+6;

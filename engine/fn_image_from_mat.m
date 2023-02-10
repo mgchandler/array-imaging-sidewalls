@@ -28,7 +28,7 @@ for im = 1:Number_of_ims
     g = imagesc(Ims(im).x*UC, Ims(im).z*UC, Ims(im).db_image);
     hold on
     title(Ims(im).name)
-    caxis([-db_range_for_output, 0])
+    clim([-db_range_for_output, 0])
     if isfield(Ims(im), 'plotExtras')
         for ex = 1:length(Ims(im).plotExtras)
             plot(Ims(im).plotExtras(ex).x*UC, Ims(im).plotExtras(ex).z*UC, ...
@@ -39,7 +39,7 @@ for im = 1:Number_of_ims
         end
     end
     
-    if and(mod(im+1, plot_x)~=0, Number_of_ims~=1)
+    if and(mod(im-1, plot_x)~=0, Number_of_ims~=1)
         set(gca, 'yticklabel', {[]})
     end
     if im <= Number_of_ims - plot_x

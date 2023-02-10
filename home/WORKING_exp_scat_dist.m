@@ -69,6 +69,7 @@ end
 data = zeros(4, 100, 21, (xsize/pixel+1)*(zsize/pixel+1));
 
 stat_folders = ["defective - jig at corner - 0mm offset", "defective - jig at corner - 1mm offset", "non-defective - jig at corner - 0mm offset", "non-defective - jig at corner - 1mm offset"];
+if ~load_in_data
 for ii = 1:length(folders)
     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..')))
         thisdir = fullfile(dirname, folders(ii).name, 'TFMs', 'Relative coords');
@@ -92,7 +93,7 @@ for ii = 1:length(folders)
                     model_options.mesh.geom.geometry = geom;
                     disp(model_options.model.savepath)
                     disp(model_options.model.savename)
-                    [Ims, ~, ~] = fn_tfm(model_options);
+%                     [Ims, ~, ~] = fn_tfm(model_options);
                 end
 
                 %% Store the data
@@ -131,6 +132,7 @@ ksv = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
 % chi2p = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
 % chi2v = zeros(21, size(Ims(1).image, 1)*size(Ims(1).image, 2));
 nd_rician = zeros(2, size(data, 3), size(data, 4));
+end
 if load_in_data
     load(sprintf("%s rician params.mat", b_or_s))
 else
@@ -168,7 +170,7 @@ else
     end
 %     save(fullfile(dirname, sprintf("%s rician params%s.mat", b_or_s, suffix)), "nd_rician", "ksp", "ksv", "chi2p", "chi2v")
 end
-
+load(fullfile(stat_folders(1), "TFMs", "Relative coords", "01 big"))
 Sigma = Ims;
 Nu = Ims;
 KS = Ims;
@@ -253,7 +255,7 @@ for ii = 1:length(folders)
 %     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), and(~strcmp(folders(ii).name, '..'), any(strcmp(folders(ii).name, stat_folders)))))
     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..')))
         thisdir = fullfile(dirname, folders(ii).name, 'TFMs', 'Relative coords');
-        yaml_options.model.savepath = thisdir;
+        yaml_options.model.savepath = "";%thisdir;
         for jj = 0:99
             try
 %                 cd(thisdir)
@@ -278,6 +280,9 @@ end
 for ii = 1:length(folders)
 %     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), and(~strcmp(folders(ii).name, '..'), any(strcmp(folders(ii).name, stat_folders)))))
     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..')))
+        if any(strcmp(folders(ii).name, stat_folders))
+            continue
+        end
         thisdir = fullfile(dirname, folders(ii).name, "TFMs", 'Relative coords');
         yaml_options.model.savepath = thisdir;
         for jj = 0:99
@@ -294,7 +299,7 @@ for ii = 1:length(folders)
                 T_stat.x = Ims(1).x;
                 T_stat.z = Ims(1).z;
                 T_stat.name = "Linear Signal Likelihood";
-                T_stat.plotExras = Ims(1).plotExtras;
+                T_stat.plotExtras = Ims(1).plotExtras;
                 lin_likelihood = zeros(size(Ims, 1), size(data, 2), size(data, 3));
                 for im = 1:21
                     pt = 1;
@@ -314,7 +319,7 @@ for ii = 1:length(folders)
                     Lin_Likelihood(im).x = Ims(1).x;
                     Lin_Likelihood(im).z = Ims(1).z;
                     Lin_Likelihood(im).name = Ims(im).name;
-                    Lin_Likelihood(im).plotExtras = Im(im).plotExtras;
+                    Lin_Likelihood(im).plotExtras = Ims(im).plotExtras;
                 end
                 fn_image_from_mat(Lin_Likelihood)
                 grp = get(get(gcf, 'Children'), 'Children');
@@ -333,7 +338,7 @@ for ii = 1:length(folders)
                 T_stat.db_image = T_stat.image;
                 fn_image_from_mat(T_stat)
                 grp = get(get(gcf, 'Children'), 'Children');
-                grp(2).CLim = [nanmin(T_stat.db_image(:)), nanmax(T_stat.db_image(:))];
+                grp(2).CLim = [min(T_stat.db_image(:), [], 'all', 'omitnan'), max(T_stat.db_image(:), [], 'all', 'omitnan')];
                 grp(1).Label.String = "Likelihood";
                 savefig(fullfile(thisdir, sprintf("%s Linear Likelihood%s.fig", matname, suffix)))
                 saveas(gcf, fullfile(thisdir, sprintf("%s Linear Likelihood%s.png", matname, suffix)))

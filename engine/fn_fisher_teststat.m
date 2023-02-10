@@ -48,6 +48,12 @@ end
 
 db_range = 40;
 
+TStat = Ims;
+for im = 1:size(Ims, 1)
+    TStat(im).db_image = 0;
+    TStat(im).image = 0;
+end
+
 Fused = Ims(1);
 Fused.name = "Fisher Fusion Test Statistic";
 Fused.db_image = 0;
@@ -55,11 +61,27 @@ Fused.image = 0;
 
 %% Compute test parameter
 for im = 1:number_of_ims
+    TStat(im).image = (Ims(im).image ./ Sigma(im).db_image);
+    TStat(im).db_image = abs(TStat(im).image);
     Fused.image = Fused.image + (Ims(im).image ./ Sigma(im).db_image).^2;
 end
 Fused.image = sqrt(Fused.image);
 Fused.db_image = abs(Fused.image);
-%% Save Fused (phased array scale)          
+%% Save Fused (phased array scale)  fn_image_from_mat(Fused)
+fn_image_from_mat(TStat)
+grp = get(get(gcf, 'Children'), 'Children');
+for im = 2:22
+    grp(im).CLim = [0, 60];
+    grp(im).XLim = [Ims(1).x(1)*1e3, Ims(1).x(end)*1e3];
+    grp(im).YLim = [Ims(1).z(1)*1e3, Ims(1).z(end)*1e3];
+end
+grp(1).Label.String = "(array units)";
+if ~strcmp(model_options.model.savepath, "")
+    savefig(fullfile(model_options.model.savepath, sprintf("%s Fisher fusion Test Statistic", model_options.model.savename)))
+    saveas(gcf, fullfile(model_options.model.savepath, sprintf("%s Fisher fusion Test Statistic.png", model_options.model.savename)))
+    save(fullfile(model_options.model.savepath, sprintf("%s Fisher fusion Test Statistic.mat", model_options.model.savename)), "Fused")
+end
+
 fn_image_from_mat(Fused)
 grp = get(get(gcf, 'Children'), 'Children');
 grp(2).CLim = [0, 60];

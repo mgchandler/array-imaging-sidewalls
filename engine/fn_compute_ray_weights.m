@@ -14,7 +14,7 @@ function ray_weights = fn_compute_ray_weights(ray, freq_array, varargin)
 %       Contains beamspread, directivity and transmission/reflection
 %       coefficients along the forward and backward path for the ray.
 
-debug = false;
+debug = true;
 
 % Relevant dimensions.
 [probe_els, num_scatterers] = size(ray.min_times);
@@ -240,7 +240,7 @@ else
             % calculated in this function is equal to the real
             % distance - no angles are required in the calculation.            
             ray_weights.beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(min_dists(:, 4, :), no_walls+1, num_scatterers), reshape(inc_out_angles(:, 1, :), no_walls+1, num_scatterers), speeds, freq_array(freq_idx));
-            ray_weights.inv_beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(inv_min_dists(:, 4, :), no_walls+1, num_scatterers), reshape(inv_inc_out_angles(:, 2, :), no_walls+1, num_scatterers), flip(speeds), freq_array(freq_idx));
+            ray_weights.inv_beamspread(tx, :, freq_idx) = fn_beamspread_2d(reshape(inv_min_dists(:, 4, :), no_walls+1, num_scatterers), reshape(inv_inc_out_angles(:, 1, :), no_walls+1, num_scatterers), flip(speeds), freq_array(freq_idx));
 
             % Trans/refl      
             inv_angles = reshape(conj(asin(sin(inc_out_angles(1:end-1, 1, :)) .* speeds(2:end).' ./ speeds(1:end-1).')), no_walls, num_scatterers);
