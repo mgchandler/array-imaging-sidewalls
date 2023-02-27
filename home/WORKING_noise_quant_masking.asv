@@ -300,12 +300,12 @@ for ii = 1:length(folders)
 %                 end
                 % Mark everything >99th percentile
 %                 p = icdf(rayleigh, percentile_target);
-                S(im).db_image = 20 * log10(abs(S(im).image) ./ max(abs(S(im).image(:)), [], 'omitnan'));
+%                 S(im).db_image = 20 * log10(abs(S(im).image) ./ max_);
                 T = double(S(im).db_image > -20);
                 mask(:, :, im) = T;
             end
 
-            save(sprintf("%s 20db_thresh mask", matname), "mask", "acl_x", "acl_z")
+            save(sprintf("%s 30db_thresh mask", matname), "mask", "acl_x", "acl_z")
 
             %% Analyse all of the data generated.
 % %             load(sprintf("%s acf+hics mask", matname))
@@ -420,20 +420,6 @@ for mask = 1:m
 end
 global_mask = and(global_mask, unmasked);
 save(sprintf("%s global", mask_type), "global_mask")
-
-Global = Ims;
-for im = 1:21
-    Global(im).db_image = global_mask(:, :, im);
-    Global(im).x = acl_x;
-    Global(im).z = acl_z;
-end
-Global = rmfield(Global, "plotExtras");
-fn_image_from_mat(Global)
-grp = get(get(gcf, 'Children'), 'Children');
-for im = 2:22
-    grp(im).CLim = [0, 1];
-    colormap gray
-end
 
 % New_masks = Masks;
 % for mask = 1:m

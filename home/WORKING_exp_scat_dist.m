@@ -13,8 +13,8 @@ yaml_options = yaml.loadFile(yaml_name);
 
 b_or_s = "big";
 suffix = "";%" small_amps_neglected";
-load_ims = true;
-load_in_data = true;
+load_ims = false;
+load_in_data = false;
 plot_everything = false;
 
 N = 1000;
@@ -48,7 +48,7 @@ yaml_options.mesh.scat = fn_scat_info( ...
 );
 yaml_options.model.time_it = false;
 % yaml_options.model.image_range = [yaml_options.mesh.scat.x - 3e-3, yaml_options.mesh.scat.x + 3e-3, yaml_options.mesh.scat.z - 3e-3, yaml_options.mesh.scat.z + 3e-3];
-yaml_options.model.pixel = .2e-3;
+yaml_options.model.pixel = .5e-3;
 yaml_options.mesh.geom.n_pts = 2000;
 yaml_options.mesh.n_per_wl = 0;
 yaml_options.model.savepath = "";%"C:\Users\mc16535\OneDrive - University of Bristol\Documents\Postgrad\Coding\array-imaging-sidewalls\home-output\scat vs artefact distribution\RT Simulation\Random";
@@ -74,25 +74,26 @@ for ii = 1:length(folders)
     if and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..')))
         thisdir = fullfile(dirname, folders(ii).name, 'TFMs', 'Relative coords');
         yaml_options.model.savepath = thisdir;
-        for jj = 0:99
+        for jj = 1:99
             try
                 if ~load_ims
                 %% Do the imaging
                     cd(thisdir)
                     matname = sprintf("%02d", jj);
-                    load(fullfile(thisdir, matname))
-                    freq = [0:length(exp_data.time)-1] / exp_data.time(end);
-                    yaml_options.data.time = exp_data.time - 5e-7;
-                    yaml_options.data.data = ifft(2 * fn_hanning(length(exp_data.time), yaml_options.probe.freq/max(freq), yaml_options.probe.freq/max(freq)) .* fft(exp_data.time_data));
-                    yaml_options.model.savename = sprintf("%s %s", matname, b_or_s);
-                    geom = fn_size_geometry_from_fmc(exp_data, yaml_options.mesh.geom.z{4}, yaml_options.mesh.geom.x{1}, true, fullfile(thisdir, 'TFMs', sprintf('%s sizing.mat', yaml_options.model.savename)));
-                    if strcmp(b_or_s, "sml")
-                        yaml_options.model.image_range = [geom(1).point1(1) - 18e-3, geom(1).point1(1) - 12e-3, geom(4).point1(3) + 7e-3, geom(4).point1(3) + 13e-3];
-                    end
+%                     load(fullfile(thisdir, matname))
+%                     freq = [0:length(exp_data.time)-1] / exp_data.time(end);
+%                     yaml_options.data.time = exp_data.time - 5e-7;
+%                     yaml_options.data.data = ifft(2 * fn_hanning(length(exp_data.time), yaml_options.probe.freq/max(freq), yaml_options.probe.freq/max(freq)) .* fft(exp_data.time_data));
+%                     yaml_options.model.savename = sprintf("%s %s", matname, b_or_s);
+%                     geom = fn_size_geometry_from_fmc(exp_data, yaml_options.mesh.geom.z{4}, yaml_options.mesh.geom.x{1}, true, fullfile(thisdir, 'TFMs', sprintf('%s sizing.mat', yaml_options.model.savename)));
+                    load(sprintf("%s sml sizing", matname))
+                    yaml_options.model.image_range = [geometry(3).point1(1)+1e-5, geometry(1).point1(1)-1e-5, ...
+                                                      geometry(4).point1(3)+1e-5, geometry(2).point1(3)-1e-5];
                     model_options = fn_default_model_options(yaml_options);
-                    model_options.mesh.geom.geometry = geom;
+                    model_options.mesh.geom.geometry = geometry;
                     disp(model_options.model.savepath)
                     disp(model_options.model.savename)
+                    [Sens, ~] = fn_sens(model_options);
 %                     [Ims, ~, ~] = fn_tfm(model_options);
                 end
 

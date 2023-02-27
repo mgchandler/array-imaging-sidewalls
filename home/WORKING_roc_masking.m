@@ -9,7 +9,7 @@ yaml_name = "exp_scat_dist.yml";
 yaml_options = yaml.loadFile(yaml_name);
 
 b_or_s = "big";
-suffix = " ACLs";
+mask_type = "";
 
 N = 1000;
 psf_step = 5e-3;
@@ -43,6 +43,8 @@ yaml_options.model.time_it = 0;
 yaml_options.model.model_geom = 0;
 yaml_options.model.plot_it = 0;
 
+best_views = [];
+
 %% Run through data sets
 folders = dir(dirname);
 ff = 1;
@@ -53,21 +55,35 @@ t1 = tic;
 rng(mod(t1, 2^32))
 samples = sort(floor(200*random('Uniform', 0, 1, m, 1)));
 
-Masks = repmat(struct("matname", 0, "x", 0, "z", 0, "mask", 0, "geometry", 0), m, 1);
+% load(sprintf("%s mask global", mask_type))
+load("big rician params")
+load(fullfile("defective - jig at corner - 0mm offset", "TFMs", "Relative coords", "01 big"))
+load(fullfile("defective - jig at corner - 0mm offset", "TFMs", "Relative coords", "01 sml sizing"))
+load(fullfile("defective - jig at corner - 0mm offset", "TFMs", "Relative coords", "01 sens"))
+params_geom = geometry;
+params_x = Ims(1).x - params_geom(1).point1(1);
+params_z = Ims(1).z - params_geom(2).point1(3);
+sigma = zeros(size(params_z, 2), size(params_x, 2), 21);
+for im = 1:21
+    sigma(:, :, im) = reshape(nd_rician(2, im, :), size(params_z, 2), size(params_x, 2));
+    Sens(im).x = Sens(im).x - params_geom(1).point1(1);
+    Sens(im).z = Sens(im).z - params_geom(2).point1(3);
+end
 idx = 1;
+thresholds = linspace(0, .01, 10000);
+% log10_thresholds = linspace(-300, 0, 1000);
+% thresholds = [0, 10.^log10_thresholds];
 
-min_x = 0;
-min_z = 0;
-
-figure
-hold on
+max_i = 0;
 
 stat_folders = ["non-defective - jig at corner - 0mm offset", "non-defective - jig at corner - 1mm offset", "non-defective - jig at corner 2 - 0mm offset"];
+stat_folders = ["defective - jig at corner - 0mm offset", "defective - jig at corner - 1mm offset", "defective - jig at corner 2 - 0mm offset", "non-defective - jig at corner - 0mm offset", "non-defective - jig at corner - 1mm offset", "non-defective - jig at corner 2 - 0mm offset"];
 for ii = 1:length(folders)
     if and(and(folders(ii).isdir, and(~strcmp(folders(ii).name, '.'), ~strcmp(folders(ii).name, '..'))), any(strcmp(folders(ii).name, stat_folders)))
         thisdir = fullfile(dirname, folders(ii).name, 'TFMs', 'Relative coords');
         yaml_options.model.savepath = "";%thisdir;
         yaml_options.model.savename = "";
+        pass_fail = false(100, size(thresholds, 2));
         for jj = 0:99
             try
                 %% Generate ACLs for ACF Mask
@@ -78,7 +94,7 @@ for ii = 1:length(folders)
                 matname = sprintf("%02d", jj);
 % %                 yaml_options.model.savename = sprintf("%s %s", matname, b_or_s);
                 load(sprintf("%s sml sizing", matname))
-                load(sprintf("%s %s", matname, b_or_s))
+%                 load(sprintf("%s %s", matname, b_or_s))
 %                 % Update geometry. Do this manually as there's a
 %                 % combination of mins/maxes which isn't easy to automate.
                 yaml_options.mesh.geom.x{1} = max(geometry(1).point1(1), geometry(1).point2(1));
@@ -95,7 +111,164 @@ for ii = 1:length(folders)
                 yaml_options.mesh.geom.z{6} = min(geometry(5).point1(3), geometry(5).point2(3));
                 yaml_options.model.image_range = [geometry(3).point1(1)+1e-5, geometry(1).point1(1)-1e-5, ...
                                                   geometry(4).point1(3)+1e-5, geometry(2).point1(3)-1e-5];
-%                 model_options = fn_default_model_options(yaml_options);
+                model_options = fn_default_model_options(yaml_options);
+                model_options.mesh.geom.geometry = geometry;
+%                 [Ims, ~, ~] = fn_tfm(model_options);
+%                 [Sens, ~] = fn_sens(model_options);
+                %% Apply the mask. Scale it to the size of geometry.
+%                 sx = geometry(3).point1(1);
+%                 sz = geometry(3).point1(3);
+%                 ex = geometry(1).point2(1);
+%                 ez = geometry(1).point2(3);
+%                 nx = size(global_mask, 2);
+%                 nz = size(global_mask, 1);
+%                 mask_x = linspace(sx, ex, nx);
+%                 mask_z = linspace(sz, ez, nz);
+%                 [im_x, im_z] = meshgrid(Ims(1).x, Ims(1).z);
+%                 % Rescale the mask.
+%                 scaled_mask = zeros(size(Ims(1).z, 2), size(Ims(1).x, 2), 21);
+%                 for im = 1:21
+%                     scaled_mask(:, :, im) = interp2(mask_x, mask_z, double(global_mask(:, :, im)), im_x, im_z);
+%                 end
+%                 scaled_mask(scaled_mask > .5) = 1;
+%                 scaled_mask(scaled_mask <= .5) = 0;
+                % Apply it.
+%                 for im = 1:21
+%                     Ims(im).image(logical(scaled_mask(:, :, im))) = nan;
+%                     Ims(im).db_image(logical(scaled_mask(:, :, im))) = nan;
+% %                     Ims(im).image = Ims(im).image .* scaled_mask(:, :, im);
+% %                     Ims(im).db_image = Ims(im).db_image .* scaled_mask(:, :, im);
+%                 end
+                % Get the relevant bits of sigma.
+                
+                %% Do the ROC bit.
+%                 % What is the best view? Within ROC, find where sensitivity is highest for pixel.
+%                 % Find out where Sens and Ims overlap. 
+%                 ims_x  = reshape(Ims(1).x, 1, []) - geometry(1).point1(1);
+%                 ims_z  = reshape(Ims(1).z, 1, []) - geometry(2).point1(3);
+%                 % We want the valid subset of each.
+%                 [~, sx]  = min(abs(params_x - ims_x(1)));
+%                 [~, sz]  = min(abs(params_z - ims_z(1)));
+%                 [~, ex]  = min(abs(params_x - ims_x(end)));
+%                 [~, ez]  = min(abs(params_z - ims_z(end)));
+%                 sigma = zeros(ez-sz+1, ex-sx+1, 21);
+%                 for im = 1:21
+%                     Ims(im).x = ims_x;
+%                     Ims(im).z = ims_z;
+%                     Sens(im).x = ims_x;
+%                     Sens(im).z = ims_z;
+% 
+%                     im_sigma = reshape(nd_rician(2, im, :), size(params_z, 2), size(params_x, 2));
+%                     sigma(:, :, im) = im_sigma(sz:ez, sx:ex);
+%                 end
+%                 save(sprintf("%s large roc input", matname), "Sens", "Ims", "sigma")
+%                 continue
+
+                %% ROC analysis on masked data.
+                load(sprintf("%s large roc input", matname))
+                sx = min(size(Ims(1).x, 2));%, size(global_mask, 2));
+                sz = min(size(Ims(1).z, 2));%, size(global_mask, 1));
+% 
+%                 for im = 1:21
+%                     if max(abs(Ims(im).image(:))) > max_i
+%                         max_i = max(abs(Ims(im).image(:)));
+%                     end
+%                 end
+
+                % Mask each image, and work out best view.
+                metric_best = zeros(sz, sx);
+                metric_arg = zeros(sz, sx);
+                im_names = [""];
+                max_ = 0;
+                for im = 1:21
+                    im_names = [im_names, Ims(im).name];
+                    Ims(im).image = Ims(im).image(1:sz, end-sx+1:end);
+                    if max(abs(Ims(im).image(:))) > max_
+                        max_ = max(abs(Ims(im).image(:))); 
+                    end
+%                     Ims(im).image = Ims(im).image .* ~global_mask(1:sz, end-sx+1:end, im);
+                    E_s = Sens(im).image(1:sz, end-sx+1:end) ./ sigma(1:sz, end-sx+1:end, im);
+                    metric = E_s + sqrt(pi/2) ./ (E_s / sqrt(8*pi) + 1).^4;
+                    higher = abs(metric) > abs(metric_best);
+                    metric_best(higher) = metric(higher);
+                    metric_arg(higher) = im;
+                end
+                metric_arg = reshape(metric_arg, sz, sx);
+                Fusion = Ims(19);
+                Fusion.image = zeros(sz, sx);
+                for im = 1:21
+                    Fusion.image(metric_arg == im) = Ims(im).image(metric_arg == im);
+                    Ims(im).db_image = 20 * log10(abs(Ims(im).image) ./ max_);
+                end
+
+%                 figure(4)
+%                 imagesc(Ims(1).x*1e3, flip(-Ims(1).z*1e3), metric_arg)
+%                 colormap(jet(20))
+%                 c = colorbar;
+%                 c.Ticks = 0:21;
+%                 c.Limits = [0, 21];
+%                 c.TickLabels = im_names;
+
+                for threshold = 1:size(thresholds, 2)
+                    % We have made a detection with this threshold.
+                    if any(abs(Fusion.image) > thresholds(threshold), 'all')
+                        pass_fail(jj+1, threshold) = true;
+                    end
+                end
+
+%                 max_ = 0;
+%                 best_view = 0;
+%                 for im = 1:21
+%                     temp_im = Sens(im).image;
+%                     temp_im(isnan(temp_im)) = 0;
+%                     if mean(abs(temp_im)) > max_
+%                         max_ = mean(abs(temp_im));
+%                         best_view = im;
+%                     end
+%                 end
+%                 best_views = [best_views; Ims(best_view).name];
+
+
+
+                %% ROC on Fisher fused data.
+%                 load(sprintf("%s big Fisher fusion Test Statistic", matname))
+% 
+%                 ims_x  = reshape(Fused.x, 1, []);
+%                 ims_z  = reshape(Fused.z, 1, []);
+%                 [~, sx]  = min(abs(geometry(3).point1(1) - ims_x));
+%                 [~, sz]  = min(abs(geometry(4).point1(3) - ims_z));
+%                 [~, ex]  = min(abs(geometry(1).point1(1) - ims_x));
+%                 [~, ez]  = min(abs(geometry(2).point1(3) - ims_z));
+                
+%                 subset = Fused.db_image(sz:ez, sx:ex);
+%                 exc = sum(subset(:) < thresholds, 1) / ((ex-sx+1)*(ez-sz+1));
+%                 plot(thresholds, exc)
+
+%                 for threshold = 1:size(thresholds, 2)
+%                     % We have made a detection with this threshold.
+%                     if any(Fused.db_image(sz:ez, sx:ex) > thresholds(threshold), 'all')
+%                         pass_fail(jj+1, threshold) = true;
+%                     end
+%                     if and(strcmp(matname, "01"), contains(folders(ii).name, "jig at corner 2"))
+%                         figure(4)
+%                         points = zeros(ez-sz+1, ex-sx+1);
+%                         points(Fused.db_image(sz:ez, sx:ex) < thresholds(threshold)) = 1;
+%                         imagesc(points)
+%                         colorbar
+%                         colormap gray
+%                         clim([0, 1])
+%                         drawnow
+%                         pause(.01)
+%                     end
+
+%                     if sum(abs(Fused.db_image(sz:ez, sx:ex)) <= thresholds(threshold), 'all')/((ex-sx+1)*(ez-sz+1)) >= thresholds(threshold)
+%                         pass_fail(jj+1, threshold) = true;
+%                     end
+%                 end
+
+                a = 1;
+
+%% Old from noise quant
 %                 %% Step 1: Calculate PSF at range of locations. Do this only in lower bit of geometry.
 %                 % Coordinates at which we find hs. Quite low res as it
 %                 % varies slowly.
@@ -122,14 +295,14 @@ for ii = 1:length(folders)
 %                 % We have a TFM of the full geometry, but we only really
 %                 % care to image in the lower bit. Get the subset of the
 %                 % TFM.
-                [~, x_min] = min(abs(Ims(1).x - geometry(3).point1(1)), [], 'all');
-                [~, x_max] = min(abs(Ims(1).x - geometry(1).point1(1)), [], 'all');
-                [~, z_min] = min(abs(Ims(1).z - geometry(4).point1(3)), [], 'all');
-                [~, z_max] = min(abs(Ims(1).z - geometry(2).point1(3)), [], 'all');
-                x_min = x_min + 1;
-                x_max = x_max - 1;
-                z_min = z_min + 1;
-                z_max = z_max - 1;
+%                 [~, x_min] = min(abs(Ims(1).x - geometry(3).point1(1)), [], 'all');
+%                 [~, x_max] = min(abs(Ims(1).x - geometry(1).point1(1)), [], 'all');
+%                 [~, z_min] = min(abs(Ims(1).z - geometry(4).point1(3)), [], 'all');
+%                 [~, z_max] = min(abs(Ims(1).z - geometry(2).point1(3)), [], 'all');
+%                 x_min = x_min + 1;
+%                 x_max = x_max - 1;
+%                 z_min = z_min + 1;
+%                 z_max = z_max - 1;
 %                 x_step = 2*(Ims(1).x(2) - Ims(1).x(1));
 %                 z_step = 2*(Ims(1).z(2) - Ims(1).z(1));
 %                 h = zeros(x_max-x_min+1, z_max-z_min+1, 21);
@@ -261,51 +434,49 @@ for ii = 1:length(folders)
 %             end
 %             save(sprintf("%s acf+hics mask", matname), "acf_mask", "mask", "acl_x", "acl_z")
             %% Simple thresholding mask
-            load(sprintf("%s%s", matname, suffix))
-            h = permute(h, [2,1,3]);
-            [X, Z] = meshgrid(acl_x, acl_z);
-            % Assume Rayleigh distribution
-            S = Ims;
-            [~, x_min] = min(abs(S(1).x - acl_x(1)));
-            [~, x_max] = min(abs(S(1).x - acl_x(end)));
-            [~, z_min] = min(abs(S(1).z - acl_z(1)));
-            [~, z_max] = min(abs(S(1).z - acl_z(end)));
-            mask = zeros(size(h));
-            max_ = 0;
-            for im = 1:21
-                % Initialise S
-                if im == 4
-                    a = 1;
-                end
-                S(im).x = acl_x;
-                S(im).z = acl_z;
-                S(im).image = S(im).image(z_min:z_max, x_min:x_max);
-                S(im).db_image = S(im).db_image(z_min:z_max, x_min:x_max);
+%             load(sprintf("%s%s", matname, suffix))
+%             h = permute(h, [2,1,3]);
+%             [X, Z] = meshgrid(acl_x, acl_z);
+%             % Assume Rayleigh distribution
+%             S = Ims;
+%             [~, x_min] = min(abs(S(1).x - acl_x(1)));
+%             [~, x_max] = min(abs(S(1).x - acl_x(end)));
+%             [~, z_min] = min(abs(S(1).z - acl_z(1)));
+%             [~, z_max] = min(abs(S(1).z - acl_z(end)));
+%             mask = zeros(size(h));
+%             for im = 1:21
+%                 % Initialise S
+%                 if im == 4
+%                     a = 1;
+%                 end
+%                 S(im).x = acl_x;
+%                 S(im).z = acl_z;
+%                 S(im).image = S(im).image(z_min:z_max, x_min:x_max);
+%                 S(im).db_image = 20 * log10(abs(S(im).image) ./ max(abs(S(im).image(:)), [], 'omitnan'));
 %                 ratios = [];
-
-                % Update S based on mask.
-%                 S(im).image(squeeze(mask(:, :, im))) = nan;
-%                 S(im).db_image(squeeze(mask(:, :, im))) = nan;
-                % Fit plane and correct for it
+% 
+%                 % Update S based on mask.
+% %                 S(im).image(squeeze(mask(:, :, im))) = nan;
+% %                 S(im).db_image(squeeze(mask(:, :, im))) = nan;
+%                 % Fit plane and correct for it
 %                 plane = fit([X(:), Z(:)], S(im).db_image(:), 'poly11', 'Exclude', reshape(mask(:, :, im), [], 1));
 %                 c = plane.p10 * X + plane.p01 * Z;
 %                 S(im).image = abs(S(im).image) ./ 10.^(c / 20);
 %                 S(im).db_image = 20 * log10(abs(S(im).image) ./ max(abs(S(im).image(:)), [], 'omitnan'));
-                % Fit Rayleigh to image
+%                 % Fit Rayleigh to image
 %                 i_c = 0:max(S(im).image(:), [], 'omitnan')/1000:max(S(im).image(:));
-%                 try
+% %                 try
 %                 rayleigh = fitdist(S(im).image(:), 'Rayleigh');
-%                 catch ME
-%                     break
-%                 end
-                % Mark everything >99th percentile
-%                 p = icdf(rayleigh, percentile_target);
-                S(im).db_image = 20 * log10(abs(S(im).image) ./ max(abs(S(im).image(:)), [], 'omitnan'));
-                T = double(S(im).db_image > -20);
-                mask(:, :, im) = T;
-            end
-
-            save(sprintf("%s 20db_thresh mask", matname), "mask", "acl_x", "acl_z")
+% %                 catch ME
+% %                     break
+% %                 end
+%                 % Mark everything >99th percentile
+% %                 p = icdf(rayleigh, percentile_target);
+%                 T = double(S(im).db_image > -20);
+%                 mask(:, :, im) = T;
+%             end
+% 
+%             save(sprintf("%s 20db_thresh mask", matname), "mask", "acl_x", "acl_z")
 
             %% Analyse all of the data generated.
 % %             load(sprintf("%s acf+hics mask", matname))
@@ -376,32 +547,90 @@ for ii = 1:length(folders)
 %                 grp(im).CLim = [0, 1];
 %             end
             %% Combine all 10 masks into one image.
-            mask_type = "20db_thresh mask";
-            load(sprintf("%s %s", matname, mask_type))
-            Masks(idx).geometry = geometry;
-            Masks(idx).matname = matname;
-            Masks(idx).x = acl_x - geometry(1).point1(1);
-            Masks(idx).z = acl_z - geometry(4).point1(3);
-            Masks(idx).mask = mask;
-
-%             plot([geometry(1).point1(1), geometry(1).point1(1), geometry(3).point1(1), geometry(3).point1(1), geometry(5).point1(1)], ...
-%                  [geometry(1).point1(3), geometry(2).point1(3), geometry(2).point1(3), geometry(4).point1(3), geometry(4).point1(3)], ...
-%                  'r')
-
-            idx = idx + 1;
+%             mask_type = "acf+hics mask";
+%             load(sprintf("%s %s", matname, mask_type))
+%             for im = 1:21
+%                 Masks(im).geometry = geometry;
+%                 Masks(idx).matname = matname;
+%                 Masks(idx).x = acl_x;
+%                 Masks(idx).z = acl_z;
+%                 Masks(im).db_image = global_mask(:, :, im);
+%             end
+% 
+%             idx = idx + 1;
             catch ME
                 disp(ME.message)
             end
 
         end
+
+        rate = sum(pass_fail, 1) / size(pass_fail, 1);
+        save(sprintf("%s %s pass fail", folders(ii).name, mask_type), "rate", "pass_fail", "thresholds")
 %         samples = samples - 100;
     end
 end
 
+% mask_type = "";
+%% Use pass/fail to plot ROC.
+% We have 100 thresholds.
+nd = zeros(size(thresholds));
+de = zeros(size(thresholds));
+for ii = 1:size(folders, 1)
+    if any(strcmp(folders(ii).name, stat_folders))
+        thisdir = fullfile(dirname, folders(ii).name, 'TFMs', 'Relative coords');
+        cd(thisdir)
+        load(sprintf("%s %s pass fail", folders(ii).name, mask_type))
+        if contains(folders(ii).name, "non-defective")
+            nd = nd + sum(pass_fail, 1);
+        else 
+            de = de + sum(pass_fail, 1);
+        end
+    end
+end
+de = de / 220;
+nd = nd / 220;
+figure(1)
+plot(thresholds, nd)
+xlabel("Threshold")
+ylabel("PFA")
+title("Pristine")
+figure(2)
+plot(thresholds, de)
+xlabel("Threshold")
+ylabel("POD")
+title("Defective")
+figure(3)
+plot(nd, de)
+xlabel("PFA")
+ylabel("POD")
+title("best view")
+save(sprintf("%s roc", mask_type)
+
+Mask = Ims;
+for im = 1:21
+    Mask(im).db_image = global_mask(:, :, im);
+end
+Mask = rmfield(Mask, "plotExtras");
+fn_image_from_mat(Mask)
+grp = get(get(gcf, 'Children'), 'Children');
+for im = 2:22
+    grp(im).CLim = [0, 1];
+    colormap gray
+end
+
+% names = [];
+% for im = 1:21
+%     names = [names; Ims(im).name];
+% end
+% 
+% out = categorical(best_views, names);
+% figure(4)
+% histogram(out, 'Normalization', 'pdf')
+
 % Want to redefine acl_x and acl_z so that they are all on the same base.
 % Subtract S2.point1.
 
-% mask_type = "acf mask";
+mask_type = "acf mask";
 max_x = 0;
 max_z = 0;
 for mask = 1:m
@@ -412,29 +641,6 @@ for mask = 1:m
         max_z = size(Masks(mask).z, 2);
     end
 end
-global_mask = zeros(max_z, max_x, 21);
-unmasked = zeros(max_z, max_x, 21);
-for mask = 1:m
-    global_mask(1:size(Masks(mask).z, 2), end-size(Masks(mask).x, 2)+1:end, :) = or(global_mask(1:size(Masks(mask).z, 2), end-size(Masks(mask).x, 2)+1:end, :), Masks(mask).mask);
-    unmasked(1:size(Masks(mask).z, 2), end-size(Masks(mask).x, 2)+1:end, :) = or(unmasked(1:size(Masks(mask).z, 2), end-size(Masks(mask).x, 2)+1:end, :), ones(size(Masks(mask).z, 2), size(Masks(mask).x, 2), 21));
-end
-global_mask = and(global_mask, unmasked);
-save(sprintf("%s global", mask_type), "global_mask")
-
-Global = Ims;
-for im = 1:21
-    Global(im).db_image = global_mask(:, :, im);
-    Global(im).x = acl_x;
-    Global(im).z = acl_z;
-end
-Global = rmfield(Global, "plotExtras");
-fn_image_from_mat(Global)
-grp = get(get(gcf, 'Children'), 'Children');
-for im = 2:22
-    grp(im).CLim = [0, 1];
-    colormap gray
-end
-
 % New_masks = Masks;
 % for mask = 1:m
 %     new_mask = zeros(max_z, max_x, 21);
